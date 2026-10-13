@@ -1,0 +1,107 @@
+name: Build Windows
+
+# Baut das Windows-Standalone (CueCore.exe im Ordner, ohne Installation/Admin lauffähig) aus derselben
+# Spec wie die Mac-App (cuecore.spec): App-Fenster über pywebview (WebView2), eingebackene DBs.
+# Start NUR von Hand: Actions-Tab → "Build Windows" → "Run workflow".
+# Ergebnis: Release-Entwurf "windows-beta" (Reiter Releases, nur fuer Repo-Mitglieder sichtbar, ZIP mit Datum
+# und Commit im Namen; Entwurf statt oeffentlichem Pre-Release); das Artifact
+# "CueCore-Windows" unten auf der Run-Seite ist nur der zweite Weg (siehe unten).
+#
+# Bewusst KEIN push-Trigger (seit 2026-07-25): ein Windows-Build wird nur gebaut,
+# wenn er ausdrücklich angefordert wird — nicht bei jedem Commit.
+
+on:
+  workflow_dispatch:
+
+# Ablage im Release-Entwurf "windows-beta" (Assets zählen NICHT gegen den Actions-Artefakt-Speicher des Accounts).
+# Das Artefakt bleibt als zweiter Weg (continue-on-error), die ZIP heißt nach Datum und Commit.
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v4
+
+      - name: Python einrichten
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Abhängigkeiten installieren
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r MusicMetaDataSearchEngine/requirements.txt
+          pip install pywebview==6.2.1 pyinstaller==6.22.3
+
+      # Eingebauter AcoustID-Key der Open Beta (Entscheidung 13.10.2026): kommt aus dem Repo-Secret
+      # ACOUSTID_APP_KEY, build_bundle_data schreibt ihn verschleiert nach build_data/builtin_keys.bin.
+      # Fehlt das Secret, baut der Workflow ohne eingebauten Key.
+      - name: Datenbanken einbacken (labels_prebuilt.db + songs.db mit allen Library-Lieferungen)
+        working-directory: MusicMetaDataSearchEngine
+        env:
+          CUECORE_ACOUSTID_APP_KEY: ${{ secrets.ACOUSTID_APP_KEY }}
+        run: python build_bundle_data.py --out ../build_data
+
+      # fpcalc (Chromaprint) für AcoustID: im Repo liegt nur das macOS-Binary, cuecore.spec sucht unter Windows
+      # MusicMetaDataSearchEngine/bin/fpcalc.exe. Offizielles Release, Prüfsumme festgeschrieben (Entscheidung
+      # 12.10.2026, derselbe Wert steht in bin/README.md) — weicht sie ab, bricht der Build ab.
+      - name: fpcalc 1.6.1 für AcoustID holen (offizielles Chromaprint-Release, SHA-256 geprüft)
+        shell: pwsh
+        run: |
+          $url = 'https://github.com/acoustid/chromaprint/releases/download/v1.6.1/chromaprint-fpcalc-1.6.1-windows-x86_64.zip'
+          $sha = '735d6182b38e9f364b84ce6f4ccd682c75e2851de89735711d6b762d12b92a4e'
+          $zip = Join-Path $env:RUNNER_TEMP 'fpcalc.zip'
+          Invoke-WebRequest -Uri $url -OutFile $zip
+          $got = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+          if ($got -ne $sha) { throw "fpcalc-ZIP: SHA-256 $got statt $sha" }
+          Expand-Archive $zip -DestinationPath (Join-Path $env:RUNNER_TEMP 'fpcalc')
+          Copy-Item (Join-Path $env:RUNNER_TEMP 'fpcalc/chromaprint-fpcalc-1.6.1-windows-x86_64/fpcalc.exe') MusicMetaDataSearchEngine/bin/fpcalc.exe
+
+      - name: Standalone bauen
+        run: pyinstaller --noconfirm --distpath dist --workpath build cuecore.spec
+
+      # Die Spec warnt bei fehlendem fpcalc nur (lokale Builds) — hier ist es ein Abbruch, kein stiller Build ohne AcoustID.
+      - name: fpcalc im Build prüfen
+        shell: pwsh
+        run: |
+          $exe = './dist/CueCore/_internal/bin/fpcalc.exe'
+          if (-not (Test-Path $exe)) { throw "$exe fehlt im Build: AcoustID ginge unter Windows nicht" }
+          & $exe -version
+          if ($LASTEXITCODE -ne 0) { throw "$exe startet nicht (Exit $LASTEXITCODE)" }
+
+      - name: Als ZIP packen
+        shell: pwsh
+        run: |
+          $stamp = (Get-Date -Format 'yyyy-MM-dd') + '-' + $env:GITHUB_SHA.Substring(0,7)
+          Compress-Archive -Path dist/CueCore -DestinationPath "CueCore-Windows-$stamp.zip"
+          Copy-Item "CueCore-Windows-$stamp.zip" CueCore-Windows.zip
+          "ZIP=CueCore-Windows-$stamp.zip" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Im Release-Entwurf "windows-beta" ablegen (ersetzt die vorige ZIP, nicht oeffentlich)
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view windows-beta --repo $env:GITHUB_REPOSITORY 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create windows-beta --repo $env:GITHUB_REPOSITORY --draft --title "CueCore Windows (Beta)" --notes "Jeweils der letzte Windows-Build. Entpacken, CueCore.exe starten (SmartScreen: Weitere Informationen -> Trotzdem ausfuehren). Braucht die WebView2-Runtime (bei Windows 10/11 mit Edge vorhanden)."
+          }
+          # alte ZIPs am Release entfernen, nur die neue bleibt
+          $old = gh release view windows-beta --repo $env:GITHUB_REPOSITORY --json assets --jq '.assets[].name'
+          foreach ($a in $old) { if ($a) { gh release delete-asset windows-beta $a --repo $env:GITHUB_REPOSITORY --yes } }
+          gh release upload windows-beta $env:ZIP --repo $env:GITHUB_REPOSITORY --clobber
+          gh release edit windows-beta --repo $env:GITHUB_REPOSITORY --notes ("Build vom " + (Get-Date -Format 'yyyy-MM-dd HH:mm') + " UTC, Commit " + $env:GITHUB_SHA.Substring(0,7) + ", Branch " + $env:GITHUB_REF_NAME + ". Entpacken, CueCore.exe starten (SmartScreen: Weitere Informationen -> Trotzdem ausfuehren). Braucht die WebView2-Runtime (bei Windows 10/11 mit Edge vorhanden).")
+
+      - name: Artifact hochladen (zweiter Weg, darf an der Speicher-Quota scheitern)
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: CueCore-Windows
+          path: CueCore-Windows.zip
+          if-no-files-found: error
+          # 7 statt 90 Tage: alte Artefakte zählen gegen den Actions-Speicher des Accounts;
+          # das Release ist der Hauptweg.
+          retention-days: 7

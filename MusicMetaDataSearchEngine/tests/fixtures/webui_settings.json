@@ -1,0 +1,181 @@
+{
+ "keys": [
+  {
+   "key": "discogs_token",
+   "label": "Discogs Personal Token",
+   "paid": false,
+   "hint": "Einfachster Weg: ein persönliches Zugangs-Token (Discogs → Settings → Developers → Generate token). Hebt das Rate-Limit (~25→60/min). Hat Vorrang vor Consumer Key/Secret.",
+   "group": "discogs",
+   "set": false
+  },
+  {
+   "key": "discogs_consumer_key",
+   "label": "Discogs Consumer Key",
+   "paid": false,
+   "hint": "Alternative zum Personal Token: Consumer Key deiner Discogs-Application. Braucht auch das Secret. OAuth-Flow NICHT nötig.",
+   "group": "discogs",
+   "set": false
+  },
+  {
+   "key": "discogs_consumer_secret",
+   "label": "Discogs Consumer Secret",
+   "paid": false,
+   "hint": "Gehört zum Consumer Key.",
+   "group": "discogs",
+   "set": false
+  },
+  {
+   "key": "genius_token",
+   "label": "Genius Client Access Token",
+   "paid": false,
+   "hint": "Songwriter (Komponist/Texter) für Songs, die MusicBrainz und Discogs ohne Autoren führen. genius.com/api-clients → New API Client → „Generate Access Token“. Community-gepflegt: Vorschlag mit Quellenlink, kein Labelcode. Genius erlaubt kommerzielle Nutzung nur mit Lizenz (api-sales@genius.com).",
+   "group": "genius",
+   "set": false
+  },
+  {
+   "key": "acoustid_api_key",
+   "label": "AcoustID Application API-Key",
+   "paid": false,
+   "hint": "Akustischer Fingerabdruck (Chromaprint) statt Dateiname — erkennt Tracks ohne Tags und ohne brauchbaren Namen. Kostenloser Application-Key: acoustid.org → New Application. Laut AcoustID-Doku nur für NICHT-kommerzielle Nutzung frei; für kommerzielle Anwendungen eine eigene Anmeldung.",
+   "group": "acoustid",
+   "set": false
+  },
+  {
+   "key": "audd_token",
+   "label": "AudD Token",
+   "paid": true,
+   "hint": "Audio-Fingerprinting (kaputte Files erkennen). Pay-as-you-go.",
+   "group": "audd",
+   "set": false
+  },
+  {
+   "key": "editingtools_api_key",
+   "label": "editingtools.io API-Key",
+   "paid": true,
+   "hint": "Für den Library-Metadaten-Scan im EDL-Tab (Production-Music-Cues). Kontingent-basiert (ab einer Anfrage-Menge kostenpflichtig). editingtools.io → Account → API-Key.",
+   "group": "editingtools",
+   "set": false
+  },
+  {
+   "key": "acrcloud_access_key",
+   "label": "ACRCloud Access Key",
+   "paid": true,
+   "hint": "Fingerprinting-Alternative.",
+   "group": "acrcloud",
+   "set": false
+  },
+  {
+   "key": "acrcloud_access_secret",
+   "label": "ACRCloud Access Secret",
+   "paid": true,
+   "hint": "Gehört zum ACRCloud Access Key.",
+   "group": "acrcloud",
+   "set": false
+  }
+ ],
+ "paths": [
+  {
+   "key": "lc_verified_dir",
+   "label": "LC-verified-Ordner",
+   "hint": "Zielordner für getaggte + umbenannte Tracks. Pflicht für den Tagger-Apply.",
+   "group": "ordner",
+   "value": "/Users/x/LC verified"
+  }
+ ],
+ "texts": [],
+ "partners": [
+  {
+   "id": "p1",
+   "name": "Fresh Tracks",
+   "host": "api.fresh.example",
+   "client_id": "test-client",
+   "secret_set": true,
+   "complete": true
+  }
+ ],
+ "partner_fields": {
+  "name": {
+   "label": "Name",
+   "hint": "Anzeigename, z.B. Fresh Tracks — steht später als Quelle am Cue."
+  },
+  "host": {
+   "label": "Host",
+   "hint": "z.B. api.library-partner.com (ohne https://, ohne Pfad — der API-Pfad wird automatisch ergänzt)."
+  },
+  "client_id": {
+   "label": "Client-ID",
+   "hint": "Client-ID aus den Zugangsdaten des Anbieters."
+  },
+  "client_secret": {
+   "label": "Client-Secret",
+   "hint": "Client-Secret aus den Zugangsdaten des Anbieters. Wird maskiert gespeichert; leer lassen zum Behalten."
+  }
+ },
+ "groups": [
+  {
+   "key": "ordner",
+   "label": "Ordner",
+   "test": false,
+   "hint": "Wohin getaggte und umbenannte Tracks wandern."
+  },
+  {
+   "key": "trackmeta",
+   "label": "Track-Metadata-API (Library-Partner)",
+   "test": true,
+   "partners": true,
+   "hint": "Dateiname → Titel, Interpret, Autoren, Label, LC. Mehrere Partner möglich (je Name, Host, Client-ID, Secret aus den Zugangsdaten des Anbieters); „Metadaten vervollständigen“ im Cue-Sheet-Tab fragt sie der Reihe nach."
+  },
+  {
+   "key": "editingtools",
+   "label": "editingtools.io",
+   "test": true,
+   "url": "https://editingtools.io",
+   "hint": "Production-Music-Cues im EDL-Tab. Kontingent-basiert."
+  },
+  {
+   "key": "discogs",
+   "label": "Discogs",
+   "test": true,
+   "url": "https://www.discogs.com/settings/developers",
+   "hint": "Hebt das Rate-Limit der Discogs-Abfragen (~25 → 60/min). Personal Token reicht."
+  },
+  {
+   "key": "genius",
+   "label": "Genius",
+   "test": true,
+   "url": "https://genius.com/api-clients",
+   "hint": "Songwriter als Vorschlag, wenn MusicBrainz/Discogs keine Autoren kennen. Kostenloser Client Access Token; kommerzielle Nutzung nur mit Genius-Lizenz."
+  },
+  {
+   "key": "acoustid",
+   "label": "AcoustID",
+   "test": true,
+   "url": "https://acoustid.org/new-application",
+   "hint": "Fingerabdruck der Audiodatei (Chromaprint/fpcalc) gegen die AcoustID-Datenbank — findet Tracks, deren Name und Tags nichts hergeben. Kostenlos für nicht-kommerzielle Nutzung. Wird vor AudD gefragt."
+  },
+  {
+   "key": "audd",
+   "label": "AudD",
+   "test": false,
+   "url": "https://dashboard.audd.io",
+   "hint": "Audio-Fingerprinting für Dateien ohne Tags und ohne Schema-Namen. Pay-as-you-go."
+  },
+  {
+   "key": "acrcloud",
+   "label": "ACRCloud",
+   "test": false,
+   "url": "https://console.acrcloud.com",
+   "hint": "Fingerprinting-Alternative."
+  }
+ ],
+ "configured": {
+  "editingtools": false,
+  "trackmeta": true,
+  "discogs": false,
+  "genius": false,
+  "acoustid": false,
+  "audd": false,
+  "acrcloud": false
+ },
+ "fpcalc": "/usr/local/bin/fpcalc"
+}

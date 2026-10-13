@@ -1,0 +1,358 @@
+{
+ "built": "2026-09-20",
+ "rows": 486,
+ "libraries": [
+  "APL",
+  "Cezame",
+  "Extreme Music",
+  "Extreme Music; KPM",
+  "KPM",
+  "KPM; Universal Production Music",
+  "KPM; Warner Chappell PM",
+  "Universal Production Music",
+  "Warner Chappell PM",
+  "West One Music"
+ ],
+ "sources": [
+  "APL-Labelliste 2026-09",
+  "APL-Website 2026-09",
+  "Cezame-Labelliste 2026-09",
+  "Extreme-Music-Labelliste",
+  "Extreme-Music-Website 2026-09",
+  "KPM-Labelliste 2022-05",
+  "KPM-Website 2026-09",
+  "UPM-Labelliste 2026-09",
+  "Warner-Chappell-Labelliste 2026-09",
+  "West-One-Labelliste 2026-09"
+ ],
+ "decided_by_gvl_name": [
+  "Warner Chappell PM ALTT (Alchemy Trailer Tools): Beschreibung LC89364 (GVL-Name passt), Trackseite LC89342 verworfen",
+  "Warner Chappell PM CAS (CPM Archive Series): Beschreibung LC30199 (GVL-Name passt), Trackseite LC07189 verworfen",
+  "Warner Chappell PM ELEWS (Elephant Sound Design - Wild Sanctuary Biophonic): Trackseite LC98790 (GVL-Name passt), Beschreibung LC24367 verworfen",
+  "Warner Chappell PM GSD (Graphic Sound Design): Trackseite LC27121 (GVL-Name passt), Beschreibung LC12540 verworfen",
+  "Warner Chappell PM MCMW (Midcoast Music Wired): Trackseite LC33780 (GVL-Name passt), Beschreibung LC34666 verworfen",
+  "Warner Chappell PM NAKD (Naked Music): Trackseite LC34666 (GVL-Name passt), Beschreibung LC33780 verworfen",
+  "Warner Chappell PM NRV (Revolucion): Beschreibung LC11748 (GVL-Name passt), Trackseite LC30198 verworfen",
+  "Warner Chappell PM SONG (Songcraft): Trackseite LC86355 (GVL-Name passt), Beschreibung LC91802 verworfen"
+ ],
+ "excluded": [
+  {
+   "prefix": "XDC",
+   "labelcode": "84940",
+   "library": "Extreme Music",
+   "why": "GVL widerspricht der Liste"
+  },
+  {
+   "prefix": "GDIS",
+   "labelcode": "94544",
+   "library": "KPM",
+   "why": "GVL widerspricht der Liste"
+  },
+  {
+   "prefix": "BZ",
+   "labelcode": "89388",
+   "library": "APL",
+   "why": "GVL widerspricht der Liste"
+  },
+  {
+   "prefix": "MHA",
+   "labelcode": "",
+   "library": "Universal Production Music",
+   "why": "leer"
+  },
+  {
+   "prefix": "MHD",
+   "labelcode": "",
+   "library": "Universal Production Music",
+   "why": "leer"
+  },
+  {
+   "prefix": "MHE",
+   "labelcode": "",
+   "library": "Universal Production Music",
+   "why": "leer"
+  },
+  {
+   "prefix": "MHI",
+   "labelcode": "",
+   "library": "Universal Production Music",
+   "why": "leer"
+  },
+  {
+   "prefix": "MHS",
+   "labelcode": "",
+   "library": "Universal Production Music",
+   "why": "leer"
+  },
+  {
+   "prefix": "MH",
+   "labelcode": "",
+   "library": "Universal Production Music",
+   "why": "leer"
+  },
+  {
+   "prefix": "CVA",
+   "labelcode": "",
+   "library": "Universal Production Music",
+   "why": "leer"
+  },
+  {
+   "prefix": "EMPC",
+   "labelcode": "",
+   "library": "Universal Production Music",
+   "why": "leer"
+  },
+  {
+   "prefix": "ZONE",
+   "labelcode": "",
+   "library": "Universal Production Music",
+   "why": "leer"
+  },
+  {
+   "prefix": "ZTR",
+   "labelcode": "",
+   "library": "Universal Production Music",
+   "why": "leer"
+  },
+  {
+   "prefix": "ZONE",
+   "labelcode": "",
+   "library": "Universal Production Music",
+   "why": "leer"
+  },
+  {
+   "prefix": "SFX",
+   "labelcode": "",
+   "library": "West One Music",
+   "why": "leer"
+  },
+  {
+   "prefix": "QF",
+   "labelcode": "",
+   "library": "West One Music",
+   "why": "leer"
+  },
+  {
+   "prefix": "REP",
+   "labelcode": "",
+   "library": "West One Music",
+   "why": "leer"
+  },
+  {
+   "prefix": "QFCOMP",
+   "labelcode": "",
+   "library": "West One Music",
+   "why": "leer"
+  },
+  {
+   "prefix": "QF",
+   "labelcode": "",
+   "library": "West One Music",
+   "why": "leer"
+  },
+  {
+   "prefix": "QFSD",
+   "labelcode": "",
+   "library": "West One Music",
+   "why": "leer"
+  },
+  {
+   "prefix": "DRP",
+   "labelcode": "",
+   "library": "Extreme Music",
+   "why": "leer"
+  },
+  {
+   "prefix": "DND",
+   "labelcode": "",
+   "library": "Extreme Music",
+   "why": "leer"
+  },
+  {
+   "prefix": "XBN",
+   "labelcode": "",
+   "library": "Extreme Music",
+   "why": "leer"
+  },
+  {
+   "prefix": "PEDE",
+   "labelcode": "30336",
+   "library": "KPM",
+   "why": "Code weder im Master noch im Supplemental"
+  },
+  {
+   "prefix": "PEDA",
+   "labelcode": "30259",
+   "library": "KPM",
+   "why": "Code weder im Master noch im Supplemental"
+  },
+  {
+   "prefix": "PEDF",
+   "labelcode": "30260",
+   "library": "KPM",
+   "why": "Code weder im Master noch im Supplemental"
+  },
+  {
+   "prefix": "PEDD",
+   "labelcode": "30261",
+   "library": "KPM",
+   "why": "Code weder im Master noch im Supplemental"
+  },
+  {
+   "prefix": "PEDB",
+   "labelcode": "30263",
+   "library": "KPM",
+   "why": "Code weder im Master noch im Supplemental"
+  },
+  {
+   "prefix": "ARP",
+   "labelcode": "37416",
+   "library": "KPM",
+   "why": "Code weder im Master noch im Supplemental"
+  },
+  {
+   "prefix": "RHZ",
+   "labelcode": "98314",
+   "library": "KPM",
+   "why": "GVL widerspricht der Liste"
+  },
+  {
+   "prefix": "BZ",
+   "labelcode": "89388",
+   "library": "APL",
+   "why": "GVL widerspricht der Liste"
+  },
+  {
+   "prefix": "CM",
+   "labelcode": "19921",
+   "library": "KPM",
+   "why": "Kürzel mehrdeutig: 19921, 23109"
+  },
+  {
+   "prefix": "CM",
+   "labelcode": "23109",
+   "library": "Universal Production Music",
+   "why": "Kürzel mehrdeutig: 19921, 23109"
+  },
+  {
+   "prefix": "CM",
+   "labelcode": "19921",
+   "library": "KPM",
+   "why": "Kürzel mehrdeutig: 19921, 23109"
+  },
+  {
+   "prefix": "CHALK",
+   "labelcode": "84804",
+   "library": "KPM",
+   "why": "Kürzel mehrdeutig: 82157, 84804"
+  },
+  {
+   "prefix": "CHALK",
+   "labelcode": "82157",
+   "library": "Universal Production Music",
+   "why": "Kürzel mehrdeutig: 82157, 84804"
+  },
+  {
+   "prefix": "CHALK",
+   "labelcode": "84804",
+   "library": "KPM",
+   "why": "Kürzel mehrdeutig: 82157, 84804"
+  },
+  {
+   "prefix": "JUSTE",
+   "labelcode": "12539",
+   "library": "KPM",
+   "why": "Kürzel mehrdeutig: 12539, 50769"
+  },
+  {
+   "prefix": "JUSTE",
+   "labelcode": "50769",
+   "library": "KPM",
+   "why": "Kürzel mehrdeutig: 12539, 50769"
+  },
+  {
+   "prefix": "JUSTE",
+   "labelcode": "50769",
+   "library": "KPM",
+   "why": "Kürzel mehrdeutig: 12539, 50769"
+  },
+  {
+   "prefix": "KPMINT",
+   "labelcode": "02061",
+   "library": "KPM",
+   "why": "Kürzel mehrdeutig: 02061, 30517"
+  },
+  {
+   "prefix": "KPMINT",
+   "labelcode": "30517",
+   "library": "KPM",
+   "why": "Kürzel mehrdeutig: 02061, 30517"
+  },
+  {
+   "prefix": "NIGHTSE",
+   "labelcode": "96705",
+   "library": "KPM",
+   "why": "Kürzel mehrdeutig: 96704, 96705"
+  },
+  {
+   "prefix": "NIGHTSE",
+   "labelcode": "96704",
+   "library": "KPM",
+   "why": "Kürzel mehrdeutig: 96704, 96705"
+  },
+  {
+   "prefix": "NIGHTSE",
+   "labelcode": "96704",
+   "library": "KPM",
+   "why": "Kürzel mehrdeutig: 96704, 96705"
+  },
+  {
+   "prefix": "SPL",
+   "labelcode": "70919",
+   "library": "APL",
+   "why": "Kürzel mehrdeutig: 30241, 70919"
+  },
+  {
+   "prefix": "SPL",
+   "labelcode": "30241",
+   "library": "KPM",
+   "why": "Kürzel mehrdeutig: 30241, 70919"
+  },
+  {
+   "prefix": "SPL",
+   "labelcode": "70919",
+   "library": "APL",
+   "why": "Kürzel mehrdeutig: 30241, 70919"
+  },
+  {
+   "prefix": "BPM",
+   "labelcode": "24303",
+   "library": "Universal Production Music",
+   "why": "Kürzel mehrdeutig: 23100, 24303, 99236"
+  },
+  {
+   "prefix": "BPM",
+   "labelcode": "99236",
+   "library": "Universal Production Music",
+   "why": "Kürzel mehrdeutig: 23100, 24303, 99236"
+  },
+  {
+   "prefix": "BPM",
+   "labelcode": "23100",
+   "library": "Universal Production Music",
+   "why": "Kürzel mehrdeutig: 23100, 24303, 99236"
+  },
+  {
+   "prefix": "SFL",
+   "labelcode": "30201",
+   "library": "Warner Chappell PM",
+   "why": "Kürzel mehrdeutig: 12540, 30201"
+  },
+  {
+   "prefix": "SFL",
+   "labelcode": "12540",
+   "library": "Warner Chappell PM",
+   "why": "Kürzel mehrdeutig: 12540, 30201"
+  }
+ ]
+}
