@@ -1,0 +1,14 @@
+{
+ "source": "MusicBrainz Full Export mbdump.tar.bz2 (CC0), Tabellen label + label_alias",
+ "dump_timestamp": "20260912-002318",
+ "master": "GVL_Labelcodes_synced.csv",
+ "labels_total": 349372,
+ "labels_with_lc": 7151,
+ "labels_lc_in_gvl": 6209,
+ "aliases_total": 34177,
+ "aliases_of_gvl_labels": 2358,
+ "dropped_generic": 100,
+ "dropped_gvl_known": 5461,
+ "dropped_ambiguous": 8,
+ "rows": 2860
+}

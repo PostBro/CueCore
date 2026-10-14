@@ -1,0 +1,26 @@
+# --- Python / Build ---
+.venv/
+.venv-build/
+__pycache__/
+*.pyc
+.pytest_cache/
+dist/
+build/
+.DS_Store
+
+# --- lokale Laufzeit-DBs ---
+# Die produktiven DBs liegen im Datenordner der App (labels.db, cache.db, operations.db,
+# settings.json) und gehoeren nie ins Repo. Getrackt bleibt der Seed
+# MusicMetaDataSearchEngine/data/songs.db, er wird in den Build eingebacken.
+labels.db
+labels_prebuilt.db
+cache.db
+operations.db
+settings.json
+
+# --- Quell-PDF der GVL ---
+# Die daraus erzeugte, PDF-verifizierte data/GVL_Labelcodes_synced.csv ist getrackt.
+GVL-Labelcodes.pdf
+
+# --- App-Build: eingebackene DBs (build_bundle_data.py), reproduzierbar aus dem Repo ---
+build_data/
