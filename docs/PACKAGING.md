@@ -9,8 +9,11 @@ ist er ausgeblendet (`hideQuitInShell` in index.html).
 ## Bauen auf dem Mac
 
 ```bash
+export UV_PYTHON_INSTALL_DIR=/Users/Shared/cuecore-python           # Python außerhalb des Home-Ordners
+uv python install 3.12
 cd MusicMetaDataSearchEngine
 uv venv --python 3.12 .venv-build                                   # eigenständiges Python, min. macOS 11
+.venv-build/bin/python -c "import os,sysconfig;print(os.path.expanduser('~') in str(sysconfig.get_config_vars()))"  # muss False sein
 uv pip install --python .venv-build/bin/python -r requirements.txt -r requirements-build.txt
 .venv-build/bin/python build_bundle_data.py    # -> ../build_data/ (labels_prebuilt.db + songs.db, ~10 s)
 cd ..
@@ -19,13 +22,19 @@ MusicMetaDataSearchEngine/.venv-build/bin/pyinstaller --noconfirm cuecore.spec
 
 Nicht mit dem Dev-`.venv` (Homebrew-Python) bauen — dessen Framework verlangt macOS 26.
 
+**Kein Home-Pfad in der App:** uv schreibt den Installationsort seines Pythons in `_sysconfigdata`, und PyInstaller
+packt diese Datei in die App. Liegt das Python unter `~/.local/share/uv/python`, steht damit der Benutzername in
+jeder ausgelieferten App. Deshalb `UV_PYTHON_INSTALL_DIR` auf einen neutralen Ordner setzen und vor dem Build
+die Prüfzeile oben laufen lassen; bei `True` das `.venv-build` löschen und neu anlegen.
+
 **Eingebauter AcoustID-Key (Open Beta, seit 13.10.2026):** vor `build_bundle_data.py` die Variable
 `CUECORE_ACOUSTID_APP_KEY` setzen (Key der App CUECORE auf acoustid.org, nie committen). Das Skript schreibt ihn
 verschleiert nach `build_data/builtin_keys.bin`, die Spec nimmt die Datei mit; ohne Variable baut die App ohne
 eingebauten Key. Windows liest ihn aus dem Repo-Secret `ACOUSTID_APP_KEY`. Ein eigener Key in den Einstellungen gewinnt.
 
 Ergebnis: `dist/CueCore.app` (rund 190 MB, arm64, ad-hoc signiert, ZIP rund 70 MB; Build vom 11.10.2026). Zum
-Weitergeben: `ditto -c -k --keepParent dist/CueCore.app CueCore-mac.zip`.
+Weitergeben: `ditto -c -k --norsrc --noextattr --keepParent dist/CueCore.app CueCore-mac.zip` (ohne `._*`-Dateien
+und erweiterte Attribute).
 `dist/`, `build/` und `build_data/` sind gitignored.
 
 Die Spec bricht ab, wenn `build_data/` fehlt — der Schritt `build_bundle_data.py` ist Pflicht und reproduzierbar
@@ -53,6 +62,17 @@ jedem Build lohnt ein Blick auf `git status --short | grep '^ D'`.
 **Nicht im Bundle:** `track_index.db` (6,5 GB, Dump-Index aus Discogs/MusicBrainz). Wer ihn auf einem zweiten
 Rechner will, kopiert die Datei in den Datenordner (unten); die App findet sie beim nächsten Start und zeigt
 sonst „Track-Index: keiner" in der Rail.
+
+**Track-Index als Release-Archiv packen:** ohne Benutzer- und Gruppennamen im Tar-Header, sonst steht der
+Mac-Benutzer in jedem Download:
+
+```bash
+COPYFILE_DISABLE=1 tar --uid 0 --gid 0 --uname "" --gname "" --no-xattrs \
+  -cJf CueCore_Track-Index_<stand>.tar.xz track_index.db
+tar -tvJf CueCore_Track-Index_<stand>.tar.xz          # Besitzer muss 0/0 sein
+```
+
+Danach `URL`, `SHA256` und `SIZE` in `core/indexdownload.py` auf das neue Archiv setzen.
 
 ## Ablageorte zur Laufzeit (nutzer-schreibbar, kein Admin)
 
