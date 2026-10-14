@@ -14,7 +14,7 @@ def _http_err(code):
 def test_check_trackmeta_forces_fresh_token():
     calls = []
     def http(method, url, *, headers=None, body=None, form=None):
-        calls.append(url); return trackmeta.Resp(ok=True, status=200, data={"access_token": "t", "expires_in": 7200})
+        calls.append(url); return trackmeta.Resp(ok=True, status=200, data={"access_token": "t", "expires_in": 900})
     c = trackmeta.Client("api.example.com", "test-client", "S", http=http)
     c.token()                                   # gecacht
     monkey = []

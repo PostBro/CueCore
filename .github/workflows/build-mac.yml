@@ -1,0 +1,78 @@
+name: Build Mac
+
+# Baut die Mac-App (dist/CueCore.app, arm64) aus derselben Spec wie Windows (cuecore.spec) auf einem
+# GitHub-Runner statt auf einem privaten Rechner: so landen keine lokalen Pfade oder Benutzernamen in der App.
+# Start NUR von Hand: Actions-Tab → "Build Mac" → "Run workflow".
+# Ergebnis: Release-Entwurf "mac-beta" (nur für Repo-Mitglieder sichtbar) mit der ZIP; das Artifact
+# "CueCore-Mac" unten auf der Run-Seite ist der zweite Weg.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-mac:
+    runs-on: macos-14
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v4
+
+      - name: Python einrichten
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Abhängigkeiten installieren
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r MusicMetaDataSearchEngine/requirements.txt
+          pip install pywebview==6.2.1 pyinstaller==6.22.3
+
+      # Eingebauter AcoustID-Key und Profil der Track-Metadata-API: nur aus den Repo-Secrets, verschleiert nach
+      # build_data/builtin_keys.bin. Fehlt ein Secret, fehlt die Funktion in der App.
+      - name: Datenbanken einbacken (labels_prebuilt.db + songs.db mit allen Library-Lieferungen)
+        working-directory: MusicMetaDataSearchEngine
+        env:
+          CUECORE_ACOUSTID_APP_KEY: ${{ secrets.ACOUSTID_APP_KEY }}
+          CUECORE_TRACKMETA_PROFILE: ${{ secrets.TRACKMETA_PROFILE }}
+        run: python build_bundle_data.py --out ../build_data
+
+      - name: App bauen
+        run: pyinstaller --noconfirm --distpath dist --workpath build cuecore.spec
+
+      - name: fpcalc und Mindestversion im Build prüfen
+        run: |
+          fp=dist/CueCore.app/Contents/Frameworks/bin/fpcalc
+          test -x "$fp" || { echo "$fp fehlt im Build: AcoustID ginge nicht"; exit 1; }
+          "$fp" -version
+          otool -l dist/CueCore.app/Contents/MacOS/CueCore | grep -A3 LC_BUILD_VERSION | grep minos
+
+      - name: Als ZIP packen (ohne ._*-Dateien und erweiterte Attribute)
+        run: |
+          stamp="$(date -u +%Y-%m-%d)-${GITHUB_SHA::7}"
+          ditto -c -k --norsrc --noextattr --keepParent dist/CueCore.app "CueCore-Mac-$stamp.zip"
+          cp "CueCore-Mac-$stamp.zip" CueCore-Mac.zip
+          echo "ZIP=CueCore-Mac-$stamp.zip" >> "$GITHUB_ENV"
+
+      - name: Im Release-Entwurf "mac-beta" ablegen (ersetzt die vorige ZIP, nicht öffentlich)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view mac-beta --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create mac-beta --repo "$GITHUB_REPOSITORY" --draft --title "CueCore Mac (Beta)" --notes "Jeweils der letzte Mac-Build (Apple Silicon, macOS 11 oder neuer, unsigniert)."
+          fi
+          for a in $(gh release view mac-beta --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name'); do
+            gh release delete-asset mac-beta "$a" --repo "$GITHUB_REPOSITORY" --yes
+          done
+          gh release upload mac-beta "$ZIP" --repo "$GITHUB_REPOSITORY" --clobber
+
+      - name: Artifact hochladen (zweiter Weg, darf an der Speicher-Quota scheitern)
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: CueCore-Mac
+          path: CueCore-Mac.zip
+          if-no-files-found: error
+          retention-days: 7

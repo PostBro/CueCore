@@ -8,6 +8,12 @@ ist er ausgeblendet (`hideQuitInShell` in index.html).
 
 ## Bauen auf dem Mac
 
+**Release-Weg:** Actions-Tab → „Build Mac“ → „Run workflow“ (`.github/workflows/build-mac.yml`). Der Workflow baut
+auf einem GitHub-Runner und legt die ZIP im Release-Entwurf `mac-beta` ab; so stehen keine lokalen Pfade oder
+Benutzernamen in der App. Lokal gebaute Apps nur zum Testen verwenden, nicht veröffentlichen.
+
+Lokal (zum Testen):
+
 ```bash
 export UV_PYTHON_INSTALL_DIR=/Users/Shared/cuecore-python           # Python außerhalb des Home-Ordners
 uv python install 3.12
@@ -31,6 +37,12 @@ die Prüfzeile oben laufen lassen; bei `True` das `.venv-build` löschen und neu
 `CUECORE_ACOUSTID_APP_KEY` setzen (Key der App CUECORE auf acoustid.org, nie committen). Das Skript schreibt ihn
 verschleiert nach `build_data/builtin_keys.bin`, die Spec nimmt die Datei mit; ohne Variable baut die App ohne
 eingebauten Key. Windows liest ihn aus dem Repo-Secret `ACOUSTID_APP_KEY`. Ein eigener Key in den Einstellungen gewinnt.
+
+**Profil der Track-Metadata-API:** Pfade, Scope, Batch-Größe und Feldnamen der Partner-API stehen nicht im Repo.
+Sie kommen als JSON aus der Variable `CUECORE_TRACKMETA_PROFILE` (Repo-Secret `TRACKMETA_PROFILE`) und landen
+wie der AcoustID-Key verschleiert in `build_data/builtin_keys.bin`. Beim Start aus dem Quellcode liest
+`core/trackmeta.py` dieselbe Variable direkt. Ohne Profil ist die Funktion aus; ein unvollständiges Profil lässt
+`build_bundle_data.py` abbrechen. Verschleiert heißt nicht geheim: wer die App zerlegt, kann es lesen.
 
 Ergebnis: `dist/CueCore.app` (rund 190 MB, arm64, ad-hoc signiert, ZIP rund 70 MB; Build vom 11.10.2026). Zum
 Weitergeben: `ditto -c -k --norsrc --noextattr --keepParent dist/CueCore.app CueCore-mac.zip` (ohne `._*`-Dateien

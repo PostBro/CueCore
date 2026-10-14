@@ -16,5 +16,14 @@ os.environ.setdefault("CUECORE_SETTINGS", os.path.join(_settings_dir, "settings.
 # Daten- UND Labelordner ins Temp.
 _db_dir = tempfile.mkdtemp(prefix="cuecore-test-db-")
 os.environ.setdefault("CUECORE_DB", os.path.join(_db_dir, "labels.db"))
+# Track-Metadata-API: erfundenes Partner-Profil (core/trackmeta.py) — das echte steht nie im Repo und wird hier
+# überschrieben, damit Tests nie gegen echte Pfade laufen.
+import json
+os.environ["CUECORE_TRACKMETA_PROFILE"] = json.dumps({
+    "base": "/zzq/v1", "token": "/zzq/token", "meta": "/zzq/lookup", "scope": "zzq-scope",
+    "batch": 10, "ttl": 900, "list": "names",
+    "fields": {"titel": "zz_title", "interpret": "zz_artist", "komponist": "zz_composer", "texter": "zz_writer",
+               "album": "zz_album", "labelname": "zz_label", "labelcode": "zz_lc", "tracknummer": "zz_no",
+               "isrc": "zz_isrc"}})
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))

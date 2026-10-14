@@ -45,6 +45,10 @@ def write_builtin_keys(out: Path) -> bool:
     from core import settings
     f = out / "builtin_keys.bin"
     keys = {k: os.environ[env].strip() for k, env in settings.BUILTIN_ENV.items() if os.environ.get(env, "").strip()}
+    if "trackmeta_profile" in keys:
+        from core import trackmeta
+        if trackmeta.parse_profile(keys["trackmeta_profile"]) is None:   # kaputtes Profil nicht still ausliefern
+            raise SystemExit(f"{settings.BUILTIN_ENV['trackmeta_profile']}: Profil unvollständig oder kein JSON")
     if f.exists():
         f.unlink()
     if not keys:

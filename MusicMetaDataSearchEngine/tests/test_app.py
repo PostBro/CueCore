@@ -1249,7 +1249,7 @@ def test_edl_trackmeta_scan_validates_labelcode_against_gvl(tmp_path, monkeypatc
     j = client.post("/api/edl/trackmeta-scan", json={"cues": [
         {"fileName": "a.mp3"}, {"clip_name": "b.mp3"}, {"fileName": "c.mp3"}, {"fileName": "d.mp3"}, {"fileName": " "}]}).json()
     assert seen["names"] == ["a.mp3", "b.mp3", "c.mp3", "d.mp3"]
-    assert seen["client"].configured() and seen["client"].base == "https://api.example.com/api-v2/public"
+    assert seen["client"].configured() and seen["client"].base == "https://api.example.com/zzq/v1"
     assert j["ok"] and j["matched"] == 3 and j["count"] == 4 and j["requests"] == 1
     e = j["entries"]
     assert e[0]["labelcode"] == "00121" and e[0]["labelname"] == "Atlantic"          # roher LC im Master

@@ -78,6 +78,7 @@ def test_eingebauter_key_nur_aus_der_umgebung_und_verschleiert(tmp_path, monkeyp
     ist, verschleiert nach builtin_keys.bin; ohne Variable bleibt keine alte Datei liegen."""
     from core import settings
     out = tmp_path / "bd"
+    monkeypatch.delenv("CUECORE_TRACKMETA_PROFILE", raising=False)
     monkeypatch.setenv("CUECORE_ACOUSTID_APP_KEY", "zzqBuildKey")
     build_bundle_data.write_builtin_keys(out)
     blob = (out / "builtin_keys.bin").read_bytes()
@@ -85,3 +86,21 @@ def test_eingebauter_key_nur_aus_der_umgebung_und_verschleiert(tmp_path, monkeyp
     monkeypatch.delenv("CUECORE_ACOUSTID_APP_KEY")
     build_bundle_data.write_builtin_keys(out)
     assert not (out / "builtin_keys.bin").exists()
+
+
+def test_trackmeta_profil_nur_aus_der_umgebung_verschleiert_und_geprueft(tmp_path, monkeypatch):
+    """Das Profil der Track-Metadata-API (conftest.py: erfundene Werte) landet verschleiert in builtin_keys.bin;
+    ein kaputtes Profil bricht den Build ab, statt eine App ohne funktionierende Abfrage auszuliefern."""
+    import json
+    import os
+    import pytest
+    from core import settings
+    out = tmp_path / "bd"
+    monkeypatch.delenv("CUECORE_ACOUSTID_APP_KEY", raising=False)
+    raw = os.environ["CUECORE_TRACKMETA_PROFILE"]
+    build_bundle_data.write_builtin_keys(out)
+    blob = (out / "builtin_keys.bin").read_bytes()
+    assert b"/zzq/" not in blob and settings.decode_builtin(blob) == {"trackmeta_profile": raw}
+    monkeypatch.setenv("CUECORE_TRACKMETA_PROFILE", json.dumps({"base": "/zzq"}))
+    with pytest.raises(SystemExit):
+        build_bundle_data.write_builtin_keys(out)

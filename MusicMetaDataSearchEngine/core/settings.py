@@ -172,11 +172,12 @@ def load(path: str | Path | None = None) -> dict:
         return {}
 
 
-# Eingebaute Anwendungs-Schlüssel (nur AcoustID, für die nicht-kommerzielle Nutzung).
+# Eingebaute Anwendungs-Schlüssel (AcoustID, für die nicht-kommerzielle Nutzung) und das Profil der
+# Track-Metadata-API (core/trackmeta.py: Pfade, Scope, Feldnamen; Zugangsdaten trägt jeder selbst ein).
 # Sie stehen NICHT im Repo: build_bundle_data.py schreibt sie aus der Umgebung (BUILTIN_ENV) verschleiert nach
 # build_data/builtin_keys.bin, die Spec legt die Datei ins Bundle, app.py setzt BUILTIN_PATH. Ein eigener Key in den
 # Einstellungen gewinnt. Verschleiert heißt: nicht im Klartext lesbar und nie in der Oberfläche — geheim ist es nicht.
-BUILTIN_ENV = {"acoustid_api_key": "CUECORE_ACOUSTID_APP_KEY"}
+BUILTIN_ENV = {"acoustid_api_key": "CUECORE_ACOUSTID_APP_KEY", "trackmeta_profile": "CUECORE_TRACKMETA_PROFILE"}
 BUILTIN_PATH: Path | None = None
 _MASK = b"CueCore-builtin-keys"
 _builtin_cache: tuple[Path | None, dict] | None = None

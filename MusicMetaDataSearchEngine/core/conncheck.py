@@ -25,7 +25,7 @@ def check_trackmeta(client) -> dict:
         return {"ok": False, "status": 0, "error": "not_configured", "detail": ""}
     # Eigener Probe-Client mit kurzem Timeout und ohne Retries — der Token-Cache des echten
     # Clients bleibt unberührt.
-    probe = trackmeta.Client(client.base, client.client_id, client.client_secret,
+    probe = trackmeta.Client(client.base, client.client_id, client.client_secret, profile=client.profile,
                              http=functools.partial(trackmeta.http_request, retries=1, timeout=PROBE_TIMEOUT))
     r = probe.token(force=True)
     return {"ok": r.ok, "status": r.status, "error": "" if r.ok else (r.error or "unknown"),

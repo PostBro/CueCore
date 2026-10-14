@@ -38,11 +38,13 @@ jobs:
 
       # Eingebauter AcoustID-Key der Open Beta (Entscheidung 13.10.2026): kommt aus dem Repo-Secret
       # ACOUSTID_APP_KEY, build_bundle_data schreibt ihn verschleiert nach build_data/builtin_keys.bin.
-      # Fehlt das Secret, baut der Workflow ohne eingebauten Key.
+      # Fehlt das Secret, baut der Workflow ohne eingebauten Key. Ebenso das Profil der Track-Metadata-API
+      # (Secret TRACKMETA_PROFILE, JSON; ohne Secret ist die Funktion in der App aus).
       - name: Datenbanken einbacken (labels_prebuilt.db + songs.db mit allen Library-Lieferungen)
         working-directory: MusicMetaDataSearchEngine
         env:
           CUECORE_ACOUSTID_APP_KEY: ${{ secrets.ACOUSTID_APP_KEY }}
+          CUECORE_TRACKMETA_PROFILE: ${{ secrets.TRACKMETA_PROFILE }}
         run: python build_bundle_data.py --out ../build_data
 
       # fpcalc (Chromaprint) für AcoustID: im Repo liegt nur das macOS-Binary, cuecore.spec sucht unter Windows
