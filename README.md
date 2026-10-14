@@ -21,7 +21,7 @@ Aktuelle Version: **Beta 0.9.5** (0.9.5-beta). Herunterladen, entpacken, starten
 
 Alle Versionen und Änderungen unter [Releases](https://github.com/PostBro/CueCore/releases). Für Macs mit Intel-Prozessor gibt es noch keinen Build.
 
-**Optional: Offline-Track-Index** (17 Millionen Tracks aus Discogs und MusicBrainz, 1,32 GB): in CueCore unter Einstellungen, „Lokaler Track-Index“, auf „Track-Index herunterladen“ klicken. Damit findet CueCore Labelcodes und Urheber auch ohne Netz; deine eigenen Tracks bleiben unberührt. CueCore läuft auch ohne. Von Hand geht es auch: [Archiv](https://github.com/PostBro/CueCore/releases/download/v0.9.1-beta/CueCore_Track-Index_2026-09.tar.xz) entpacken und `track_index.db` in den Datenordner legen.
+**Optional: Offline-Track-Index** (17 Millionen Tracks aus Discogs und MusicBrainz, 1,32 GB): in CueCore unter Einstellungen, „Lokaler Track-Index“, auf „Track-Index herunterladen“ klicken. Damit findet CueCore Labelcodes und Urheber auch ohne Netz; deine eigenen Tracks bleiben unberührt. CueCore läuft auch ohne. Von Hand geht es auch: [Archiv](https://github.com/PostBro/CueCore/releases/download/v0.9.1-beta/CueCore_Track-Index_2026-09-r2.tar.xz) entpacken und `track_index.db` in den Datenordner legen.
 
 ## Was CueCore kann
 
