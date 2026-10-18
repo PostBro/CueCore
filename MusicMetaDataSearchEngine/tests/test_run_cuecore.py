@@ -561,6 +561,7 @@ def test_boot_into_shows_reason_in_the_open_window():
 
 def test_starting_page_is_shown_immediately():
     assert "CueCore startet" in run_cuecore.STARTING_HTML
+    assert "einige Minuten" in run_cuecore.STARTING_HTML and "keep the window open" in run_cuecore.STARTING_HTML
 
 
 def test_shell_api_exposes_only_its_methods_to_pywebview():

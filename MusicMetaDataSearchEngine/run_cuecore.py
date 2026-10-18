@@ -371,9 +371,10 @@ STARTING_HTML = (
     "color:#eee;font:15px -apple-system,Segoe UI,sans-serif'><div style='text-align:center;max-width:460px'>"
     "<div style='font-weight:700;font-size:24px;letter-spacing:.04em;margin-bottom:14px'>CueCore</div>"
     "<p style='margin:0 0 6px'>CueCore startet …</p><p style='margin:0 0 18px;color:#999'>CueCore is starting …</p>"
-    "<p style='margin:0;color:#888;font-size:13px'>Nach einem Update richtet CueCore einmalig die Datenbanken ein, "
-    "das kann bis zu einer Minute dauern. / After an update CueCore sets up its databases once, this can take up to "
-    "a minute.</p></div></body>")
+    "<p style='margin:0;color:#888;font-size:13px'>Nach einem Update richtet CueCore einmalig die Datenbanken ein "
+    "und liest neue Library-Kataloge ein. Das kann einige Minuten dauern, bitte das Fenster offen lassen. / After an "
+    "update CueCore sets up its databases and reads new library catalogues once. This can take a few minutes, please "
+    "keep the window open.</p></div></body>")
 
 LOCK_FILE = "cuecore.lock"
 
