@@ -102,7 +102,7 @@ if MAC:
         info_plist={
             "CFBundleName": "CueCore",
             "CFBundleDisplayName": "CueCore",
-            "CFBundleShortVersionString": "0.9.6",   # = app.APP_VERSION ohne -beta
+            "CFBundleShortVersionString": "0.9.7",   # = app.APP_VERSION ohne -beta
             "NSHighResolutionCapable": True,
             "LSMinimumSystemVersion": "11.0",   # = minos aller Mach-O (Standalone-Python), PACKAGING.md
             "NSHumanReadableCopyright": "POSTBRO",

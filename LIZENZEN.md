@@ -13,7 +13,7 @@ CueCore wird ohne jede Gewährleistung bereitgestellt, siehe dort.
 Die Apps für Mac und Windows werden bei GitHub aus genau diesem Quellcode gebaut (`.github/workflows/`) und bündeln
 Python und die folgenden Bibliotheken. Jede App enthält außerdem `LICENSE` (AGPL-3.0), diese Datei und
 `THIRD-PARTY-LICENSES.txt` mit den Lizenztexten aller gebündelten Pakete, beim Build aus der Build-Umgebung gesammelt
-(`packaging/collect_licenses.py`). Versionen wie im Build von Beta 0.9.6.
+(`packaging/collect_licenses.py`). Versionen wie im Build von Beta 0.9.7.
 
 | Komponente | Version | Lizenz |
 |---|---|---|
@@ -69,7 +69,7 @@ gebündelt in `MusicMetaDataSearchEngine/web/fonts/` (siehe `LICENSE.txt` dort).
   `data/label_aliases_mb.csv` (Label-Aliasse aus MusicBrainz, CC0), jeweils nur Codes, die der GVL-Master kennt
   oder deren Herkunft in der Datei vermerkt ist.
 - **Tracks:** `MusicMetaDataSearchEngine/data/songs.db` (eigener Korpus) und `data/library_tracks/` (Metadaten aus
-  Lieferungen von Production-Music-Libraries, u.a. Cezame und RipCue Music). Die Rechte an diesen Metadaten liegen bei den
+  Lieferungen von Production-Music-Libraries, u.a. APL Music, Cezame und RipCue Music). Die Rechte an diesen Metadaten liegen bei den
   jeweiligen Libraries.
 - **Offline-Track-Index (optionaler Download):** `CueCore_Track-Index_2026-09-r2.tar.xz` beruht auf dem
   Discogs-Datendump vom 01.09.2026 (CC0) und den Kerndaten der MusicBrainz-Datenbank (CC0), gefiltert auf

@@ -407,8 +407,8 @@ def import_library_tracks(con: sqlite3.Connection, rows: list[dict], *, library:
                      file_path="" if (existed and existed["file_path"]) else (r.get("file") or ""))
         rep["inserted" if res == "inserted" else "updated"] += 1
         song_id = existed["id"] if existed else _match(con, interpret, titel)["id"]
-        fname = (r.get("file") or "").strip()
-        if fname:
+        names = [(r.get("file") or "").strip()] + [x.strip() for x in (r.get("file_alt") or "").split("|")]
+        for fname in dict.fromkeys(n for n in names if n):     # Harvest-Export: mehrere Schreibweisen je Track
             con.execute("INSERT OR REPLACE INTO library_files (file, file_name, song_id, library, catno, track_number, "
                         "version, isrc, duration_sec, sublibrary, labelcode, labelname, album, edit_id, label_geliefert) "
                         "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",

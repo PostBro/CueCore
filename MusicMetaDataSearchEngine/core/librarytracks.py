@@ -23,6 +23,9 @@ from .normalize import normalize_labelcode
 # Spalten des schlanken Extrakts — Werte wie geliefert, keine Umformung.
 CSV_COLUMNS = ("file", "library", "sublibrary", "labelcode", "catno", "album", "track_number", "title", "version",
                "duration_sec", "artist", "composers", "arranger", "publisher", "isrc", "iswc", "gema", "release_date")
+# Optional: weitere Dateinamen desselben Tracks, mit „|“ getrennt (Harvest-Export führt drei Schreibweisen).
+# Ältere Extrakte haben die Spalte nicht; read_csv verlangt nur CSV_COLUMNS.
+EXTRA_COLUMNS = ("file_alt",)
 
 
 def _s(v) -> str:
@@ -190,14 +193,66 @@ def read_cuecore_csv(path: str | Path, library: str) -> list[dict]:
     return out
 
 
+# --- Harvest-Media-Export (Katalog-Export der Plattform Harvest Media) -------------------------------------
+# Kopfzeile: LIBRARY: Code/Name, ALBUM: Code/Title/Release Date, TRACK: Title/Number/Version/Duration,
+# TRACK: Audio Filename, TRACK: Custom Audio Filename, TRACK: Harvest Filenames, WRITER:n: First/Middle/Last
+# Name + Capacity, PUBLISHER:n: Name, CODE: ISRC/ISWC/GEMA WORK NUMBER/GVL Label Code. So liefert APL Music.
+# Die drei Dateinamen-Schreibweisen landen alle in library_files (file + file_alt), weil jede davon in
+# Schnittlisten auftauchen kann. Kein Interpret: beim Import wird der Komponist zum Interpret.
+HARVEST_REQUIRED = ("LIBRARY: Name", "TRACK: Title", "TRACK: Audio Filename", "CODE: GVL Label Code")
+
+
+def looks_like_harvest_csv(fieldnames) -> bool:
+    have = {(f or "").strip() for f in (fieldnames or [])}
+    return all(c in have for c in HARVEST_REQUIRED)
+
+
+def read_harvest_csv(path: str | Path, library: str) -> list[dict]:
+    """Harvest-Media-Export -> CSV_COLUMNS-Zeilen (plus file_alt)."""
+    csv.field_size_limit(max(csv.field_size_limit(), 1 << 24))
+    out = []
+    with open(path, newline="", encoding="utf-8-sig") as f:
+        rd = csv.DictReader(f)
+        if not looks_like_harvest_csv(rd.fieldnames):
+            raise ValueError(f"{path}: kein Harvest-Export (erwartet: {', '.join(HARVEST_REQUIRED)})")
+        n_writers = sum(1 for c in rd.fieldnames if c.startswith("WRITER:") and c.endswith(": Last Name"))
+        for r in rd:
+            g = lambda k: _s(r.get(k))
+            title = g("TRACK: Title")
+            if not title:
+                continue
+            composers, arrangers = [], []
+            for k in range(1, n_writers + 1):
+                name = " ".join(x for x in (g(f"WRITER:{k}: First Name"), g(f"WRITER:{k}: Middle Name"),
+                                            g(f"WRITER:{k}: Last Name")) if x)
+                if not name:
+                    continue
+                (arrangers if g(f"WRITER:{k}: Capacity").casefold() == "arranger" else composers).append(name)
+            fn = g("TRACK: Audio Filename")
+            alts = []
+            for alt in (g("TRACK: Custom Audio Filename"), g("TRACK: Harvest Filenames")):
+                if alt and alt != fn and alt not in alts:
+                    alts.append(alt)
+            out.append({
+                "file": fn, "library": library, "sublibrary": g("LIBRARY: Name"),
+                "labelcode": g("CODE: GVL Label Code"), "catno": g("ALBUM: Code"), "album": g("ALBUM: Title"),
+                "track_number": g("TRACK: Number"), "title": title, "version": g("TRACK: Version"),
+                "duration_sec": g("TRACK: Duration"), "artist": "", "composers": "; ".join(composers),
+                "arranger": "; ".join(arrangers), "publisher": g("PUBLISHER:1: Name"), "isrc": g("CODE: ISRC"),
+                "iswc": g("CODE: ISWC"), "gema": g("CODE: GEMA WORK NUMBER"),
+                "release_date": g("ALBUM: Release Date"), "file_alt": "|".join(alts)})
+    return out
+
+
 def write_csv(rows: list[dict], path: str | Path) -> int:
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     with open(p, "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=CSV_COLUMNS, extrasaction="ignore", lineterminator="\n")
+        cols = CSV_COLUMNS + (EXTRA_COLUMNS if any(r.get("file_alt") for r in rows) else ())   # alte Extrakte unverändert
+        w = csv.DictWriter(f, fieldnames=cols, extrasaction="ignore", lineterminator="\n")
         w.writeheader()
         for r in rows:
-            w.writerow({c: r.get(c, "") for c in CSV_COLUMNS})
+            w.writerow({c: r.get(c, "") for c in cols})
     return len(rows)
 
 
@@ -286,7 +341,8 @@ def to_song_rows(rows: list[dict], code2name) -> tuple[list[dict], dict]:
             "album": r.get("album", "").strip(), "track_number": r.get("track_number", ""),
             "isrc": r.get("isrc", ""), "iswc": r.get("iswc", ""), "gema_werknummer": r.get("gema", ""),
             "duration_sec": r.get("duration_sec", ""), "catno": r.get("catno", ""), "version": r.get("version", ""),
-            "sublibrary": r.get("sublibrary", ""), "edit_id": r.get("edit_id", ""), "label_geliefert": note})
+            "sublibrary": r.get("sublibrary", ""), "edit_id": r.get("edit_id", ""), "label_geliefert": note,
+            "file_alt": r.get("file_alt", "") or ""})
     return out, {"rows": len(out), "unknown_codes": unknown, "corrected": corrected, "renamed": renamed,
                  "no_code": no_code, "by_name": by_name, "name_ambiguous": name_ambiguous}
 

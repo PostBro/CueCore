@@ -62,7 +62,7 @@ DEFAULT_DB = _user_data_dir() / "labels.db"
 DB_PATH = Path(os.environ.get("CUECORE_DB", DEFAULT_DB))
 
 # Version der Auslieferung (Rückmeldungen von Testenden, Info.plist in cuecore.spec, Seitenleiste)
-APP_VERSION = "0.9.6-beta"
+APP_VERSION = "0.9.7-beta"
 
 app = FastAPI(title="CueCore", version=APP_VERSION)
 

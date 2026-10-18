@@ -32,7 +32,8 @@ DEFAULT_OUT_DIR = PROJECT_DIR / "data" / "library_tracks"
 def cmd_extract(src: Path, library: str, out: Path | None, stamp: str) -> int:
     # Lieferungen kommen als CSV oder xlsx — der Leser entscheidet, nicht die Endung.
     readers = {"cezame": librarytracks.read_cezame_xlsx, "upm": librarytracks.read_upm_csv,
-               "ripcue": lambda p: librarytracks.read_cuecore_csv(p, "ripcue")}   # CueCore-Exportformat
+               "ripcue": lambda p: librarytracks.read_cuecore_csv(p, "ripcue"),   # CueCore-Exportformat
+               "apl": lambda p: librarytracks.read_harvest_csv(p, "apl")}           # Harvest-Media-Export
     if library not in readers:
         print(f"kein Leser für Library {library!r} (bekannt: {', '.join(readers)})")
         return 1
@@ -105,7 +106,7 @@ def main(argv: list[str] | None = None) -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     x = sub.add_parser("extract", help="Lieferung (xlsx oder CSV) -> schlanker CSV-Extrakt")
     x.add_argument("--src", "--xlsx", dest="src", required=True, help="Lieferdatei (xlsx oder CSV; das Format bestimmt der Leser aus --library)")
-    x.add_argument("--library", required=True, help="Leser: cezame, upm oder ripcue")
+    x.add_argument("--library", required=True, help="Leser: cezame, upm, ripcue oder apl")
     x.add_argument("--out", default=None, help="Ziel-CSV (Default: data/library_tracks/<library>_<JJJJ-MM-TT>.csv)")
     i = sub.add_parser("import", help="CSV-Extrakt -> songs.db + library_files")
     i.add_argument("csv")
