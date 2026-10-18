@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""MusicMeta Pipeline: Ordner scannen -> dedupe gegen 'LC verified' -> Label->LC matchen
--> umbenennen -> nach 'LC verified' verschieben -> (optional) DB aktualisieren.
+"""MusicMeta Pipeline: Ordner scannen -> dedupe gegen den Zielordner für verifizierte Dateien -> Label->LC matchen
+-> umbenennen -> in den Zielordner verschieben -> (optional) DB aktualisieren.
 
 Aufruf:
   python process_folder.py                      # fragt nach dem Ordner
@@ -65,7 +65,7 @@ def main():
     src = Path(folder)
     if not src.is_dir():
         print(f"Kein Ordner: {src}"); sys.exit(1)
-    verified = src / "LC verified"; verified.mkdir(exist_ok=True)
+    verified = src / "LC verified"; verified.mkdir(exist_ok=True)     # Zielordner für verifizierte Dateien
     dry = "--dry-run" in flags
     del_unmatched = "--delete-unmatched" in flags
     del_dupes = "--delete-dupes" in flags
@@ -115,7 +115,7 @@ def main():
 
     print(f"\nOrdner: {src}")
     print(f"  verschoben+verifiziert: {moved}  (davon LC schon im Namen: {kept_lc})")
-    print(f"  Dubletten (schon in LC verified): {dupes}" + ("  [geloescht]" if del_dupes else "  [liegen geblieben]"))
+    print(f"  Dubletten (schon im Zielordner): {dupes}" + ("  [geloescht]" if del_dupes else "  [liegen geblieben]"))
     print(f"  nicht zuordenbar: {unmatched}" + ("  [geloescht]" if del_unmatched else "  [liegen geblieben]"))
     if un_list and not del_unmatched:
         print("  --- nicht zuordenbar ---")

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """MusicBrainz-Label-Namen und -Aliasse -> data/label_aliases_mb.csv — dritte lokale Quelle für
-labelmatch.match_label (nach GVL-Master und ALIASES). Vorbefüllen Schritt 1.
+labelmatch.match_label (nach GVL-Master und ALIASES).
 
 Quelle: MusicBrainz Full Export mbdump.tar.bz2 (CC0, data.metabrainz.org/pub/musicbrainz/data/fullexport/),
 daraus nur zwei Tabellen im PostgreSQL-COPY-Textformat (Tab-getrennt, \\N = NULL, Backslash-Escapes):
@@ -16,7 +16,8 @@ Regeln (GVL gewinnt, nichts raten):
   - Namen, die der GVL-Index selbst beantwortet (exakt oder Suffix-bereinigt, wie match_label prüft) oder in
     ALIASES stehen, bleiben draußen: entweder redundant oder vom GVL überstimmt — match_label fragt die
     MB-Tabelle erst, wenn der Master nichts hergibt.
-  - Ein Name, der auf mehr als einen Code zeigt, fliegt. Namen unter 3 Zeichen oder nur aus Generika auch.
+  - Ein Name, der auf mehr als einen Code zeigt, fliegt. Namen unter 3 Zeichen oder nur aus Generika auch,
+    ebenso Namen mit Telefon-/Fax-Muster (Kontaktdaten statt Labelname).
 Ausgabe: name (MB-Schreibweise), labelcode, kind (name | alias), mb_label (MB-Label-ID), sortiert;
 dazu label_aliases_mb.meta.json mit Dump-Stand und Zählern.
 """
@@ -41,6 +42,7 @@ DEFAULT_OUT = PROJECT / "data" / "label_aliases_mb.csv"
 LABEL_COLS = {"id": 0, "gid": 1, "name": 2, "label_code": 9}
 ALIAS_COLS = {"id": 0, "label": 1, "name": 2, "type": 6}
 _UUID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
+_CONTACT = re.compile(r"\bFAX\b|\bTEL\b|\+\d{2}")     # Kontaktdaten im Namensfeld
 _ESC = {"n": "\n", "t": "\t", "r": "\r", "b": "\b", "f": "\f", "v": "\v", "\\": "\\"}
 
 
@@ -86,7 +88,7 @@ def build(dump_dir: str | Path, master_csv: str | Path = DEFAULT_MASTER,
 
     stats = {"labels_total": 0, "labels_with_lc": 0, "labels_lc_in_gvl": 0, "aliases_total": 0,
              "aliases_of_gvl_labels": 0, "dropped_generic": 0, "dropped_gvl_known": 0,
-             "dropped_ambiguous": 0, "rows": 0}
+             "dropped_ambiguous": 0, "dropped_contact": 0, "rows": 0}
     kept: dict[str, str] = {}                      # MB-Label-ID -> Code
     cands: list[tuple[str, str, str, str]] = []    # (name, code, kind, mb_label)
     first = True
@@ -118,6 +120,9 @@ def build(dump_dir: str | Path, master_csv: str | Path = DEFAULT_MASTER,
     by_key: dict[str, set[str]] = {}
     chosen: dict[str, tuple[str, str, str, str]] = {}
     for name, code, kind, mid in cands:            # Label-Namen zuerst, dann Aliasse -> Name gewinnt bei gleichem Schlüssel
+        if _CONTACT.search(name or ""):
+            stats["dropped_contact"] += 1
+            continue
         n = norm(name or "")
         sn = strip_generic(n)
         if len(n) < 3 or not sn:
@@ -159,7 +164,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  MB-Labels: {meta['labels_total']} | mit LC: {meta['labels_with_lc']} | LC im GVL-Master: "
           f"{meta['labels_lc_in_gvl']} | Aliasse dazu: {meta['aliases_of_gvl_labels']}")
     print(f"  raus: GVL kennt den Namen {meta['dropped_gvl_known']} | mehrdeutig {meta['dropped_ambiguous']} "
-          f"| generisch/kurz {meta['dropped_generic']} | Dump {meta['dump_timestamp'] or '?'}")
+          f"| generisch/kurz {meta['dropped_generic']} | Kontaktdaten {meta['dropped_contact']} | Dump {meta['dump_timestamp'] or '?'}")
     return 0
 
 

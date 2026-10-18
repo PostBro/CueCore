@@ -1,9 +1,8 @@
 """editingtools.io Cue-Sheet-Metadaten (Production-Music-Library-Gap).
 
-editingtools löst genau die Production-Library-Cues (UPM/APL/TRL), die unsere
-kommerziellen Quellen (MB/Discogs/Deezer/Wikidata) NICHT haben — über Partner-Library-
-Datenbanken. Kein einfacher Such-Endpoint: es ist ein PROJEKT-Workflow (offizielle Doku
-`en.editingtools.io/api/v2/cuesheets/`):
+editingtools löst Production-Library-Cues, die unsere kommerziellen Quellen
+(MB/Discogs/Deezer/Wikidata) nicht abdecken, über Library-Datenbanken des Dienstes.
+Kein einfacher Such-Endpoint: es ist ein PROJEKT-Workflow (offizielle Doku `en.editingtools.io/api/v2/cuesheets/`):
 
   1. POST /v2/cuesheets/project  {name, framerate, scanLibraries, entries:[{fileName,
      clipName, timecodeIn, timecodeOut, ...}]}  -> data.projectId (Scan startet async)
@@ -12,11 +11,11 @@ Datenbanken. Kein einfacher Such-Endpoint: es ist ein PROJEKT-Workflow (offiziel
      labelName, labelCode, isrc, iswc, albumTitle, interestedParties[...], source} (evtl. PRO)
   4. DELETE /v2/cuesheets/project/{id}          -> Aufräumen
 
-Auth: Basic base64("apikey:KEY"). Rate-Limit 50/min, 1000/h.
+Auth: Basic base64("apikey:KEY"). Die Rate-Limits des Dienstes sind zu beachten.
 
 Die HTTP-Schicht (`http(method, url, body) -> Resp`) wird injiziert -> Orchestrierung
-netzfrei testbar. WICHTIG: editingtools' `labelCode` ist teils eine INTERNE Label-ID,
-NICHT der GVL-LC -> der Aufrufer muss ihn gegen den GVL-Master gegenprüfen (nicht hier).
+netzfrei testbar. WICHTIG: editingtools' `labelCode` kann eine interne Label-ID sein,
+nicht der GVL-LC -> der Aufrufer muss ihn gegen den GVL-Master gegenprüfen (nicht hier).
 """
 from __future__ import annotations
 import base64
@@ -149,10 +148,10 @@ def _merge_names(*vals: str) -> str:
 
 def normalize_entry(entry: dict) -> dict:
     """editingtools-Entry -> unser Feldschema. Die Metadaten haben FLACHE Felder
-    (`composer`/`author`/`publisher`, live verifiziert) UND ggf. `interestedParties`
+    (`composer`/`author`/`publisher`) UND ggf. `interestedParties`
     (CISAC) — beide werden gemergt. `matched`=echtes Library-Signal (Source/Label/ISRC/
     Autoren/Artist), NICHT der auf den Dateinamen defaultende `trackTitle`. `labelcode_raw`
-    ist NICHT verifiziert (teils interne editingtools-ID) — der Aufrufer prüft gegen GVL."""
+    ist nicht GVL-verifiziert (kann eine interne editingtools-ID sein) — der Aufrufer prüft gegen GVL."""
     m = entry.get("metadata") or {}
     ip_c, ip_l, ip_p = _parties(m.get("interestedParties") or [])
     comp = _merge_names(m.get("composer", ""), ip_c)
@@ -249,7 +248,7 @@ def scan_files(files: list[dict], *, http, sleep=time.sleep, poll_interval: floa
     norm = [normalize_entry(e) for e in (raw or [])]
     # editingtools gibt den fileName BEREINIGT zurück (.COPY/.new/Extension gestrippt) —
     # damit der Aufrufer das Ergebnis dem ORIGINAL-Cue zuordnen kann, den gesendeten
-    # Dateinamen per Index zurückheften (Reihenfolge bleibt erhalten, live verifiziert).
+    # Dateinamen per Index zurückheften (die Reihenfolge bleibt erhalten).
     for i, n in enumerate(norm):
         n["query_filename"] = entries[i]["fileName"] if i < len(entries) else n["fileName"]
     return {"ok": True, "error": "", "scan_complete": scan_complete, "polls": polls, "entries": norm}

@@ -39,6 +39,9 @@ jobs:
           CUECORE_TRACKMETA_PROFILE: ${{ secrets.TRACKMETA_PROFILE }}
         run: python build_bundle_data.py --out ../build_data
 
+      - name: Drittlizenzen sammeln (THIRD-PARTY-LICENSES.txt in die App)
+        run: python packaging/collect_licenses.py --out build_data/THIRD-PARTY-LICENSES.txt
+
       - name: App bauen
         run: pyinstaller --noconfirm --distpath dist --workpath build cuecore.spec
 

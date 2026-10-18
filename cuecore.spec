@@ -44,6 +44,11 @@ if Path("build_data/labels_manual.json").exists():   # fremde Codes einer Liefer
     datas.append(("build_data/labels_manual.json", "data"))
 # Eingebauter AcoustID-Key der Open Beta: build_bundle_data schreibt ihn nur, wenn CUECORE_ACOUSTID_APP_KEY gesetzt
 # ist (verschleiert, nie im Repo). Ohne die Variable baut die App ohne eingebauten Key.
+if Path("build_data/THIRD-PARTY-LICENSES.txt").exists():   # packaging/collect_licenses.py (CI)
+    datas.append(("build_data/THIRD-PARTY-LICENSES.txt", "."))
+for lic in ("LICENSE", "LIZENZEN.md"):                 # AGPL-Text und Drittlizenzen gehören in jede App (nur im
+    if Path(lic).exists():                               # öffentlichen Repo vorhanden, dort baut die CI)
+        datas.append((lic, "."))
 if Path("build_data/builtin_keys.bin").exists():
     datas.append(("build_data/builtin_keys.bin", "data"))
 
@@ -97,7 +102,7 @@ if MAC:
         info_plist={
             "CFBundleName": "CueCore",
             "CFBundleDisplayName": "CueCore",
-            "CFBundleShortVersionString": "0.9.5",   # = app.APP_VERSION ohne -beta
+            "CFBundleShortVersionString": "0.9.6",   # = app.APP_VERSION ohne -beta
             "NSHighResolutionCapable": True,
             "LSMinimumSystemVersion": "11.0",   # = minos aller Mach-O (Standalone-Python), PACKAGING.md
             "NSHumanReadableCopyright": "POSTBRO",

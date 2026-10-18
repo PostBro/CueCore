@@ -299,7 +299,7 @@ def test_frozen_build_logs_to_data_dir(tmp_path, monkeypatch):
     old_out, old_err = sys.stdout, sys.stderr
     try:
         run_cuecore._ensure_std_streams()
-        print("hallo beta", flush=True)
+        print("hallo", flush=True)
         assert sys.stdout is sys.stderr and sys.stdout is not old_out
     finally:
         try:
@@ -308,7 +308,7 @@ def test_frozen_build_logs_to_data_dir(tmp_path, monkeypatch):
             pass
         sys.stdout, sys.stderr = old_out, old_err
     text = (tmp_path / "cuecore.log").read_text(encoding="utf-8")
-    assert "=== CueCore Start" in text and "hallo beta" in text
+    assert "=== CueCore Start" in text and "hallo" in text
 
 
 def test_log_rotates_over_limit(tmp_path, monkeypatch):

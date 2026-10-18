@@ -30,8 +30,8 @@ SAMPLE_ASSEMBLE = (
     "------------------------------------------------------------\n"
     "Event\tFtgStart\tFtgEnd\tMasDur\tClip\t\n"
     "1\t00:00:00:00\t00:04:17:00\t00:04:17:01\t\t\n"                     # Lücke (kein Clip)
-    "2\t00:04:17:01\t00:04:30:08\t00:00:13:08\tLet Down_LC02604.wav\t\n"
-    "3\t00:04:30:09\t00:05:00:05\t00:00:29:22\tLet Down_LC02604.wav\t\n"
+    "2\t00:04:17:01\t00:04:30:08\t00:00:13:08\tNordwand_LC02604.wav\t\n"
+    "3\t00:04:30:09\t00:05:00:05\t00:00:29:22\tNordwand_LC02604.wav\t\n"
 )
 
 
@@ -226,7 +226,7 @@ def test_parse_assemble_list_extracts_named_cues_skips_gap():
     events = parse_assemble_list(SAMPLE_ASSEMBLE)
     # Lückenzeile (Event 1, leerer Clip) sowie Deko/Spaltenkopf entfallen.
     assert [e.event_num for e in events] == ["2", "3"]
-    assert all(e.clip_name == "Let Down_LC02604.wav" for e in events)
+    assert all(e.clip_name == "Nordwand_LC02604.wav" for e in events)
 
 
 def test_parse_assemble_list_uses_ftg_as_record_tc():

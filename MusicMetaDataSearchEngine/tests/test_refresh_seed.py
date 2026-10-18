@@ -1,6 +1,6 @@
 """Der Repo-Seed wird aus der Live-DB aufgefrischt, damit er den gesamten eigenen Korpus mitliefert.
-Library-Zeilen bleiben draußen — die kommen beim Build aus data/library_tracks/, zweimal im Repo wären
-sie 60.000 Zeilen doppelt."""
+Library-Zeilen bleiben draußen — die kommen beim Build aus data/library_tracks/, sonst läge jede
+Lieferung doppelt im Repo."""
 from __future__ import annotations
 
 import csv

@@ -40,7 +40,7 @@ def test_import_csv_missing_required(tmp_path):
     con.close()
 
 
-# --- Schritt 2: erweiterte Felder + XLSX/XLS + Delimiter-Sniff + Preview ---
+# --- Erweiterte Felder + XLSX/XLS + Delimiter-Sniff + Preview ---
 
 def test_guess_mapping_extended_fields():
     m = ingest.guess_mapping(["Artist", "Title", "Album", "Track-Nr.", "ISRC", "ISWC", "GEMA-Werknummer"])
@@ -144,34 +144,34 @@ def _w(p, text, encoding="utf-8"):
 
 
 def test_liest_utf16_mit_tabs(tmp_path):
-    """UPM-Cue-Sheets sind UTF-16 mit Tabs; der Parser darf daraus nicht eine Spalte Nullbytes lesen."""
+    """Cue-Sheets mancher Libraries sind UTF-16 mit Tabs; der Parser darf daraus nicht eine Spalte Nullbytes lesen."""
     f = _w(tmp_path / "cue.csv",
            "Label\tSub Label\tAlbum title\tTrack number\tTrack title\tOriginal publisher\tComposers\t"
            "ISRC code\tLC code\tGema work code\n"
-           "Trilogy\tTrilogy\tFollow The Evidence\t1\tPensive Search\tTRILOGY (NS: 100000001, 100%)\t"
-           "Paul Edward Wilkes (PRS: 100000002, 100%)\tGB-X-1\tLC 35188\t1234567-001\n", "utf-16")
+           "Nordwand\tNordwand\tZzq Album\t1\tStille Suche\tNORDWAND (NS: 100000001, 100%)\t"
+           "Erika Testerin (PRS: 100000002, 100%)\tGB-X-1\tLC 35188\t1234567-001\n", "utf-16")
     pv = ingest.preview_file(f)
     assert pv["rows"] == 1
     assert pv["mapping"]["titel"] == "Track title" and pv["mapping"]["komponist"] == "Composers"
     assert pv["mapping"]["labelcode"] == "LC code" and pv["mapping"]["gema_werknummer"] == "Gema work code"
     s = pv["sample"][0]
     assert s["labelcode"] == "LC35188"                       # „LC 35188" -> Repo-Schreibweise
-    assert s["komponist"] == "Paul Edward Wilkes"            # PRO, IPI und Anteil raus
-    assert s["verlag"] == "TRILOGY"
+    assert s["komponist"] == "Erika Testerin"            # PRO, IPI und Anteil raus
+    assert s["verlag"] == "NORDWAND"
     assert pv["artist_from_composer"] == 1 and pv["required_ok"]
 
 
 def test_trennzeichen_wird_gezaehlt_nicht_geraten(tmp_path):
-    """csv.Sniffer riet bei TRACKINFO.csv auf Komma (die Komponisten-Spalte trägt eins) und warf
+    """csv.Sniffer riet bei TRACKLISTE.csv auf Komma (die Komponisten-Spalte trägt eins) und warf
     die ganze Zeile in eine Spalte."""
-    f = _w(tmp_path / "TRACKINFO.csv",
+    f = _w(tmp_path / "TRACKLISTE.csv",
            "File;Label;CDNumber;TrackNumber;TrackTitle;Composers;ean;isrc;AlbumTitle;LC-Code;\n"
-           "A.mp3;SCDV;1176;1.0;REBEL HORNS A;Christian Birawsky, Julian Joppig;402;DE-B63-23-06564;"
-           "POWER BEATS;LC07573\n")
+           "A.mp3;ZZQ;1176;1.0;NORDWAND A;Erika Testerin, Max Beispiel;402;DE-B63-23-06564;"
+           "ZZQ BEATS;LC07573\n")
     pv = ingest.preview_file(f)
     assert pv["mapping"]["titel"] == "TrackTitle" and pv["mapping"]["labelcode"] == "LC-Code"
     assert pv["sample"][0]["track_number"] == "1"            # „1.0" aus dem Tabellen-Export
-    assert pv["sample"][0]["komponist"] == "Christian Birawsky; Julian Joppig"
+    assert pv["sample"][0]["komponist"] == "Erika Testerin; Max Beispiel"
 
 
 def test_kopfzeile_unter_einem_titelblock(tmp_path):
@@ -192,27 +192,27 @@ def test_zusammengesetzte_kopfzeilen(tmp_path):
     """„CODE: GEMA WORK NUMBER" und „GERMAN LABEL CODE" treffen erst im zweiten Durchgang."""
     f = _w(tmp_path / "m.csv",
            "sep=,\nWORK TITLE,COMPOSERS,LABEL NAME,GERMAN LABEL CODE,CODE: GEMA WORK NUMBER,TRACK: Number\n"
-           "Feels Good,Louise Dowd [PRS] 50%,BLOCK,LC 49229,9876543-001,7\n")
+           "Stille Suche,Erika Testerin [PRS] 50%,BLOCK,LC 49229,9876543-001,7\n")
     pv = ingest.preview_file(f)
     assert pv["mapping"] == {"titel": "WORK TITLE", "komponist": "COMPOSERS", "labelname": "LABEL NAME",
                              "labelcode": "GERMAN LABEL CODE", "gema_werknummer": "CODE: GEMA WORK NUMBER",
                              "track_number": "TRACK: Number"}
-    assert pv["sample"][0]["komponist"] == "Louise Dowd" and pv["sample"][0]["labelcode"] == "LC49229"
+    assert pv["sample"][0]["komponist"] == "Erika Testerin" and pv["sample"][0]["labelcode"] == "LC49229"
 
 
 def test_komponist_wird_interpret_wenn_keiner_da_ist(tmp_path):
     """Bei Production Music ohne Interpret ist der Komponist der Interpret."""
     f = _w(tmp_path / "m.csv", "Track title,Composers,LC code,Gema work code\n"
-                               "Pensive Search,Paul Wilkes,LC 35188,1234567-001\n"
+                               "Stille Suche,Erika Testerin,LC 35188,1234567-001\n"
                                "Zweiter Titel,,LC 35188,\n")
     con = songsdb.open(tmp_path / "songs.db")
     res = ingest.import_file(con, f, quelle="test")
     assert res["inserted"] == 1 and res["skipped"] == 1 and res["artist_from_composer"] == 1
-    row = songsdb.find(con, "Paul Wilkes", "Pensive Search")
-    assert row["interpret"] == "Paul Wilkes" and row["komponist"] == "Paul Wilkes"
+    row = songsdb.find(con, "Erika Testerin", "Stille Suche")
+    assert row["interpret"] == "Erika Testerin" and row["komponist"] == "Erika Testerin"
     assert row["gema_werknummer"] == "1234567-001" and row["labelcode"] == "LC35188"
     # Werknummer ist suchbar
-    assert [r["titel"] for r in songsdb.list_songs(con, query="1234567-001")["rows"]] == ["Pensive Search"]
+    assert [r["titel"] for r in songsdb.list_songs(con, query="1234567-001")["rows"]] == ["Stille Suche"]
     con.close()
 
 

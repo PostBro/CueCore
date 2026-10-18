@@ -62,7 +62,7 @@ DEFAULT_DB = _user_data_dir() / "labels.db"
 DB_PATH = Path(os.environ.get("CUECORE_DB", DEFAULT_DB))
 
 # Version der Auslieferung (Rückmeldungen von Testenden, Info.plist in cuecore.spec, Seitenleiste)
-APP_VERSION = "0.9.5-beta"
+APP_VERSION = "0.9.6-beta"
 
 app = FastAPI(title="CueCore", version=APP_VERSION)
 
@@ -202,7 +202,7 @@ def _swap_index(idx: LabelIndex | None) -> None:
 
 
 def _load_track_index() -> None:
-    """Track-Index (Vorbefüllen Schritt 2) öffnen, wenn track_index.db im Datenordner liegt — sonst läuft
+    """Lokalen Track-Index öffnen, wenn track_index.db im Datenordner liegt — sonst läuft
     die App ohne diese Stufe. Wird bei jedem _load() geprüft, damit ein frisch gebauter Index ohne
     Neustart greift (Reload nach „Label anlegen“ o.ä.)."""
     global INDEX_CON, _INDEX_PATH
@@ -586,7 +586,7 @@ def web_asset(name: str) -> FileResponse:
 @app.get("/web/fonts/{name}")
 def web_font(name: str) -> FileResponse:
     """Gebündelte Schriften (web/fonts: fonts.css + woff2). Google Fonts im <head> ließen WebKit auf
-    fonts.gstatic.com warten — hinter einer Firewall oder offline blieb das Fenster schwarz."""
+    fonts.gstatic.com warten — hinter einer Netzsperre oder offline blieb das Fenster schwarz."""
     if name != Path(name).name or Path(name).suffix.lower() not in {".woff2", ".css"}:
         raise HTTPException(404)
     f = WEB / "fonts" / name
@@ -601,7 +601,7 @@ def health() -> dict:
         "product": "CueCore", "version": APP_VERSION, "ready": DB_META["ready"], "rows": DB_META["rows"],
         "source_version": DB_META["source_version"], "songs": DB_META["songs"], "db_path": str(DB_PATH),
         "sources": _configured_sources(),     # Rail: welche externen Quellen sind eingerichtet
-        "index": DB_META["index"],            # lokaler Track-Index (Vorbefüllen): vorhanden, Zeilen, Größe
+        "index": DB_META["index"],            # lokaler Track-Index: vorhanden, Zeilen, Größe
     }
 
 

@@ -15,7 +15,7 @@ Benutzernamen in der App. Lokal gebaute Apps nur zum Testen verwenden, nicht ver
 Lokal (zum Testen):
 
 ```bash
-export UV_PYTHON_INSTALL_DIR=/Users/Shared/cuecore-python           # Python außerhalb des Home-Ordners
+export UV_PYTHON_INSTALL_DIR=<Ordner außerhalb des Home-Ordners>    # Python außerhalb des Home-Ordners
 uv python install 3.12
 cd MusicMetaDataSearchEngine
 uv venv --python 3.12 .venv-build                                   # eigenständiges Python, min. macOS 11
@@ -26,7 +26,7 @@ cd ..
 MusicMetaDataSearchEngine/.venv-build/bin/pyinstaller --noconfirm cuecore.spec
 ```
 
-Nicht mit dem Dev-`.venv` (Homebrew-Python) bauen — dessen Framework verlangt macOS 26.
+Nicht mit einem Python bauen, dessen Framework ein neueres macOS verlangt (etwa ein Homebrew-Python): die App bekäme eine zu hohe Mindestversion.
 
 **Kein Home-Pfad in der App:** uv schreibt den Installationsort seines Pythons in `_sysconfigdata`, und PyInstaller
 packt diese Datei in die App. Liegt das Python unter `~/.local/share/uv/python`, steht damit der Benutzername in
@@ -34,11 +34,11 @@ jeder ausgelieferten App. Deshalb `UV_PYTHON_INSTALL_DIR` auf einen neutralen Or
 die Prüfzeile oben laufen lassen; bei `True` das `.venv-build` löschen und neu anlegen.
 
 **Eingebauter AcoustID-Key (Open Beta, seit 13.10.2026):** vor `build_bundle_data.py` die Variable
-`CUECORE_ACOUSTID_APP_KEY` setzen (Key der App CUECORE auf acoustid.org, nie committen). Das Skript schreibt ihn
+`CUECORE_ACOUSTID_APP_KEY` setzen (eigener Application-Key von acoustid.org, nie committen). Das Skript schreibt ihn
 verschleiert nach `build_data/builtin_keys.bin`, die Spec nimmt die Datei mit; ohne Variable baut die App ohne
 eingebauten Key. Windows liest ihn aus dem Repo-Secret `ACOUSTID_APP_KEY`. Ein eigener Key in den Einstellungen gewinnt.
 
-**Profil der Track-Metadata-API:** Pfade, Scope, Batch-Größe und Feldnamen der Partner-API stehen nicht im Repo.
+**Profil der Track-Metadata-API:** Pfade, Scope, Batch-Größe und Feldnamen der API stehen nicht im Repo.
 Sie kommen als JSON aus der Variable `CUECORE_TRACKMETA_PROFILE` (Repo-Secret `TRACKMETA_PROFILE`) und landen
 wie der AcoustID-Key verschleiert in `build_data/builtin_keys.bin`. Beim Start aus dem Quellcode liest
 `core/trackmeta.py` dieselbe Variable direkt. Ohne Profil ist die Funktion aus; ein unvollständiges Profil lässt
@@ -98,7 +98,7 @@ wie bisher; `CUECORE_WINDOW=0` erzwingt den Browser-Tab statt des App-Fensters. 
 `CUECORE_DB` in denselben Ordner (`core/settings.py` nimmt `default_data_dir()`); `CUECORE_SETTINGS` verlegt nur sie.
 
 Die gebündelte App schreibt **stdout/stderr nach `<Datenordner>/cuecore.log`** (rotiert ab 2 MB nach `.log.1`) —
-das ist die erste Anlaufstelle bei Rückmeldungen von Testenden. Ist Port 8765 von einem fremden Dienst belegt, weicht die
+das ist die erste Anlaufstelle bei Rückmeldungen. Ist Port 8765 von einem fremden Dienst belegt, weicht die
 App auf einen freien Port aus (steht im Log) und vermerkt ihn in `<Datenordner>/cuecore.port` — ein zweiter
 Doppelklick findet die laufende Instanz dort (seit 12.10.2026); startet der Server gar nicht, zeigt sie ein
 Fehlerfenster mit dem Logpfad.
@@ -112,7 +112,7 @@ laufende Instanz, kein zweiter Server.
 
 ## Gatekeeper (macOS, unsigniert)
 
-Es gibt keinen Apple-Developer-Account (Stand 21.09.2026), die App ist nur **ad-hoc signiert** (PyInstaller
+Die App ist nicht notarisiert und nur **ad-hoc signiert** (PyInstaller
 macht das automatisch, nötig auf Apple Silicon). Beim ersten Start einer heruntergeladenen Kopie meldet macOS,
 die App könne nicht geöffnet werden, weil Apple sie nicht auf Schadsoftware prüfen konnte. Zwei Wege, je
 Rechner einmalig:
@@ -125,17 +125,14 @@ Rechner einmalig:
    aus der ZIP nach `/Programme` oder in einen eigenen Ordner ziehen.
 
 **Voraussetzungen der Beta-Fassung:** Apple Silicon (arm64, kein Intel-Build) und macOS 11 oder neuer (Build
-mit dem eigenständigen Python 3.12, `uv python install 3.12` — ein Build mit dem Homebrew-Python trägt
-`minos 26.0` und läuft nur auf macOS 26+, geprüft mit `otool -l … | grep minos`). `LSMinimumSystemVersion` in
-`cuecore.spec` steht auf demselben Wert (auf einem macOS 11 ist die App noch nicht gestartet worden). Die Schriften (Saira Condensed,
-Inter; OFL) liegen unter `web/fonts/` und werden über `/web/fonts/…` ausgeliefert — **kein Google Fonts mehr**: mit
-dem externen Stylesheet im `<head>` wartete WebKit auf fonts.gstatic.com, und hinter einer Firewall mit Nachfrage-Dialog
-oder offline blieb das App-Fenster schwarz.
+mit dem eigenständigen Python 3.12, `uv python install 3.12`; ein Build mit einem Python, dessen Framework ein
+neueres macOS verlangt, trägt eine zu hohe `minos`, prüfbar mit `otool -l … | grep minos`). `LSMinimumSystemVersion` in
+`cuecore.spec` steht auf demselben Wert. Die Schriften (Saira Condensed,
+Inter; OFL) liegen lokal gebündelt unter `web/fonts/` und werden über `/web/fonts/…` ausgeliefert; beim Start wird kein Netz gebraucht.
 
-**Firewall-Hinweis für Testende (z.B. Little Snitch, LuLu):** die App ist neu und unsigniert, die erste Netzanfrage
-löst eine Nachfrage aus — „Erlauben" wählen. Jeder neue Build hat eine neue Signatur und fragt erneut. Der Start
-selbst braucht kein Netz, und die Oberfläche lädt nichts von außen (Schriften und Logos kommen vom lokalen Server).
-Alle Hosts, die CueCore ansprechen kann (aus `app.py` und `core/` ermittelt, Stand 12.10.2026), jeweils per HTTPS:
+**Firewall-Hinweis:** Fragt eine Firewall bei der ersten Netzanfrage nach, ist „Erlauben" zu wählen; bei einem neuen Build
+kann die Nachfrage erneut kommen. Der Start selbst braucht kein Netz, und die Oberfläche lädt nichts von außen (Schriften
+und Logos kommen vom lokalen Server). Alle Hosts, die CueCore ansprechen kann (aus `app.py` und `core/` ermittelt, Stand 12.10.2026), jeweils per HTTPS:
 
 | Host | wofür | Schlüssel |
 |------|-------|-----------|
@@ -149,10 +146,10 @@ Alle Hosts, die CueCore ansprechen kann (aus `app.py` und `core/` ermittelt, Sta
 | `api.acoustid.org` | Fingerabdruck-Abgleich; gesendet werden Fingerabdruck und Dauer, nicht das Audio (`fpcalc` rechnet lokal) | nur mit Application-Key |
 | `api.audd.io` | Fingerprinting als kostenpflichtiger Rückfall nach AcoustID; schickt einen Ausschnitt der Audiodatei (ohne ffmpeg die ganze Datei) | nur mit API-Token |
 | `api.editingtools.io` | Library-Scan der Cue-Liste (Dateinamen der Cues) | nur mit API-Key |
-| Host aus den Einstellungen (Track-Metadata-API des Library-Partners) | Dateinamen der Cues → Track-Metadaten | nur mit Host, Client-ID und Secret |
+| Host aus den Einstellungen (optionale Track-Metadata-API) | Dateinamen der Cues → Track-Metadaten | nur mit Host, Client-ID und Secret |
 
 Ohne Schlüssel geht an die unteren fünf keine Anfrage. „Verbindung prüfen" in den Einstellungen spricht dieselben
-Hosts an (Discogs, Genius, AcoustID, editingtools, Library-Partner). ACRCloud hat Felder in den Einstellungen, wird
+Hosts an (Discogs, Genius, AcoustID, editingtools, Track-Metadata-API). ACRCloud hat Felder in den Einstellungen, wird
 aber nirgends abgerufen. **Nur Links**, die CueCore nie selbst abruft: sie öffnen im Standardbrowser (in der Hülle
 über `open_url`), die Nachfrage kommt dann vom Browser — Quellen-Links zu `musicbrainz.org`, `www.discogs.com`,
 `www.wikidata.org`, `www.musik-sammler.de`, `genius.com` und die Links „Schlüssel holen" zu `acoustid.org`,

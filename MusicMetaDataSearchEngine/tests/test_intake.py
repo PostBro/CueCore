@@ -85,9 +85,9 @@ def test_scan_without_lookup_leaves_filename_lc_empty(tmp_path):
 
 
 def test_scan_includes_album_from_filename(tmp_path):
-    _mk(tmp_path, "FALLING_TWIN PEAKS SOUNDTRACK_ANGELO BADALAMENTI_192.mp3")
+    _mk(tmp_path, "NORDWAND_ZZQ TESTSERIE SOUNDTRACK_ERIKA TESTERIN_192.mp3")
     card = intake.scan_folder(tmp_path)[0]
-    assert card["album"] == "TWIN PEAKS SOUNDTRACK"
+    assert card["album"] == "ZZQ TESTSERIE SOUNDTRACK"
 
 
 def test_resolve_card_builds_plan_non_destructive(tmp_path):
@@ -242,18 +242,18 @@ def test_resolve_card_catalog_not_used_when_net_has_candidate(tmp_path):
 
 
 def test_resolve_card_falls_back_to_file_tags_for_writers_and_album(tmp_path):
-    # UPM-Datei: Netz kennt den Titel nicht, aber TCOM/TALB stehen in den Tags (mit [GEMA]-Markern).
-    p = _mk(tmp_path, "UPM_BER1376_1_Hot.mp3", artist="Wanja Janeva [GEMA],David Quaas [GEMA]", title="Hot [Vocal Lead]",
-            album="BER1376 Sunshine Motion", composer="Wanja Janeva [GEMA],David Quaas [GEMA]",
+    # Library-Datei im UPM-Schema: Netz kennt den Titel nicht, aber TCOM/TALB stehen in den Tags (mit [GEMA]-Markern).
+    p = _mk(tmp_path, "UPM_BER1376_1_Nordwand.mp3", artist="Erika Testerin [GEMA],Max Beispiel [GEMA]", title="Nordwand [Vocal Lead]",
+            album="BER1376 Zzq Album", composer="Erika Testerin [GEMA],Max Beispiel [GEMA]",
             label="Ed.Berlin Production Music / Universal Production Music GmbH")
-    res = ResolveResult(artist="Wanja Janeva [GEMA],David Quaas [GEMA]", title="Hot [Vocal Lead]", matched=False)
+    res = ResolveResult(artist="Erika Testerin [GEMA],Max Beispiel [GEMA]", title="Nordwand [Vocal Lead]", matched=False)
     card = intake.resolve_card(p, res.artist, res.title, resolve_fn=lambda a, t, i="": res,
                                label_lookup=lambda c: ("Berlin Production Music", ""),
                                catalog_fn=lambda text, tpub: Candidate(labelcode="07877", label="Berlin Production Music",
                                                                         confidence=0.75, dual_source=True,
                                                                         sources=["GVL-Kürzel BER", "TPUB = Hersteller", "TPUB = Label"]))
-    assert card["composer"] == "Wanja Janeva; David Quaas" and card["album"] == "BER1376 Sunshine Motion"
-    assert card["plan"]["proposed_tags"]["composer"] == "Wanja Janeva; David Quaas"
+    assert card["composer"] == "Erika Testerin; Max Beispiel" and card["album"] == "BER1376 Zzq Album"
+    assert card["plan"]["proposed_tags"]["composer"] == "Erika Testerin; Max Beispiel"
     assert card["best"]["labelcode"] == "07877" and card["band"] == "review"
 
 

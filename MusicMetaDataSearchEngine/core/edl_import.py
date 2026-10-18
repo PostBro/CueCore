@@ -163,8 +163,8 @@ _TRAIL_VERSION = re.compile(r"[\s_\-]+(instrumental(\s+(guitar|piano|version|mix
 
 
 def base_title(title: str) -> str:
-    """Titel ohne Versions-Zusatz: 'IF THIS IS LOVE (INSTRUMENTAL)' -> 'IF THIS IS LOVE',
-    'BLOOM (BONUS TRACK) (INSTRUMENTAL)' -> 'BLOOM', 'SKINNY LOVE INSTRUMENTAL GUITAR' -> 'SKINNY LOVE'."""
+    """Titel ohne Versions-Zusatz: 'NORDWAND (INSTRUMENTAL)' -> 'NORDWAND',
+    'NORDLICHT (BONUS TRACK) (INSTRUMENTAL)' -> 'NORDLICHT', 'ZZQ SONG INSTRUMENTAL GUITAR' -> 'ZZQ SONG'."""
     t, prev = (title or "").strip(), None
     while prev != t:
         prev = t
@@ -179,7 +179,7 @@ _NEEDY_STATUS = frozenset({"unresolved", "filename_lc", "missing_no_resolver", "
 
 def inherit_from_siblings(cards: list[dict], con=None, local_fn=None) -> int:
     """Gleicher Interpret + gleicher Basistitel in derselben Schnittliste: wird eine Fassung gefunden, erben
-    die anderen ('IF THIS IS LOVE' im Index, 'IF THIS IS LOVE (INSTRUMENTAL)' nicht). Ohne Geschwister-Treffer wird der Basistitel selbst
+    die anderen ('NORDWAND' im Index, 'NORDWAND (INSTRUMENTAL)' nicht). Ohne Geschwister-Treffer wird der Basistitel selbst
     in songs.db und Index gesucht. Das Ergebnis bleibt ein VORSCHLAG (Status sibling_hit, Ampel gelb) —
     ein LC aus dem Dateinamen, der abweicht, bleibt als Notiz sichtbar. Rückgabe: Zahl der geerbten Cues."""
     from .labelmatch import norm
@@ -282,7 +282,7 @@ def cross_check(events: list[EDLEvent], con, *, resolve_fn=None, label_lookup=No
             card["artist"], card["title"] = fhit["interpret"], fhit["titel"]
             card["status"], card["matched_by"] = "found_in_db", "file"
             if not card["labelcode"] and catalog_fn is not None:
-                # Lieferung ohne Code (z. B. UPM): der Katalog-Vorschlag gilt wie bei einer unbekannten
+                # Lieferung ohne Code (z. B. Libraries ohne LC in der Lieferung): der Katalog-Vorschlag gilt wie bei einer unbekannten
                 # Datei — erst das Kürzel im Clip-Namen, sonst der Sub-Library-Name der Lieferung als
                 # Label-Signal. Der LC bleibt Vorschlag, Titel/Autoren verifiziert.
                 name = fhit.get("sublibrary") or fhit.get("labelname") or ""
@@ -427,7 +427,7 @@ assert len(_PDF_WIDTHS) == len(EXPORT_COLUMNS) and sum(_PDF_WIDTHS) == 100
 _PDF_FONT, _PDF_PAD = 8.0, 10.5             # Schriftgröße der Tabelle; Innenabstand links+rechts + Rahmen in pt
 
 # Trennstellen in langen Wörtern ohne Leerzeichen: Dateinamen wie
-# „ZZQ_CONTENTBUMPER_EINE+ZZQ+TESTSHOW+SERIE_1920X1080" haben keine, und die Story-Engine kann sie
+# „ZZQ_TESTPROJEKT_EINS+ZZQ+NORDWAND+SERIE_1920X1080" haben keine, und die Story-Engine kann sie
 # deshalb nicht umbrechen. Ein unsichtbares Zero-Width-Space nach Trennzeichen gibt ihr welche
 # (Komma und Semikolon für Namenslisten ohne Leerzeichen: „Johnson,Smith,Williams").
 _BREAK_AFTER = re.compile(r"([_+\-./,;])(?=[^\s]{6,})")

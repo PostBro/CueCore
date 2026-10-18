@@ -3,10 +3,9 @@
 Zwei Regeln:
   * Library-Lieferungen: kennt der Master den gelieferten Code nicht, steht der gelieferte Labelname dort
     aber unter genau EINEM anderen Code, gilt der GVL-Code. Der gelieferte bleibt als Notiz an der Zeile
-    (Spalte `label_geliefert`, nie still verwerfen). So liefert UPM BBC Production Music mit LC21110 (GVL:
-    LC27926) und Nova Production Music mit LC26766 (GVL: LC86328). Kennt der Master weder Code noch Namen, bleibt
+    (Spalte `label_geliefert`, nie still verwerfen). Kennt der Master weder Code noch Namen, bleibt
     der Code wie geliefert und bekommt ein manuelles Label mit Notiz. Einen Code, den der Master
-    kennt, ersetzt der Name nie: 'Cézame' steht im Master unter LC04952 CEZAME, Cezame selbst nennt aber LC10347
+    kennt, ersetzt der Name nie: 'Cézame' steht im Master unter LC04952 CEZAME, die Lieferung nennt aber LC10347
     (s. core/catalog.py).
   * Listen aus fremden Quellen (generischer Import): passen Code und Name nicht zusammen oder kennt
     der Master den Code nicht, wird die Zeile zur Prüfung markiert (review_status 'review'), statt im Cue-Sheet
@@ -127,7 +126,7 @@ def check_label(code: str, name: str, master: GvlMaster) -> dict:
 
 
 def delivered_note(name: str, code: str) -> str:
-    """Wert für `label_geliefert`: was die Quelle geliefert hat, sprachneutral ('BBC Production Music · LC21110')."""
+    """Wert für `label_geliefert`: was die Quelle geliefert hat, sprachneutral ('Nordwand Music · LC99001')."""
     return " · ".join(x for x in ((name or "").strip(), "LC" + normalize_labelcode(code)) if x)
 
 
@@ -184,9 +183,8 @@ def add_manual_labels(lcon, manual_path: str | Path, entries: list[dict], *, bef
 
 def obsolete_delivery_labels(entries: list[dict], master: GvlMaster) -> list[dict]:
     """Automatisch angelegte Labels (Notiz „Aus Library-Lieferung …“), die überholt sind: der Master
-    kennt den Code nicht, den Namen aber unter genau einem anderen Code. Früher legte der Import für
-    BBC Production Music LC21110 und Nova Production Music LC26766 so ein Label an; es stand in der Label-Suche
-    vor dem GVL-Code. Von Hand angelegte Labels (andere Notiz) bleiben immer."""
+    kennt den Code nicht, den Namen aber unter genau einem anderen Code. Frühere Importe legten dafür
+    ein Label an; es stand in der Label-Suche vor dem GVL-Code. Von Hand angelegte Labels (andere Notiz) bleiben immer."""
     out = []
     for e in entries:
         if not str(e.get("note") or "").startswith(AUTO_NOTE_PREFIX):

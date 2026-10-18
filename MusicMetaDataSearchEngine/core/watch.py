@@ -127,7 +127,7 @@ def parse_cue_from_stem(stem: str) -> dict:
         return {"interpret": "", "titel": s, "labelcode": lc, "label": label}
     lib = parse_library_name(s)
     if lib:
-        # Library-Datei mit Titel im Namen (UPM/KPM-Schema): Titel lesbar, Interpret leer (Komponisten sind
+        # Library-Datei mit Titel im Namen (Library-Schema mit Katalognummer): Titel lesbar, Interpret leer (Komponisten sind
         # kein Interpret), Komponisten-Hinweis und Katalogtext für die Karte; der Katalog-Hint liefert den LC.
         return {"interpret": "", "titel": lib["title"] + (f" ({lib['version']})" if lib["version"] else ""),
                 "labelcode": lc, "label": label, "composer_hint": lib["composer_hint"], "library_name": s}
@@ -157,7 +157,7 @@ def parse_cue_from_stem(stem: str) -> dict:
     return {"interpret": interpret, "titel": titel, "labelcode": lc, "label": label}
 
 
-# Album-/Show-Felder in Underscore-Namen ('ZZQ TESTSHOW SEASON 2 (SOURCE)', '… (SCORE)'): kein Interpret, kein Titel.
+# Album-/Show-Felder in Underscore-Namen ('ZZQ TESTPROJEKT (SOURCE)', '… (SCORE)'): kein Interpret, kein Titel.
 _ALBUMISH = re.compile(r"\((source|score|soundtrack|ost|main title|theme)\)|\bseason\s*\d|\bsoundtrack\b|\bstaffel\s*\d", re.IGNORECASE)
 
 

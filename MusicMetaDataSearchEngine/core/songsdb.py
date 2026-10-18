@@ -50,8 +50,8 @@ _NEW_COLUMNS = {
     # (Tonträgerhersteller, GVL). Stabiler Fakt -> PROTECT.
     "verlag": "TEXT",
     # label_geliefert: was eine Library als Label + Code geliefert hat, wenn der GVL-Master das
-    # Label unter einem anderen Code führt und deshalb der GVL-Code in labelcode steht ('BBC Production Music ·
-    # LC21110'). Nie still verwerfen — die Notiz bleibt an der Zeile. Gesetzt nur zusammen mit dem labelcode.
+    # Label unter einem anderen Code führt und deshalb der GVL-Code in labelcode steht ('Nordwand Music ·
+    # LC99001'). Nie still verwerfen — die Notiz bleibt an der Zeile. Gesetzt nur zusammen mit dem labelcode.
     "label_geliefert": "TEXT",
 }
 _PROTECT_FIELDS = ("komponist", "texter", "labelname", "labelcode", "isrc", "iswc",
@@ -215,7 +215,7 @@ def ensure_schema(con: sqlite3.Connection) -> None:
         nk = _nkey(r["interpret"], r["titel"])
         if nk != r["nkey"]:
             con.execute("UPDATE songs SET nkey=? WHERE id=?", (nk, r["id"]))
-    # Library-Dateinamen: Library-Clips heißen in EDLs nur nach Katalognummer („CEZ4030_1“);
+    # Library-Dateinamen: Library-Clips heißen in EDLs nur nach Katalognummer („ZZQ4030_1“);
     # jeder gelieferte Dateiname zeigt auf seine songs-Zeile — auch wenn derselbe Interpret+Titel auf
     # mehreren Alben liegt und deshalb nur EINE songs-Zeile trägt (UNIQUE interpret+titel).
     con.execute("""CREATE TABLE IF NOT EXISTS library_files (
@@ -223,37 +223,36 @@ def ensure_schema(con: sqlite3.Connection) -> None:
         catno TEXT, track_number TEXT, version TEXT, isrc TEXT, duration_sec REAL, sublibrary TEXT)""")
     lf_cols = {r[1] for r in con.execute("PRAGMA table_info(library_files)")}
     # Je Datei: Sub-Katalog, Label/Code und Album der Lieferung — derselbe Interpret+Titel liegt auf mehreren
-    # Alben (auch verschiedener Sub-Libraries mit eigenem LC: Cezame 20 Schlüssel / 50 Dateien), trägt aber nur
+    # Alben (auch verschiedener Sub-Libraries mit eigenem LC), trägt aber nur
     # EINE songs-Zeile; die Cue-Karte muss den LC der getroffenen Datei zeigen, nicht den der ersten.
     for col in ("sublibrary", "labelcode", "labelname", "album", "edit_id", "label_geliefert"):
         if col not in lf_cols:
             con.execute(f"ALTER TABLE library_files ADD COLUMN {col} TEXT")
     con.execute("CREATE INDEX IF NOT EXISTS idx_library_files_song ON library_files(song_id)")
-    # Edit-/Track-ID der Lieferung: UPM nennt sie am Ende JEDES Dateinamens, und die EDL-Clips tragen
-    # dieselbe Nummer bei abweichender Katalog-Schreibweise (Lieferung 'VM_40_11_…_1018801',
-    # EDL 'UPM_VM40_11_…_1018801'). Damit trifft die Zuordnung auch dann.
+    # Edit-/Track-ID der Lieferung: manche Lieferungen nennen sie am Ende jedes Dateinamens, und die EDL-Clips
+    # tragen dieselbe Nummer bei abweichender Katalog-Schreibweise (Lieferung 'ZZQ_40_11_…_1000001',
+    # EDL 'UPM_ZZQ40_11_…_1000001'). Damit trifft die Zuordnung auch dann.
     con.execute("CREATE INDEX IF NOT EXISTS idx_library_files_edit ON library_files(edit_id)")
-    # Sub-Kataloge der Lieferung je songs-Zeile („Cézame; Bibliotheque Music“), damit „the box“ im Datenbank-Tab
+    # Sub-Kataloge der Lieferung je songs-Zeile („Nordwand Music; Zzq Library“), damit „nordwand“ im Datenbank-Tab
     # trifft — gepflegt von import_library_tracks, kein Editor-Feld.
     if "sublibraries" not in {r[1] for r in con.execute("PRAGMA table_info(songs)")}:
         con.execute("ALTER TABLE songs ADD COLUMN sublibraries TEXT")
-    # Welche mitgelieferte Lieferungs-CSV schon drin ist — je DATEI, nicht je Library. Cezame kam einmal als
-    # ganzer Katalog, UPM kommt bei jedem Download neu; „einmal je Library" hätte jede
-    # zweite UPM-Lieferung stumm verschluckt.
+    # Welche mitgelieferte Lieferungs-CSV schon drin ist — je DATEI, nicht je Library; „einmal je Library"
+    # hätte jede zweite Lieferung derselben Library stumm verschluckt.
     con.execute("""CREATE TABLE IF NOT EXISTS library_deliveries (
         file TEXT PRIMARY KEY, library TEXT NOT NULL, imported TEXT NOT NULL, rows INTEGER)""")
     ensure_fts(con)
     con.commit()
 
 
-# quelle/sublibraries: „cezame“, „the box“. gema_werknummer, damit die Werknummer
+# quelle/sublibraries: „zzq“, „nordwand“. gema_werknummer, damit die Werknummer
 # auffindbar ist (Feld immer führen, füllen was vorhanden ist, mitsuchen — eine GEMA-API gibt es nicht).
 _FTS_COLS = ("interpret", "titel", "labelname", "labelcode", "quelle", "sublibraries", "gema_werknummer")
 
 
 def ensure_fts(con: sqlite3.Connection) -> None:
     """FTS5-Trigram über Interpret, Titel, Label, Code für die Suche im Datenbank-Tab (external content,
-    Trigger halten es aktuell). Vorher LIKE über vier Spalten: 0,5 s bei 61k Zeilen nach der Cezame-Lieferung,
+    Trigger halten es aktuell). Vorher LIKE über vier Spalten: 0,5 s bei 61k Zeilen,
     kein Index möglich. remove_diacritics: „athane“ trifft „Athané“. Fehlt die Tabelle (alte DB),
     wird sie angelegt und einmal aus songs gefüllt."""
     if con.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='songs_fts'").fetchone():
@@ -343,9 +342,9 @@ def find_by_file(con: sqlite3.Connection, name: str) -> dict | None:
                 "f.labelname AS file_labelname, f.album AS file_album, f.label_geliefert AS file_label_geliefert "
                 "FROM library_files f "
                 "JOIN songs s ON s.id = f.song_id WHERE f.edit_id=?", (eid,)).fetchall()
-            # Die Endzahl allein ist keine Zuordnung — „Interview Zzq Take 3 1420031“ traf sonst einen
-            # UPM-Track als verifiziert. Ein Wort aus Titel oder Dateiname der Lieferung muss auch
-            # im Clipnamen stehen (9 von 2.880 UPM-Dateien tragen den Titel nicht im Namen: 'EM_3001_2_EM023955_SD_Fay').
+            # Die Endzahl allein ist keine Zuordnung — „Interview Zzq Take 3 1000001“ traf sonst einen
+            # Library-Track als verifiziert. Ein Wort aus Titel oder Dateiname der Lieferung muss auch
+            # im Clipnamen stehen (einzelne Lieferdateien tragen den Titel nicht im Namen).
             words = set(norm(key).split())
             r = [x for x in r if _shares_word(words, x["titel"], _file_key(x["file"]))]
             r = r[0] if len(r) == 1 else None      # mehrdeutig -> lieber nichts
@@ -376,7 +375,7 @@ def mark_delivery(con: sqlite3.Connection, file: str, library: str, *, rows: int
 
 
 def _num(v) -> float | None:
-    """Sekunden aus der Lieferung: Zahl oder None (Cezame liefert bei fehlender Länge auch „''“)."""
+    """Sekunden aus der Lieferung: Zahl oder None (manche Lieferungen führen bei fehlender Länge auch „''“)."""
     try:
         return float(v) if v not in (None, "") else None
     except (TypeError, ValueError):

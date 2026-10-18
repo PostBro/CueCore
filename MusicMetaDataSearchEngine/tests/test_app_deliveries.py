@@ -14,9 +14,9 @@ client = TestClient(app)
 
 GVL = [
     LabelRecord("00121", "Atlantic", "", "", "Warner Music", "R6;R9"),
-    LabelRecord("27926", "BBC Production Music", "", "Ja", "Universal Production Music GmbH", ""),
-    LabelRecord("86328", "Nova Production Music", "", "Ja", "Universal Production Music GmbH", ""),
-    LabelRecord("48731", "Volta Music", "", "Ja", "Universal Production Music GmbH", ""),
+    LabelRecord("99126", "Nordwand Production Music", "", "Ja", "Testhersteller GmbH", ""),
+    LabelRecord("99186", "Zzq Production Music", "", "Ja", "Testhersteller GmbH", ""),
+    LabelRecord("99231", "Nordwand Music", "", "Ja", "Testhersteller GmbH", ""),
 ]
 HEADER = ("AUDITION LINK,EDIT ID,WORK TITLE,ALBUM,ALBUM ID,TRACK ID,YEAR OF RELEASE,COMPOSERS,PUBLISHERS,"
           "LABEL NAME,GERMAN LABEL CODE,ISRC")
@@ -28,9 +28,9 @@ def _row(name, edit_id, title, label, code):
 
 
 DELIVERY = "sep=,\n" + HEADER + "\n" + "\n".join([
-    _row("VM_40_1", "9000001", "Nordwand Eins", "Volta Music", "LC 48731"),
+    _row("ZZQ_40_1", "9000001", "Nordwand Eins", "Nordwand Music", "LC 99231"),
     _row("ZZQ_1_1", "9000002", "Nordwand Zwei", "Testlabel Nordwand", "LC 99022"),
-    _row("BBCPM_117_10", "9000003", "Nordwand Drei", "BBC Production Music", "LC 21110"),
+    _row("ZZQPM_117_10", "9000003", "Nordwand Drei", "Nordwand Production Music", "LC 99110"),
 ]) + "\n"
 
 
@@ -48,12 +48,12 @@ def _upload(commit):
 
 def test_upload_einer_lieferung_legt_fremde_codes_als_manuelles_label_an(tmp_path):
     """Der App-Weg legt fremde Codes als manuelles Label an (die Suche findet den Code, die Vorschau sagt
-    dasselbe). Dazu: BBC LC21110 wird zum GVL-Code LC27926."""
+    dasselbe). Dazu: Nordwand LC99110 wird zum GVL-Code LC99126."""
     _setup(tmp_path)
     pv = _upload(False).json()
     assert pv["unknown_codes"] == {"99022": {"label": "Testlabel Nordwand", "n": 1}}
-    assert pv["corrected"] == {"21110": {"label": "BBC Production Music", "gvl_code": "27926", "n": 1}}
-    assert set(pv["labels"]) == {"LC48731", "LC99022", "LC27926"}
+    assert pv["corrected"] == {"99110": {"label": "Nordwand Production Music", "gvl_code": "99126", "n": 1}}
+    assert set(pv["labels"]) == {"LC99231", "LC99022", "LC99126"}
     assert client.get("/api/labels/manual").json()["labels"] == []                  # Vorschau schreibt nichts
     com = _upload(True).json()
     assert com["inserted"] == 3 and [m["labelcode"] for m in com["manual_labels"]] == ["99022"]
@@ -61,9 +61,9 @@ def test_upload_einer_lieferung_legt_fremde_codes_als_manuelles_label_an(tmp_pat
     assert [(m["labelcode"], m["label"]) for m in manual] == [("99022", "Testlabel Nordwand")]
     assert "Aus Library-Lieferung upm (music_metadata.csv)" in manual[0]["note"]
     assert client.get("/api/search", params={"q": "99022"}).json()["results"][0]["label"] == "Testlabel Nordwand"
-    assert [r["labelcode"] for r in client.get("/api/search", params={"q": "21110"}).json()["results"]] == []
-    hit = songsdb.find_by_file(appmod.SONGS_CON, "BBCPM_117_10_Nordwand_Drei_9000003")
-    assert hit["labelcode"] == "LC27926" and hit["label_geliefert"] == "BBC Production Music · LC21110"
+    assert [r["labelcode"] for r in client.get("/api/search", params={"q": "99110"}).json()["results"]] == []
+    hit = songsdb.find_by_file(appmod.SONGS_CON, "ZZQPM_117_10_Nordwand_Drei_9000003")
+    assert hit["labelcode"] == "LC99126" and hit["label_geliefert"] == "Nordwand Production Music · LC99110"
     assert _upload(True).json()["manual_labels"] == []                              # zweiter Lauf: nichts doppelt
 
 
@@ -75,37 +75,37 @@ def test_ordner_scan_zeigt_und_legt_fremde_codes_an(tmp_path):
     (d / "music_metadata.csv").write_text(DELIVERY, encoding="utf-8")
     pv = client.post("/api/ingest/scan-folder", json={"folder": str(tmp_path / "Downloads")}).json()
     assert pv["found"] == 1 and pv["unknown_codes"] == {"99022": {"label": "Testlabel Nordwand", "n": 1}}
-    assert pv["corrected"]["21110"]["gvl_code"] == "27926"
+    assert pv["corrected"]["99110"]["gvl_code"] == "99126"
     com = client.post("/api/ingest/scan-folder", json={"folder": str(tmp_path / "Downloads"), "commit": True}).json()
     assert com["files"] == 1 and [m["labelcode"] for m in com["manual_labels"]] == ["99022"]
     assert client.get("/api/search", params={"q": "99022"}).json()["results"][0]["source"] == "manuell"
 
 
 def test_start_heilt_bestand_und_legt_fehlende_labels_an(tmp_path):
-    """Eine Installation, die die UPM-Lieferungen vor der GVL-Code-Korrektur eingepflegt hat (LC21110 an den
-    BBC-Tracks, ein automatisch angelegtes Label 21110, kein Label für den fremden Code), bekommt beim Start
+    """Eine Installation, die die Lieferungen vor der GVL-Code-Korrektur eingepflegt hat (LC99110 an den
+    Tracks eines Labels, ein automatisch angelegtes Label 99110, kein Label für den fremden Code), bekommt beim Start
     die Korrektur und das fehlende manuelle Label. Von Hand angelegte Labels bleiben."""
     con = songsdb.open(tmp_path / "songs.db")
     rows = librarytracks.read_upm_csv(_write(tmp_path / "md.csv", DELIVERY))
-    old, _ = librarytracks.to_song_rows(rows, {"48731": "Volta Music"}.get)         # Stand vor der Korrektur
+    old, _ = librarytracks.to_song_rows(rows, {"99231": "Nordwand Music"}.get)         # Stand vor der Korrektur
     songsdb.import_library_tracks(con, old, library="upm", date_verified="2026-10-08")
     con.close()
     (tmp_path / "labels_manual.json").write_text(json.dumps([
-        {"labelcode": "21110", "label": "BBC Production Music", "note": "Aus Library-Lieferung upm "
-         "(upm_2026-10-archiv.csv), 16 Tracks; nicht im GVL-Master beim Import am 2026-10-08"},
-        {"labelcode": "99001", "label": "Fresh Tracks Music", "note": "vom Anbieter bestätigt"}]), encoding="utf-8")
+        {"labelcode": "99110", "label": "Nordwand Production Music", "note": "Aus Library-Lieferung upm "
+         "(zzq_2026-01-01.csv), 16 Tracks; nicht im GVL-Master beim Import am 2026-01-01"},
+        {"labelcode": "99001", "label": "Testlabel Manuell", "note": "Testnotiz"}]), encoding="utf-8")
     db = tmp_path / "labels.db"
     build_label_db(GVL, db, "2026-09-15")
     lcon = labeldb.connect(db)          # wie labels_prebuilt.db des alten Bundles: Nova steht nur in der DB
-    labeldb.add_manual_labels(lcon, [{"labelcode": "26766", "label": "Nova Production Music"}])
+    labeldb.add_manual_labels(lcon, [{"labelcode": "99166", "label": "Zzq Production Music"}])
     lcon.close()
     appmod.configure(db)
-    hit = songsdb.find_by_file(appmod.SONGS_CON, "BBCPM_117_10_Nordwand_Drei_9000003")
-    assert hit["labelcode"] == "LC27926" and hit["label_geliefert"] == "BBC Production Music · LC21110"
+    hit = songsdb.find_by_file(appmod.SONGS_CON, "ZZQPM_117_10_Nordwand_Drei_9000003")
+    assert hit["labelcode"] == "LC99126" and hit["label_geliefert"] == "Nordwand Production Music · LC99110"
     manual = {m["labelcode"]: m for m in client.get("/api/labels/manual").json()["labels"]}
     assert sorted(manual) == ["99001", "99022"]
-    assert [r["labelcode"] for r in client.get("/api/search", params={"q": "BBC Production Music"}).json()["results"]] == ["27926"]
-    assert [r["labelcode"] for r in client.get("/api/search", params={"q": "Nova Production Music"}).json()["results"]] == ["86328"]
+    assert [r["labelcode"] for r in client.get("/api/search", params={"q": "Nordwand Production Music"}).json()["results"]] == ["99126"]
+    assert [r["labelcode"] for r in client.get("/api/search", params={"q": "Zzq Production Music"}).json()["results"]] == ["99186"]
     appmod.configure(tmp_path / "labels.db")                                         # zweiter Start: stabil
     assert sorted(m["labelcode"] for m in client.get("/api/labels/manual").json()["labels"]) == ["99001", "99022"]
 
@@ -116,12 +116,12 @@ def _write(p, text):
 
 
 def test_generische_liste_mit_fremden_codes_wird_zur_pruefung_markiert(tmp_path):
-    """Eine Liste mit LC99095 (nicht im Master) und 'BBC Production Music' + LC00121 (laut Master Atlantic)
+    """Eine Liste mit LC99095 (nicht im Master) und 'Nordwand Production Music' + LC00121 (laut Master Atlantic)
     wird zur Prüfung markiert und nicht als verifiziert übernommen; das Cue-Sheet zeigt beide nicht grün."""
     _setup(tmp_path)
     text = ("Work Title;Composer;Publisher;Label Name;LC Code\n"
             "Nordwand Generisch;Erika Testerin;Testverlag;Testlabel Generisch;LC99095\n"
-            "Nordwand Falschcode;Erika Testerin;Testverlag;BBC Production Music;LC00121\n"
+            "Nordwand Falschcode;Erika Testerin;Testverlag;Nordwand Production Music;LC00121\n"
             "Nordwand Passt;Erika Testerin;Testverlag;ATLANTIC;LC00121\n")
     body = {"filename": "generic.csv", "content_b64": base64.b64encode(text.encode()).decode()}
     pv = client.post("/api/ingest/upload", json={**body, "commit": False}).json()
@@ -133,23 +133,23 @@ def test_generische_liste_mit_fremden_codes_wird_zur_pruefung_markiert(tmp_path)
                   for i, t in enumerate(("Generisch", "Falschcode", "Passt"), 1))
     cards = client.post("/api/edl/import", json={"content": "TITLE: T\nFCM: NON-DROP FRAME\n\n" + edl}).json()["cards"]
     assert [(c["status"], c["labelcode"], c["labelname"]) for c in cards] == [
-        ("db_review", "LC99095", "Testlabel Generisch"), ("db_review", "LC00121", "BBC Production Music"),
+        ("db_review", "LC99095", "Testlabel Generisch"), ("db_review", "LC00121", "Nordwand Production Music"),
         ("found_in_db", "LC00121", "Atlantic")]                                        # GVL-Schreibweise
     rows = {r["titel"]: r for r in client.get("/api/db/songs", params={"q": "Nordwand"}).json()["rows"]}
     assert rows["Nordwand Generisch"]["review_status"] == "review" and not rows["Nordwand Passt"]["review_status"]
 
 
 def _install_mit_automatischen_labels(tmp_path):
-    """Installation wie in test_start_heilt_bestand_und_legt_fehlende_labels_an: automatisch angelegtes LC21110 in der JSON, Nova
-    LC26766 nur in labels.db, von Hand angelegtes LC99001 — der Start räumt die beiden automatischen weg."""
-    manual = [{"labelcode": "21110", "label": "BBC Production Music", "note": "Aus Library-Lieferung upm "
-               "(upm_2026-10-archiv.csv), 16 Tracks; nicht im GVL-Master beim Import am 2026-10-08"},
-              {"labelcode": "99001", "label": "Fresh Tracks Music", "note": "vom Anbieter bestätigt"}]
+    """Installation wie in test_start_heilt_bestand_und_legt_fehlende_labels_an: automatisch angelegtes LC99110 in der JSON, Nova
+    LC99166 nur in labels.db, von Hand angelegtes LC99001 — der Start räumt die beiden automatischen weg."""
+    manual = [{"labelcode": "99110", "label": "Nordwand Production Music", "note": "Aus Library-Lieferung upm "
+               "(zzq_2026-01-01.csv), 16 Tracks; nicht im GVL-Master beim Import am 2026-01-01"},
+              {"labelcode": "99001", "label": "Testlabel Manuell", "note": "Testnotiz"}]
     (tmp_path / "labels_manual.json").write_text(json.dumps(manual), encoding="utf-8")
     db = tmp_path / "labels.db"
     build_label_db(GVL, db, "2026-09-15")
     lcon = labeldb.connect(db)
-    labeldb.add_manual_labels(lcon, [{"labelcode": "26766", "label": "Nova Production Music"}])
+    labeldb.add_manual_labels(lcon, [{"labelcode": "99166", "label": "Zzq Production Music"}])
     lcon.close()
     return db, (tmp_path / "labels_manual.json").read_bytes()
 
@@ -169,19 +169,19 @@ def test_selbstheilung_sichert_labels_vorher_datiert(tmp_path, monkeypatch):
     jsons, dbs = _backups(tmp_path)
     assert len(jsons) == 1 and len(dbs) == 1, (jsons, dbs)
     assert (tmp_path / jsons[0]).read_bytes() == before                            # Stand vor dem Umschreiben
-    assert "21110" not in (tmp_path / "labels_manual.json").read_text(encoding="utf-8")
+    assert "99110" not in (tmp_path / "labels_manual.json").read_text(encoding="utf-8")
     old = labeldb.connect(tmp_path / dbs[0])
-    assert old.execute("SELECT COUNT(*) FROM labels WHERE labelcode='26766' AND source='manuell'").fetchone()[0] == 1
+    assert old.execute("SELECT COUNT(*) FROM labels WHERE labelcode='99166' AND source='manuell'").fetchone()[0] == 1
     old.close()
     live = labeldb.connect(db)
-    assert live.execute("SELECT COUNT(*) FROM labels WHERE labelcode='26766'").fetchone()[0] == 0
+    assert live.execute("SELECT COUNT(*) FROM labels WHERE labelcode='99166'").fetchone()[0] == 0
     live.close()
     # derselbe Lauf schreibt noch einmal um (neues überholtes Label) — keine zweite Sicherung
     manual = json.loads((tmp_path / "labels_manual.json").read_text(encoding="utf-8"))
-    manual.append({"labelcode": "26766", "label": "Nova Production Music", "note": "Aus Library-Lieferung upm (x)"})
+    manual.append({"labelcode": "99166", "label": "Zzq Production Music", "note": "Aus Library-Lieferung upm (x)"})
     (tmp_path / "labels_manual.json").write_text(json.dumps(manual), encoding="utf-8")
     appmod.configure(db)
-    assert "26766" not in (tmp_path / "labels_manual.json").read_text(encoding="utf-8")
+    assert "99166" not in (tmp_path / "labels_manual.json").read_text(encoding="utf-8")
     assert _backups(tmp_path) == (jsons, dbs)
 
 
@@ -196,8 +196,8 @@ def test_selbstheilung_ohne_aenderung_legt_keine_sicherung_an(tmp_path, monkeypa
     assert _backups(tmp_path) == first
 
 
-D7_DELIVERY = "sep=,\n" + HEADER + "\n" + "\n".join([
-    _row("VM_40_2", "9000011", "Nordwand Elf", "Volta Music", ""),
+OHNE_CODE_DELIVERY = "sep=,\n" + HEADER + "\n" + "\n".join([
+    _row("ZZQ_40_2", "9000011", "Nordwand Elf", "Nordwand Music", ""),
     _row("ZZQ_2_1", "9000012", "Nordwand Zwoelf", "Testlabel Ohne Code", ""),
 ]) + "\n"
 
@@ -207,14 +207,14 @@ def test_upload_traegt_lc_ueber_den_eindeutigen_namen_ein(tmp_path):
     mit Notiz; die Vorschau nennt das (by_name), der Rest bleibt 'ohne Labelcode'."""
     from core.labelcheck import LC_BY_NAME_NOTE
     _setup(tmp_path)
-    body = {"filename": "music_metadata.csv", "content_b64": base64.b64encode(D7_DELIVERY.encode()).decode()}
+    body = {"filename": "music_metadata.csv", "content_b64": base64.b64encode(OHNE_CODE_DELIVERY.encode()).decode()}
     pv = client.post("/api/ingest/upload", json={**body, "commit": False}).json()
-    assert pv["by_name"] == {"Volta Music": {"gvl_code": "48731", "n": 1}} and pv["no_code"] == 1
-    assert set(pv["labels"]) == {"LC48731", "—"}
+    assert pv["by_name"] == {"Nordwand Music": {"gvl_code": "99231", "n": 1}} and pv["no_code"] == 1
+    assert set(pv["labels"]) == {"LC99231", "—"}
     com = client.post("/api/ingest/upload", json={**body, "commit": True}).json()
-    assert com["by_name"] == {"Volta Music": {"gvl_code": "48731", "n": 1}} and com["manual_labels"] == []
-    hit = songsdb.find_by_file(appmod.SONGS_CON, "VM_40_2_Nordwand_Elf_9000011")
-    assert (hit["labelcode"], hit["labelname"], hit["label_geliefert"]) == ("LC48731", "Volta Music", LC_BY_NAME_NOTE)
+    assert com["by_name"] == {"Nordwand Music": {"gvl_code": "99231", "n": 1}} and com["manual_labels"] == []
+    hit = songsdb.find_by_file(appmod.SONGS_CON, "ZZQ_40_2_Nordwand_Elf_9000011")
+    assert (hit["labelcode"], hit["labelname"], hit["label_geliefert"]) == ("LC99231", "Nordwand Music", LC_BY_NAME_NOTE)
     assert songsdb.find_by_file(appmod.SONGS_CON, "ZZQ_2_1_Nordwand_Zwoelf_9000012")["labelcode"] == ""
 
 
@@ -222,16 +222,16 @@ def test_vorschau_nennt_die_labelnamen_der_zeilen_ohne_code(tmp_path):
     """Zeilen ohne Code erscheinen in der Lieferungs-Vorschau unter dem Eintrag „—“. Er trägt die gelieferten
     Labelnamen mit Zeilenzahl, im Upload und im Ordner-Scan (zusammengezählt über mehrere Lieferungen)."""
     _setup(tmp_path)
-    body = {"filename": "music_metadata.csv", "content_b64": base64.b64encode(D7_DELIVERY.encode()).decode()}
+    body = {"filename": "music_metadata.csv", "content_b64": base64.b64encode(OHNE_CODE_DELIVERY.encode()).decode()}
     pv = client.post("/api/ingest/upload", json={**body, "commit": False}).json()
     assert pv["labels"]["—"] == {"label": "", "n": 1, "names": {"Testlabel Ohne Code": 1}}
     for sub in ("Download 1", "Download 2"):
         d = tmp_path / "Downloads" / sub
         d.mkdir(parents=True)
-        (d / "music_metadata.csv").write_text(D7_DELIVERY, encoding="utf-8")
+        (d / "music_metadata.csv").write_text(OHNE_CODE_DELIVERY, encoding="utf-8")
     scan = client.post("/api/ingest/scan-folder", json={"folder": str(tmp_path / "Downloads")}).json()
     assert scan["labels"]["—"] == {"label": "", "n": 2, "names": {"Testlabel Ohne Code": 2}}
-    assert scan["labels"]["LC48731"] == {"label": "Volta Music", "n": 2}
+    assert scan["labels"]["LC99231"] == {"label": "Nordwand Music", "n": 2}
 
 
 def test_start_traegt_lc_fuer_bestehende_installationen_nach(tmp_path):
@@ -239,16 +239,16 @@ def test_start_traegt_lc_fuer_bestehende_installationen_nach(tmp_path):
     bekommen den eindeutigen GVL-Code mit Notiz; ein zweiter Start ändert nichts mehr."""
     from core.labelcheck import LC_BY_NAME_NOTE
     con = songsdb.open(tmp_path / "songs.db")
-    rows = librarytracks.read_upm_csv(_write(tmp_path / "md.csv", D7_DELIVERY))
+    rows = librarytracks.read_upm_csv(_write(tmp_path / "md.csv", OHNE_CODE_DELIVERY))
     old, _ = librarytracks.to_song_rows(rows, {}.get)
     songsdb.import_library_tracks(con, old, library="upm", date_verified="2026-10-08")
     con.close()
     db = tmp_path / "labels.db"
     build_label_db(GVL, db, "2026-09-15")
     appmod.configure(db)
-    hit = songsdb.find_by_file(appmod.SONGS_CON, "VM_40_2_Nordwand_Elf_9000011")
-    assert (hit["labelcode"], hit["label_geliefert"]) == ("LC48731", LC_BY_NAME_NOTE)
-    assert songsdb.find(appmod.SONGS_CON, "Erika Testerin", "Nordwand Elf")["labelcode"] == "LC48731"
+    hit = songsdb.find_by_file(appmod.SONGS_CON, "ZZQ_40_2_Nordwand_Elf_9000011")
+    assert (hit["labelcode"], hit["label_geliefert"]) == ("LC99231", LC_BY_NAME_NOTE)
+    assert songsdb.find(appmod.SONGS_CON, "Erika Testerin", "Nordwand Elf")["labelcode"] == "LC99231"
     assert songsdb.find_by_file(appmod.SONGS_CON, "ZZQ_2_1_Nordwand_Zwoelf_9000012")["labelcode"] == ""
     assert librarytracks.fill_codes_by_name(appmod.SONGS_CON, appmod.GVL_MASTER)["filled"] == []
 

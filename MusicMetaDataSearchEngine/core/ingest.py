@@ -73,7 +73,7 @@ def _cell(v) -> str:
 
 
 def _decode(path: str | Path) -> str:
-    """Dateiinhalt als Text. UTF-16 (BOM) kommt von Windows-Exporten — Cue-Sheets einer Library vom Server
+    """Dateiinhalt als Text. UTF-16 (BOM) kommt von Windows-Exporten — Cue-Sheets mancher Libraries
     sind so kodiert; ohne Erkennung liest der Parser eine einzige Spalte voll Nullbytes."""
     raw = Path(path).read_bytes()
     for bom, enc in ((b"\xff\xfe\x00\x00", "utf-32"), (b"\x00\x00\xfe\xff", "utf-32"),
@@ -111,7 +111,7 @@ def _header_index(grid: list[list[str]]) -> int:
 
 
 def _dialect(text: str, forced: str = ""):
-    """Trenner bestimmen. csv.Sniffer riet bei TRACKINFO.csv auf Komma, weil die Komponisten-Spalte
+    """Trenner bestimmen. csv.Sniffer riet bei TRACKLISTE.csv auf Komma, weil die Komponisten-Spalte
     „Vorname Nachname, Vorname Nachname" enthält — die ganze Zeile landete in einer Spalte.
     Deshalb gezählt statt geraten: welcher Kandidat zerlegt die ersten Zeilen am gleichmäßigsten?"""
     if forced:
@@ -126,7 +126,7 @@ def _dialect(text: str, forced: str = ""):
         common = max(set(counts), key=counts.count)      # häufigste Spaltenzahl = die echte Breite
         if common < 2:
             continue
-        # Erst Gleichmäßigkeit, dann Breite: das Komma zerlegt TRACKINFO.csv zwar ebenso gleichmäßig
+        # Erst Gleichmäßigkeit, dann Breite: das Komma zerlegt TRACKLISTE.csv zwar ebenso gleichmäßig
         # (die Komponisten-Spalte hat genau ein Komma), aber nur in zwei Spalten statt in zehn.
         score = (round(counts.count(common) / len(counts), 2), common)
         if score > best_score:

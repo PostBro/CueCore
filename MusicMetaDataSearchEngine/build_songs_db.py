@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Baut die Songs-Datenbank für die MusicMetaDataSearchEngine.
 
-Quelle: kuratierte MP3s in 'LC verified/'. Felder:
+Quelle: kuratierte MP3s in einem Ordner mit verifizierten Dateien (Argument). Felder:
   interpret, titel, komponist, texter, labelname, labelcode
 - interpret/titel: aus ID3 (TPE1/TIT2), Fallback Dateiname
 - labelname/labelcode: aus dem Dateinamen-Klammerblock [Label_LCxxxxx] (kuratiert, maßgeblich)
@@ -14,9 +14,9 @@ from __future__ import annotations
 import csv, os, re, shutil, sqlite3, subprocess, sys, tempfile
 from pathlib import Path
 
-SRCS = [Path(a) for a in sys.argv[1:]]          # Ordner "LC verified" als Argument (kein fester Pfad im Repo)
+SRCS = [Path(a) for a in sys.argv[1:]]          # Ordner mit verifizierten Dateien als Argument (kein fester Pfad im Repo)
 if not SRCS:                                     # ohne Ordner nichts überschreiben (der Seed käme leer heraus)
-    sys.exit("Aufruf: python build_songs_db.py <Ordner 'LC verified'> [weitere Ordner]")
+    sys.exit("Aufruf: python build_songs_db.py <Ordner mit verifizierten Dateien> [weitere Ordner]")
 OUT = Path(__file__).parent / "data"
 OUT.mkdir(exist_ok=True)
 

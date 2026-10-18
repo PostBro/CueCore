@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Lokalen Track-Index aus den offiziellen Dumps bauen — Vorbefüllen Schritt 2 (eigener Index neben
-labels.db, Pflichtfelder Interpret, Titel, Label, LC, Komponist, Texter; beide Dumps; per Script).
+"""Lokalen Track-Index aus den offiziellen Dumps bauen — eigener Index neben
+labels.db (Pflichtfelder Interpret, Titel, Label, LC, Komponist, Texter; beide Dumps; per Script).
 
     python build_track_index.py discogs     --dump discogs_20260901_releases.xml.gz [--out <db>] [--limit N]
     python build_track_index.py musicbrainz --dump <ordner mit mbdump/>             [--out <db>]

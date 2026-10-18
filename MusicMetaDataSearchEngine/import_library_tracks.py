@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Library-Lieferung (komplette Track-Datenbank einer Production-Music-Library) einpflegen.
+"""Library-Lieferung (Track-Datenbank einer Production-Music-Library) einpflegen.
 
-  python import_library_tracks.py extract --xlsx "~/Downloads/czesame - metadata.xlsx" --library cezame
+  python import_library_tracks.py extract --src <lieferung.xlsx> --library cezame
       -> data/library_tracks/cezame_<JJJJ-MM-TT>.csv (schlanker Extrakt, wie geliefert; git-versioniert).
-         Eine vorhandene Datei wird nie überschrieben — sonst ersetzt eine zweite UPM-Lieferung desselben
-         Monats still die erste, und bestehende Installationen bekommen sie nie (Name schon eingepflegt).
+         Eine vorhandene Datei wird nie überschrieben — sonst ersetzt eine zweite Lieferung desselben
+         Tages still die erste, und bestehende Installationen bekommen sie nie (Name schon eingepflegt).
   python import_library_tracks.py import data/library_tracks/cezame_2026-09.csv
       -> songs.db (verifiziert, quelle library:cezame) + library_files (Dateiname -> Track);
          Labelname in GVL-Schreibweise aus labels.db; Codes, die der Master nicht kennt, werden wie
@@ -30,8 +30,9 @@ DEFAULT_OUT_DIR = PROJECT_DIR / "data" / "library_tracks"
 
 
 def cmd_extract(src: Path, library: str, out: Path | None, stamp: str) -> int:
-    # UPM liefert CSV (eine je Download), Cezame eine xlsx — der Leser entscheidet, nicht die Endung.
-    readers = {"cezame": librarytracks.read_cezame_xlsx, "upm": librarytracks.read_upm_csv}
+    # Lieferungen kommen als CSV oder xlsx — der Leser entscheidet, nicht die Endung.
+    readers = {"cezame": librarytracks.read_cezame_xlsx, "upm": librarytracks.read_upm_csv,
+               "ripcue": lambda p: librarytracks.read_cuecore_csv(p, "ripcue")}   # CueCore-Exportformat
     if library not in readers:
         print(f"kein Leser für Library {library!r} (bekannt: {', '.join(readers)})")
         return 1
@@ -103,8 +104,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--date", default=date.today().isoformat(), help="date_verified / Datei-Stempel")
     sub = ap.add_subparsers(dest="cmd", required=True)
     x = sub.add_parser("extract", help="Lieferung (xlsx oder CSV) -> schlanker CSV-Extrakt")
-    x.add_argument("--src", "--xlsx", dest="src", required=True, help="Lieferdatei (Cezame: xlsx, UPM: music_metadata.csv)")
-    x.add_argument("--library", required=True, help="Leser: cezame oder upm")
+    x.add_argument("--src", "--xlsx", dest="src", required=True, help="Lieferdatei (xlsx oder CSV; das Format bestimmt der Leser aus --library)")
+    x.add_argument("--library", required=True, help="Leser: cezame, upm oder ripcue")
     x.add_argument("--out", default=None, help="Ziel-CSV (Default: data/library_tracks/<library>_<JJJJ-MM-TT>.csv)")
     i = sub.add_parser("import", help="CSV-Extrakt -> songs.db + library_files")
     i.add_argument("csv")

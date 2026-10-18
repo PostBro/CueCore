@@ -50,11 +50,13 @@ def test_build_keeps_only_new_names_of_gvl_codes(tmp_path):
         _label(7, "AB", "407"),                            # zu kurz -> raus
         _label(8, "Zé \\\\ Ton", "407"),                   # COPY-Escape '\\\\' -> '\\'
         _label(9, "Ohne Code", ""),                        # label_code NULL
+        _label(10, "FAX +49-30/123456", "407"),            # Telefon-/Fax-Muster statt Labelname -> raus
     ], [
         _alias(1, 2, "Republic Nashville"),                # Alias eines Master-Labels -> bleibt
         _alias(2, 3, "Whatever"),                          # Label nicht behalten -> raus
         _alias(3, 2, "Island", "2"),                       # GVL-Name eines anderen Codes -> raus (GVL gewinnt)
         _alias(4, 2, "Republic Records Nashville"),        # gleicher Schlüssel wie der Name -> Name gewinnt, kein Doppel
+        _alias(5, 2, "TEL +49 30 555555"),                 # auch als Alias -> raus
     ])
     out = tmp_path / "label_aliases_mb.csv"
     meta = mb.build(dump, _master(tmp_path), out)
@@ -65,8 +67,8 @@ def test_build_keeps_only_new_names_of_gvl_codes(tmp_path):
         ("Republic Records Nashville", "07552", "name", "2"),
         ("Zé \\ Ton", "00407", "name", "8"),
     ]
-    assert meta["labels_total"] == 9 and meta["labels_with_lc"] == 8 and meta["labels_lc_in_gvl"] == 7
-    assert meta["aliases_total"] == 4 and meta["aliases_of_gvl_labels"] == 3
+    assert meta["labels_total"] == 10 and meta["labels_with_lc"] == 9 and meta["labels_lc_in_gvl"] == 8
+    assert meta["aliases_total"] == 5 and meta["aliases_of_gvl_labels"] == 4 and meta["dropped_contact"] == 2
     assert meta["dropped_ambiguous"] == 1 and meta["dropped_generic"] == 2 and meta["dropped_gvl_known"] == 2
     assert meta["rows"] == 3 and meta["dump_timestamp"] == "20260912-002318"
     assert json.loads(out.with_suffix(".meta.json").read_text(encoding="utf-8"))["rows"] == 3

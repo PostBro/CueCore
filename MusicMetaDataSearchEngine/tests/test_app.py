@@ -301,7 +301,7 @@ def test_resolve_local_hit_surfaces_album_and_isrc(tmp_path):
     assert j["local"] is True and j["album"] == "Debut Album" and j["isrcs"] == ["GBUM71501189"]
 
 
-# --- Phase 2: Resolver-Merge (DB vs. Netz, Feld-Konflikte) ---
+# --- Resolver-Merge (DB vs. Netz, Feld-Konflikte) ---
 
 def test_resolve_merge_flags_conflict(tmp_path, monkeypatch):
     from core import songsdb
@@ -495,7 +495,7 @@ def test_db_song_delete(tmp_path):
     assert r.status_code == 404 and r.json()["detail"]
 
 
-# --- Musik-DB-Import (Schritt 2): Upload preview + commit ---
+# --- Musik-DB-Import: Upload preview + commit ---
 
 def _b64_csv(text: str) -> str:
     import base64
@@ -539,7 +539,7 @@ def test_ingest_upload_missing_required_columns(tmp_path):
     assert client.post("/api/ingest/upload", json={**body, "commit": True}).status_code == 422
 
 
-# --- DB-Export (Schritt 2): csv / xlsx / pdf ---
+# --- DB-Export: csv / xlsx / pdf ---
 
 def test_db_export_csv(tmp_path):
     _setup(tmp_path)
@@ -592,7 +592,7 @@ def test_db_export_rejects_bad_format(tmp_path):
     assert client.get("/api/db/export", params={"fmt": "json"}).status_code == 422
 
 
-# --- GVL-PDF-Reconcile (Schritt 3): preview + merge (Master wird auf tmp umgelenkt!) ---
+# --- GVL-PDF-Reconcile: preview + merge (Master wird auf tmp umgelenkt!) ---
 
 _GVLX = {"labelcode": 17, "label": 114, "kurzname": 211, "plm": 308, "hersteller": 362, "rr": 460}
 
@@ -1182,7 +1182,7 @@ def test_intake_resolve_endpoint_accepts_isrc(tmp_path, monkeypatch):
 def _trackmeta_cfg(monkeypatch, host="api.example.com", cid="test-client", secret="S", clear=True, partners=None):
     """Partnerliste in den Settings faken (Datei bleibt unangetastet)."""
     plist = partners if partners is not None else [
-        {"id": "p1", "name": "Fresh Tracks", "host": host, "client_id": cid, "client_secret": secret}]
+        {"id": "p1", "name": "Partner A", "host": host, "client_id": cid, "client_secret": secret}]
     plist = [p for p in plist if p["host"] and p["client_id"]]
     monkeypatch.setattr(appmod.settings, "partners", lambda *a, **kw: plist)
     monkeypatch.setattr(appmod.settings, "partners_status", lambda *a, **kw: [
@@ -1200,7 +1200,7 @@ def _lookup_ok(entries):
 def test_settings_view_lists_partners_without_secrets(monkeypatch):
     _trackmeta_cfg(monkeypatch)
     r = client.get("/api/settings").json()
-    assert r["partners"] == [{"id": "p1", "name": "Fresh Tracks", "host": "api.example.com", "client_id": "test-client",
+    assert r["partners"] == [{"id": "p1", "name": "Partner A", "host": "api.example.com", "client_id": "test-client",
                               "secret_set": True, "complete": True}]
     assert set(r["partner_fields"]) == {"name", "host", "client_id", "client_secret"}
     assert not any(k["key"].startswith("trackmeta") for k in r["keys"])
@@ -1212,11 +1212,11 @@ def test_settings_post_partners_roundtrip(tmp_path, monkeypatch):
     """POST /api/settings mit `partners` ersetzt die Liste; ohne `partners` bleibt sie stehen."""
     monkeypatch.setattr(appmod.settings, "SETTINGS_PATH", tmp_path / "settings.json")
     j = client.post("/api/settings", json={"updates": {}, "partners": [
-        {"name": "Fresh Tracks", "host": "a.example", "client_id": "test-client", "client_secret": "S"},
+        {"name": "Partner A", "host": "a.example", "client_id": "test-client", "client_secret": "S"},
         {"name": "Zwei", "host": "b.example", "client_id": "11", "client_secret": "T"}]}).json()
-    assert [p["name"] for p in j["partners"]] == ["Fresh Tracks", "Zwei"] and j["configured"]["trackmeta"] is True
+    assert [p["name"] for p in j["partners"]] == ["Partner A", "Zwei"] and j["configured"]["trackmeta"] is True
     j = client.post("/api/settings", json={"updates": {"discogs_token": "x"}}).json()
-    assert [p["name"] for p in j["partners"]] == ["Fresh Tracks", "Zwei"]
+    assert [p["name"] for p in j["partners"]] == ["Partner A", "Zwei"]
     j = client.post("/api/settings", json={"updates": {}, "partners": []}).json()
     assert j["partners"] == [] and j["configured"]["trackmeta"] is False
     appmod._TRACKMETA_CLIENTS.clear()
@@ -1254,7 +1254,7 @@ def test_edl_trackmeta_scan_validates_labelcode_against_gvl(tmp_path, monkeypatc
     e = j["entries"]
     assert e[0]["labelcode"] == "00121" and e[0]["labelname"] == "Atlantic"          # roher LC im Master
     assert e[1]["labelcode"] == "00121" and "Labelname" in e[1]["lc_note"]           # via Name gemappt
-    assert e[2]["labelcode"] == "" and "Fresh Tracks-LC nicht im GVL" in e[2]["lc_note"]  # nicht mappbar, Quelle = Partnername
+    assert e[2]["labelcode"] == "" and "Partner A-LC nicht im GVL" in e[2]["lc_note"]  # nicht mappbar, Quelle = Partnername
     assert e[3]["labelcode"] == "" and e[3]["lc_note"] == ""                         # null: keine Note
     assert [x.get("rechterueckrufe") for x in e] == ["R6;R9", "R6;R9", "", ""]         # R-Code zum LC
 
@@ -1279,7 +1279,7 @@ def test_edl_trackmeta_scan_asks_partners_in_order_only_for_open_names(tmp_path,
     ganzen Scan, solange ein anderer geantwortet hat."""
     _setup(tmp_path)
     _trackmeta_cfg(monkeypatch, partners=[
-        {"id": "p1", "name": "Fresh Tracks", "host": "a.example", "client_id": "test-client", "client_secret": "S"},
+        {"id": "p1", "name": "Partner A", "host": "a.example", "client_id": "test-client", "client_secret": "S"},
         {"id": "p2", "name": "Zwei", "host": "b.example", "client_id": "11", "client_secret": "T"},
         {"id": "p3", "name": "Drei", "host": "c.example", "client_id": "12", "client_secret": "U"}])
     asked = []
@@ -1301,11 +1301,11 @@ def test_edl_trackmeta_scan_asks_partners_in_order_only_for_open_names(tmp_path,
     assert asked == [("test-client", ["a.mp3", "b.mp3", "c.mp3"]), ("11", ["b.mp3", "c.mp3"]), ("12", ["b.mp3", "c.mp3"])]
     assert j["ok"] is True and j["matched"] == 2 and j["count"] == 3 and j["requests"] == 3
     e = {x["fileName"]: x for x in j["entries"]}
-    assert e["a.mp3"]["partner"] == "Fresh Tracks" and e["a.mp3"]["labelcode"] == "00121"
+    assert e["a.mp3"]["partner"] == "Partner A" and e["a.mp3"]["labelcode"] == "00121"
     assert e["b.mp3"]["partner"] == "Drei" and e["b.mp3"]["labelcode"] == "00121" and e["b.mp3"]["labelname"] == "Atlantic"
     assert e["c.mp3"]["matched"] is False and "partner" not in e["c.mp3"]
     assert [(r["partner"], r["ok"], r["asked"], r["matched"]) for r in j["partners"]] == [
-        ("Fresh Tracks", True, 3, 1), ("Zwei", False, 2, 0), ("Drei", True, 2, 1)]
+        ("Partner A", True, 3, 1), ("Zwei", False, 2, 0), ("Drei", True, 2, 1)]
     # Verbindungstest je Partner: id wählt, unbekannte id -> not_configured
     monkeypatch.setattr(appmod.conncheck, "check_trackmeta",
                         lambda c: {"ok": c is not None, "status": 200 if c else 0, "error": "" if c else "not_configured", "detail": c.client_id if c else ""})
@@ -1528,18 +1528,18 @@ def test_manual_label_create_search_persist_delete(tmp_path):
     sich wieder entfernen. GVL-Zeilen bleiben unantastbar."""
     import json
     db = _setup(tmp_path)
-    r = client.post("/api/labels/manual", json={"labelcode": "lc 99001", "label": "Fresh Tracks Music",
-                                                "hersteller": "Fresh Tracks GmbH", "note": "vom Anbieter bestätigt"})
+    r = client.post("/api/labels/manual", json={"labelcode": "lc 99001", "label": "Partner A Music",
+                                                "hersteller": "Partner A GmbH", "note": "Testnotiz"})
     assert r.status_code == 200, r.text
     j = r.json()
     assert j["created"]["labelcode"] == "99001" and j["created"]["source"] == "manuell"
     assert client.get("/api/search", params={"q": "99001"}).json()["results"][0]["source"] == "manuell"
-    assert any(x["labelcode"] == "99001" for x in client.get("/api/search", params={"q": "fresh"}).json()["results"])
-    assert appmod.INDEX.code2name["99001"] == "Fresh Tracks Music"           # Resolver/Tagger sehen es
+    assert any(x["labelcode"] == "99001" for x in client.get("/api/search", params={"q": "partner"}).json()["results"])
+    assert appmod.INDEX.code2name["99001"] == "Partner A Music"           # Resolver/Tagger sehen es
     manual = json.loads((tmp_path / "labels_manual.json").read_text(encoding="utf-8"))
-    assert manual[0]["label"] == "Fresh Tracks Music" and manual[0]["note"] == "vom Anbieter bestätigt"
+    assert manual[0]["label"] == "Partner A Music" and manual[0]["note"] == "Testnotiz"
     # Doppelt anlegen -> 409, Pflichtfelder -> 422
-    assert client.post("/api/labels/manual", json={"labelcode": "99001", "label": "Fresh Tracks Music"}).status_code == 409
+    assert client.post("/api/labels/manual", json={"labelcode": "99001", "label": "Partner A Music"}).status_code == 409
     assert client.post("/api/labels/manual", json={"labelcode": "12", "label": "x"}).status_code == 422
     assert client.post("/api/labels/manual", json={"labelcode": "99003", "label": "  "}).status_code == 422
     # Bestehender GVL-Code mit anderem Namen: erlaubt (1:n), Antwort nennt die bestehenden Zeilen
@@ -1548,10 +1548,10 @@ def test_manual_label_create_search_persist_delete(tmp_path):
     # Neu bauen wie nach einem PDF-Update: labels.db weg, configure() -> manuelle bleiben
     build_label_db(SAMPLE, db, "2026-06-30")
     appmod.configure(db)
-    assert client.get("/api/search", params={"q": "99001"}).json()["results"][0]["label"] == "Fresh Tracks Music"
+    assert client.get("/api/search", params={"q": "99001"}).json()["results"][0]["label"] == "Partner A Music"
     assert [m["labelcode"] for m in client.get("/api/labels/manual").json()["labels"]] == ["00121", "99001"]
     # Entfernen
-    assert client.request("DELETE", "/api/labels/manual", json={"labelcode": "99001", "label": "Fresh Tracks Music"}).status_code == 200
+    assert client.request("DELETE", "/api/labels/manual", json={"labelcode": "99001", "label": "Partner A Music"}).status_code == 200
     assert client.get("/api/search", params={"q": "99001"}).json()["results"] == []
     assert "99001" not in appmod.INDEX.code2name
     assert client.request("DELETE", "/api/labels/manual", json={"labelcode": "00121", "label": "Atlantic"}).status_code == 404
@@ -1720,10 +1720,10 @@ def test_library_list_upload_preview_commit_delete(tmp_path):
     _setup(tmp_path)
     csv_text = "Kürzel;Label;LC\nZZA;Zza Records;LC 121\nZZB;Zzb;10192\nZZC;Nix;99999\nZZA;Anders;10192\n"
     b64 = base64.b64encode(csv_text.encode("utf-8")).decode()
-    body = {"filename": "Fresh_Liste.csv", "content_b64": b64, "library": "Fresh Tracks"}
+    body = {"filename": "Zzq_Liste.csv", "content_b64": b64, "library": "Partner A"}
     j = client.post("/api/labels/lists/preview", json=body).json()
     assert j["rows"] == 4 and j["mapping"]["prefix"] == "Kürzel"
-    assert [(k["prefix"], k["labelcode"], k["label_gvl"], k["library"]) for k in j["kept"]] == [("ZZB", "10192", "DOMINO British", "Fresh Tracks")]
+    assert [(k["prefix"], k["labelcode"], k["label_gvl"], k["library"]) for k in j["kept"]] == [("ZZB", "10192", "DOMINO British", "Partner A")]
     assert {e["prefix"]: e["why"] for e in j["excluded"]}["ZZC"] == "Code weder im Master noch im Supplemental"
     assert all("mehrdeutig" in e["why"] for e in j["excluded"] if e["prefix"] == "ZZA")
     assert any(i["prefix"] == "ZZB" and "GVL „DOMINO British“" in i["why"] for i in j["infos"])
@@ -1731,8 +1731,8 @@ def test_library_list_upload_preview_commit_delete(tmp_path):
     assert "ZZB" not in appmod.INDEX.prefix2code
     # Übernehmen
     j = client.post("/api/labels/lists/commit", json=body).json()
-    assert j["stored"].endswith("_Fresh_Liste.csv") and j["user_prefixes"] == 1 and j["attached"] == 1
-    assert appmod.INDEX.prefix2code["ZZB"] == {"labelcode": "10192", "library": "Fresh Tracks", "prefix": "ZZB", "user": True}
+    assert j["stored"].endswith("_Zzq_Liste.csv") and j["user_prefixes"] == 1 and j["attached"] == 1
+    assert appmod.INDEX.prefix2code["ZZB"] == {"labelcode": "10192", "library": "Partner A", "prefix": "ZZB", "user": True}
     assert (tmp_path / librarylists.USER_PREFIXES).exists()
     meta = json.loads((tmp_path / librarylists.USER_META).read_text(encoding="utf-8"))
     assert meta["rows"] == 1 and any(e["prefix"] == "ZZC" for e in meta["excluded"])
@@ -1741,7 +1741,7 @@ def test_library_list_upload_preview_commit_delete(tmp_path):
     # zweite Liste mit demselben Kürzel und anderem Code -> „schon vergeben“ (erste Liste gewinnt)
     b2 = base64.b64encode("Kürzel;Label;LC\nZZB;Other;00121\n".encode("utf-8")).decode()
     j2 = client.post("/api/labels/lists/preview", json={"filename": "zwei.csv", "content_b64": b2}).json()
-    assert j2["kept"] == [] and j2["excluded"][0]["why"].startswith("Kürzel schon vergeben: LC10192 DOMINO British (Fresh Tracks)")
+    assert j2["kept"] == [] and j2["excluded"][0]["why"].startswith("Kürzel schon vergeben: LC10192 DOMINO British (Partner A)")
     # Entfernen
     r = client.request("DELETE", "/api/labels/lists", json={"name": j["stored"]})
     assert r.status_code == 200 and r.json()["attached"] == 0 and "ZZB" not in appmod.INDEX.prefix2code
@@ -1768,7 +1768,7 @@ def test_library_list_preview_names_library_like_commit(tmp_path):
     assert appmod.INDEX.prefix2code["ZZB"]["library"] == "liblist"
 
 
-# --- Lokaler Track-Index (Vorbefüllen Schritt 2) ------------------------------------------------
+# --- Lokaler Track-Index ------------------------------------------------
 
 def _with_index(tmp_path, rows):
     """labels.db + track_index.db im selben Ordner, dann configure() -> App öffnet den Index."""
@@ -2175,7 +2175,7 @@ def test_exports_go_through_save_download_helper():
 
 
 def test_fonts_are_bundled_not_fetched_from_google():
-    """Google Fonts im <head> würden hinter einer Firewall oder offline das Rendern blockieren; die Schriften sind mitgeliefert."""
+    """Google Fonts im <head> würden offline das Rendern blockieren; die Schriften sind mitgeliefert."""
     html = client.get("/").text
     assert "fonts.googleapis.com" not in html and "fonts.gstatic.com" not in html
     assert '<link href="/web/fonts/fonts.css" rel="stylesheet">' in html

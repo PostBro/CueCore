@@ -2,18 +2,18 @@
 
 <p align="center"><b>Cue-Sheets für die GEMA, Labelcodes und Musik-Tagging für Schnitt und Postproduktion.</b><br>Kostenlos, Open Source, für Mac und Windows.</p>
 
-> **Open Beta 0.9.5, ein nicht-kommerzielles Projekt.** CueCore wird im Produktionsalltag benutzt, ist aber noch in der Erprobung. Bitte jede Angabe vor einer GEMA-Meldung selbst prüfen und Fehler melden (siehe [Feedback](#feedback)).
+> **Open Beta 0.9.6, ein nicht-kommerzielles Projekt.** CueCore wird im Produktionsalltag benutzt, ist aber noch in der Erprobung. Bitte jede Angabe vor einer GEMA-Meldung selbst prüfen und Fehler melden (siehe [Feedback](#feedback)).
 
 ---
 
 ## Download
 
-Aktuelle Version: **Beta 0.9.5** (0.9.5-beta). Herunterladen, entpacken, starten: alles ist dabei, auch die Datenbanken.
+Aktuelle Version: **Beta 0.9.6** (0.9.6-beta). Herunterladen, entpacken, starten: alles ist dabei, auch die Datenbanken.
 
 | System | Datei |
 |---|---|
-| Mac mit Apple-Chip (M1 und neuer), macOS 11 oder neuer | [CueCore_Beta-0.9.5_Mac.zip](https://github.com/PostBro/CueCore/releases/download/v0.9.5-beta/CueCore_Beta-0.9.5_Mac.zip) |
-| Windows 10 und 11 (64 Bit), ohne Installation | [CueCore_Beta-0.9.5_Windows.zip](https://github.com/PostBro/CueCore/releases/download/v0.9.5-beta/CueCore_Beta-0.9.5_Windows.zip) |
+| Mac mit Apple-Chip (M1 und neuer), macOS 11 oder neuer | [CueCore_Beta-0.9.6_Mac.zip](https://github.com/PostBro/CueCore/releases/download/v0.9.6-beta/CueCore_Beta-0.9.6_Mac.zip) |
+| Windows 10 und 11 (64 Bit), ohne Installation | [CueCore_Beta-0.9.6_Windows.zip](https://github.com/PostBro/CueCore/releases/download/v0.9.6-beta/CueCore_Beta-0.9.6_Windows.zip) |
 
 > **Mac: macOS blockiert den ersten Start.** Die App ist nicht notarisiert. Meldung schließen (nicht in den Papierkorb legen), dann **Systemeinstellungen > Datenschutz & Sicherheit**, ganz nach unten scrollen, bei „CueCore wurde blockiert“ auf **„Dennoch öffnen“** klicken und mit Passwort oder Touch ID bestätigen. Das ist nur einmal nötig. Details unter [Installieren](#installieren).
 >
@@ -25,13 +25,13 @@ Alle Versionen und Änderungen unter [Releases](https://github.com/PostBro/CueCo
 
 ## Was CueCore kann
 
-<p align="center"><a href="https://github.com/PostBro/CueCore/releases/download/v0.9.5-beta/CueCore_Erklaervideo.mp4"><img src="bilder/cuecore-video.png" alt="Erklärvideo ansehen (30 Sekunden)" width="820"></a><br><sub>Erklärvideo, 30 Sekunden, mit Demodaten. Klick aufs Bild.</sub></p>
+<p align="center"><a href="https://github.com/PostBro/CueCore/releases/download/v0.9.6-beta/CueCore_Erklaervideo.mp4"><img src="bilder/cuecore-video.png" alt="Erklärvideo ansehen (30 Sekunden)" width="820"></a><br><sub>Erklärvideo, 30 Sekunden, mit Demodaten. Klick aufs Bild.</sub></p>
 
 1. **Cue-Sheet aus der Schnittliste.** EDL (CMX3600, Avid Assemble List), Final-Cut-Pro-XML aus Premiere oder Resolve, FCPXML, Pro-Tools-Session-Text oder eine einfache Excel-/CSV-Liste einlesen. CueCore rechnet die GEMA-Dauern, sucht Interpret, Titel, Komponist, Verlag, Label und Labelcode in der Datenbank und im Netz und zeigt je Cue eine Ampel: grün steht fest, gelb ist ein Vorschlag, rot fehlt. Abgabe als Excel, CSV oder PDF, mit Rechterückruf-Codes.
 2. **Musikdateien taggen.** Ordner scannen, Labelcode je Datei prüfen, ID3-Tags schreiben (Label, Labelcode) und nach dem Schema `Interpret - Titel - [Label_LC12345].mp3` umbenennen und einsortieren. Ohne bestätigten Labelcode wird nichts umbenannt. Jeder Schritt lässt sich rückgängig machen.
 3. **Track nachschlagen.** Interpret, Titel oder Album eingeben und Labelcode, Komponist und Verlag aus Datenbank und Netz holen (MusicBrainz, Discogs, Deezer, Wikidata und weitere, siehe unten).
 4. **Label-Datenbank.** Der offizielle GVL-Labelcode-Master (85.803 Codes, Stand 13.10.2026) mit Rechterückruf-Codes R1 bis R13. Ein neuer Stand lässt sich direkt aus dem PDF der GVL-Labelrecherche einspielen.
-5. **Track-Datenbank.** 66.417 Tracks sind mitgeliefert, darunter Lieferungen von Production-Music-Libraries wie Cezame. Eigene Listen und Library-Lieferungen (CSV/Excel) lassen sich einlesen, Einträge bearbeiten, prüfen und löschen.
+5. **Track-Datenbank.** 79.204 Tracks sind mitgeliefert, darunter Lieferungen der Production-Music-Libraries Cezame und RipCue Music. Eigene Listen und Library-Lieferungen (CSV/Excel) lassen sich einlesen, Einträge bearbeiten, prüfen und löschen.
 
 Oberfläche auf Deutsch und Englisch, hell und dunkel.
 
@@ -75,7 +75,7 @@ Ohne eigenen Schlüssel arbeiten bereits: MusicBrainz, Deezer, Wikidata, iTunes-
 | AudD | Fingerprint-Alternative | [dashboard.audd.io](https://dashboard.audd.io) | nutzungsabhängig |
 | ACRCloud | Fingerprint-Alternative | [console.acrcloud.com](https://console.acrcloud.com) | siehe Anbieter |
 | editingtools.io | Production-Music-Cues im Cue-Sheet ergänzen | [editingtools.io](https://editingtools.io) (Account, API-Key) | kontingentbasiert |
-| Track-API einer Library | Metadaten direkt von einer Library (z.B. Fresh Tracks) | Zugangsdaten bei der Library anfragen | nach Vereinbarung mit der Library |
+| Track-API einer Library | Metadaten direkt von einer Library mit eigener Schnittstelle | Zugangsdaten bei der Library anfragen | nach Vereinbarung mit der Library |
 
 Mit deinem eigenen Schlüssel nimmst du die Bedingungen des jeweiligen Anbieters an. AcoustID ist laut Anbieter nur für nicht-kommerzielle Nutzung kostenlos, das gilt auch für den eingebauten Zugang; für kommerzielle Nutzung bietet AcoustID OÜ einen Bezahlzugang ([acoustid.biz](https://acoustid.biz)). Genius erlaubt kommerzielle Nutzung nur mit eigener Lizenz.
 
@@ -105,4 +105,4 @@ Fehler, Fragen, Wünsche: [Issues](https://github.com/PostBro/CueCore/issues) od
 
 ---
 
-<sub>**English:** CueCore is a free, open-source desktop app for film and TV editors and music rights people in Germany: it turns edit decision lists (EDL, FCP XML, FCPXML, Pro Tools text, Excel/CSV) into GEMA cue sheets, looks up GVL label codes, composers and publishers, and tags and renames music files (ID3, label code). Label codes come from the official GVL master (85,803 codes); 66,417 tracks are included; an optional offline index with 17 million tracks from Discogs and MusicBrainz is a separate download. Interface in German and English. Open beta 0.9.5, a non-commercial project, for Mac (Apple silicon) and Windows; AcoustID fingerprinting is built in for non-commercial use. Licensed under AGPL-3.0.</sub>
+<sub>**English:** CueCore is a free, open-source desktop app for film and TV editors and music rights people in Germany: it turns edit decision lists (EDL, FCP XML, FCPXML, Pro Tools text, Excel/CSV) into GEMA cue sheets, looks up GVL label codes, composers and publishers, and tags and renames music files (ID3, label code). Label codes come from the official GVL master (85,803 codes); 79,204 tracks are included; an optional offline index with 17 million tracks from Discogs and MusicBrainz is a separate download. Interface in German and English. Open beta 0.9.6, a non-commercial project, for Mac (Apple silicon) and Windows; AcoustID fingerprinting is built in for non-commercial use. Licensed under AGPL-3.0.</sub>

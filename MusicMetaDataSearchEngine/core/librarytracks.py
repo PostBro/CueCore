@@ -1,9 +1,8 @@
-"""Library-Lieferungen (komplette Track-Datenbanken einer Production-Music-Library) in die songs.db.
+"""Library-Lieferungen (Track-Datenbanken einer Production-Music-Library) in die songs.db.
 
-Metadaten, die eine Library selbst liefert, gelten als verifiziert — sie sind die
-Quelle, gegen die alles andere geprüft würde. Deshalb landen sie als `review_status=verified`,
+Metadaten, die eine Library selbst liefert, gelten als verifiziert. Sie landen als `review_status=verified`,
 `quelle=library:<name>` in der songs.db, plus eine Zeile je Dateiname in `library_files`, damit der
-Cue-Sheet-Tab einen Clip „CEZ4030_1“ sofort findet (songsdb.find_by_file).
+Cue-Sheet-Tab einen Clip „ZZQ0001_1“ sofort findet (songsdb.find_by_file).
 
 Ablauf: `extract` liest die Lieferung (xlsx) und schreibt einen schlanken CSV-Extrakt nach
 data/library_tracks/<name>_<datum>.csv — so wie geliefert, nur die genutzten Spalten (git-versioniert,
@@ -12,8 +11,7 @@ wiederholbar). `import` liest den CSV und bildet die Zeilen auf die songs.db ab:
 Code (Codes, die der Master nicht kennt, bleiben wie geliefert und werden gemeldet — außer der gelieferte
 Labelname steht im Master unter einem anderen Code: dann gilt der GVL-Code, s. core/labelcheck.py).
 
-Beispiel einer Lieferung: Cezame, 60.938 Tracks, 20 Sub-Libraries mit eigenem LC in der Spalte
-„SubLibrary Code“.
+Sub-Libraries mit eigenem LC stehen in der Spalte „SubLibrary Code“.
 """
 from __future__ import annotations
 import csv
@@ -49,9 +47,8 @@ def flip_name(name: str) -> str:
 def flip_person_list(value: str) -> str:
     """Personenliste mit Einträgen „Nachname, Vorname“ -> „Vorname Nachname“, je ';'-Teil. Gedreht wird nur,
     wenn beide Seiten des einen Kommas ein einzelnes Wort sind („Testerin, Erika“); „Anna Bell, Tom Roe“ sind
-    zwei Personen und bleiben stehen. Ohne das teilte clean_writer_names am Komma, und aus einer Person wurden
-    zwei (Interpret und Komponist „Testerin; Erika“). PRO-Marker vorher raus, sonst zählt
-    „Erika [GEMA]“ als zwei Wörter."""
+    zwei Personen und bleiben stehen. Andernfalls teilte clean_writer_names am Komma, und aus einer Person
+    würden zwei („Testerin; Erika“). PRO-Marker vorher raus, sonst zählt „Erika [GEMA]“ als zwei Wörter."""
     from .catalog import _PRO_MARKER
     out = []
     for part in _PRO_MARKER.sub("", value or "").split(";"):
@@ -103,14 +100,14 @@ def read_cezame_xlsx(path: str | Path) -> list[dict]:
         wb.close()
 
 
-# --- Universal Production Music: „music_metadata.csv“, die bei einem Download mitgeliefert wird -----------
+# --- Format „music_metadata.csv“ (Begleitdatei eines Track-Downloads) ----------------------------------
 # Spalten: AUDITION LINK, EDIT ID, WORK TITLE, ALBUM, ALBUM ID,
 # TRACK ID, YEAR OF RELEASE, COMPOSERS, PUBLISHERS, LABEL NAME, GERMAN LABEL CODE, ISRC.
 # Zwei Eigenheiten: Zeile 1 ist Excels „sep=,", und der Dateiname steckt nur im AUDITION LINK
-# (…/VM_40_11_Little_White_Lies_Anderson_Moenks_1018801.mp3?response-content-type=…).
-# Die EDIT ID steht am Ende dieses Dateinamens — und dieselbe Nummer trägt der Clip-Name in den EDLs
-# („UPM_KOS731_55_WHERE_I_BELONG_INSTRUMENTAL_JUILLET_1420631"). Sie ist damit der verlässlichste
-# Schlüssel, weil Katalog-Schreibweisen auseinandergehen (CSV „VM_40_11", EDL „UPM_VM40_11").
+# (…/ZZQ_40_11_Nordwand_Elf_Testerin_1000001.mp3?response-content-type=…).
+# Die EDIT ID steht am Ende dieses Dateinamens, und dieselbe Nummer trägt der Clip-Name in den EDLs
+# („UPM_ZZQ40_11_NORDWAND_ELF_1000001"). Sie ist damit der verlässlichste
+# Schlüssel, weil Katalog-Schreibweisen auseinandergehen (CSV „ZZQ_40_11", EDL „UPM_ZZQ40_11").
 UPM_REQUIRED = ("AUDITION LINK", "EDIT ID", "WORK TITLE", "GERMAN LABEL CODE")
 
 
@@ -153,6 +150,43 @@ def read_upm_csv(path: str | Path) -> list[dict]:
             "artist": "", "composers": clean_writer_names(flip_person_list(g("COMPOSERS"))), "arranger": "",
             "publisher": clean_writer_names(g("PUBLISHERS")), "isrc": g("ISRC"), "iswc": "", "gema": "",
             "release_date": g("YEAR OF RELEASE"), "edit_id": g("EDIT ID")})
+    return out
+
+
+# --- Lieferung im CueCore-Exportformat (Track-Datenbank, „Export CSV“) -------------------------------------
+# Kopfzeile wie core/dbexport: Interpret, Titel, Komponist, Texter, Verlag, Album, Track-Nr., Label, LC, ISRC,
+# ISWC, GEMA-Werknr., File Name. So liefert RipCue Music. Leerzeilen (nur Kommas) werden übersprungen,
+# ein Dateiname ohne Endung („0“) bleibt leer statt als falscher Schlüssel in library_files zu landen.
+CUECORE_REQUIRED = ("Interpret", "Titel", "Label", "LC", "File Name")
+
+
+def looks_like_cuecore_csv(fieldnames) -> bool:
+    have = {(f or "").strip() for f in (fieldnames or [])}
+    return all(c in have for c in CUECORE_REQUIRED)
+
+
+def read_cuecore_csv(path: str | Path, library: str) -> list[dict]:
+    """Lieferung im CueCore-Exportformat -> CSV_COLUMNS-Zeilen. sublibrary = gelieferter Labelname,
+    catno = Katalogteil des Dateinamens vor dem ersten Unterstrich („RCM0001_01_…“ -> „RCM0001“)."""
+    with open(path, newline="", encoding="utf-8-sig") as f:
+        rd = csv.DictReader(f)
+        if not looks_like_cuecore_csv(rd.fieldnames):
+            raise ValueError(f"{path}: kein CueCore-Exportformat (erwartet: {', '.join(CUECORE_REQUIRED)})")
+        src = [dict(r) for r in rd]
+    out = []
+    for r in src:
+        g = lambda k: _s(r.get(k))
+        if not any(g(k) for k in r):
+            continue
+        fn = g("File Name")
+        if "." not in fn:
+            fn = ""
+        out.append({
+            "file": fn, "library": library, "sublibrary": g("Label"), "labelcode": g("LC"),
+            "catno": fn.split("_", 1)[0] if "_" in fn else "", "album": g("Album"),
+            "track_number": g("Track-Nr."), "title": g("Titel"), "version": "", "duration_sec": "",
+            "artist": g("Interpret"), "composers": g("Komponist"), "arranger": "", "publisher": g("Verlag"),
+            "isrc": g("ISRC"), "iswc": g("ISWC"), "gema": g("GEMA-Werknr."), "release_date": ""})
     return out
 
 
@@ -199,7 +233,7 @@ def to_song_rows(rows: list[dict], code2name) -> tuple[list[dict], dict]:
     by_name, name_ambiguous = {}, {}
     for r in rows:
         # Der Extrakt trägt die Namen wie geliefert — PRO-Marker ('[IMRO]', '( NS)') hier raus, sonst landen sie
-        # in Komponist, Verlag und bei UPM auch im Interpret. Idempotent für schon geputzte Werte.
+        # in Komponist, Verlag und bei Lieferungen ohne Interpret auch im Interpret. Idempotent für schon geputzte Werte.
         composers = clean_writer_names(flip_person_list(r.get("composers", "")))
         publisher = clean_writer_names(r.get("publisher", ""))
         digits = normalize_labelcode(r.get("labelcode", "")) if r.get("labelcode") else ""
@@ -213,8 +247,9 @@ def to_song_rows(rows: list[dict], code2name) -> tuple[list[dict], dict]:
                 if sub and gvl.casefold() != sub.casefold():
                     renamed[sub] = gvl
             elif len(alt) == 1:
-                # UPM liefert 'BBC Production Music' mit LC21110, der Master führt es unter LC27926 —
-                # sonst gäbe die App für denselben Track je nach Weg zwei verschiedene LCs aus.
+                # Beispiel: eine Lieferung nennt 'Nordwand Music' mit einem Code, den der Master nicht kennt, und der
+                # Master führt den Namen unter einem anderen Code. Sonst gäbe die App für denselben Track je nach
+                # Weg zwei verschiedene LCs aus.
                 note = delivered_note(sub, digits)
                 e = corrected.setdefault(digits, {"label": sub, "gvl_code": alt[0], "n": 0})
                 e["n"] += 1
@@ -230,8 +265,8 @@ def to_song_rows(rows: list[dict], code2name) -> tuple[list[dict], dict]:
             given = (r.get("sublibrary") or "").strip()
             alt = name2codes(given) if (name2codes and given) else []
             if len(alt) == 1:
-                # UPM liefert z.B. 'Hooked' ohne German Label Code, der Master führt den Namen unter genau
-                # einem Code — der gilt, die Notiz macht sichtbar, woher er kommt
+                # Die Zeile trägt keinen Code, der Master führt den gelieferten Namen unter genau
+                # einem Code. Der gilt, die Notiz macht sichtbar, woher er kommt.
                 digits, labelname, note = alt[0], code2name(alt[0]) or given, LC_BY_NAME_NOTE
                 e = by_name.setdefault(given, {"gvl_code": alt[0], "n": 0})
                 e["n"] += 1
@@ -240,10 +275,9 @@ def to_song_rows(rows: list[dict], code2name) -> tuple[list[dict], dict]:
                 if alt:                           # Name unter mehreren Codes: nicht raten, offen lassen
                     e = name_ambiguous.setdefault(given, {"gvl_codes": alt, "n": 0})
                     e["n"] += 1
-        # Lieferungen ohne Interpret (UPM): **der Komponist IST der Interpret** (bei Production Libraries
-        # läuft die GEMA-Meldung so). Er bleibt zusätzlich im
-        # Komponist-Feld stehen. Nur wenn auch der fehlt, tritt das Label ein (songs braucht Interpret+Titel
-        # als Schlüssel).
+        # Lieferungen ohne Interpret: der Komponist ist der Interpret (bei Production Libraries läuft die
+        # GEMA-Meldung so). Er bleibt zusätzlich im Komponist-Feld stehen. Nur wenn auch der fehlt, tritt das
+        # Label ein (songs braucht Interpret+Titel als Schlüssel).
         interpret = flip_name(r["artist"]) if r.get("artist") else (composers or labelname or sub)
         out.append({
             "file": r["file"], "interpret": interpret, "titel": r["title"],
@@ -259,8 +293,8 @@ def to_song_rows(rows: list[dict], code2name) -> tuple[list[dict], dict]:
 
 def heal_library_codes(songs_con, master) -> dict:
     """Selbstheilung beim Start, wiederverwendbar für die Bereinigung der Live-DB: Lieferungs-Zeilen, die
-    vor der Code-Korrektur eingepflegt wurden (LC21110 an den BBC-Tracks), bekommen den GVL-Code — Datei- und songs-Zeile, der
-    gelieferte Code als label_geliefert. Dazu die verbliebenen fremden Codes (Master kennt weder Code noch Namen),
+    vor der Code-Korrektur eingepflegt wurden (fremder Code an den Tracks eines Labels), bekommen den GVL-Code —
+    Datei- und songs-Zeile, der gelieferte Code als label_geliefert. Dazu die verbliebenen fremden Codes (Master kennt weder Code noch Namen),
     damit der Aufrufer für sie das manuelle Label anlegt. Nur Lieferungs-Zeilen (library_files, songs mit quelle
     library:*), nur solche, die Code UND Namen noch wie geliefert tragen. Idempotent.
     Rückgabe {corrected: [{from, to, label, files, songs}], unknown_codes: {code: {label, n, library[, gvl_codes]}}}."""
@@ -334,7 +368,7 @@ def fill_codes_by_name(songs_con, master) -> dict:
 def ensure_imported(songs_con, csv_dir: str | Path, code2name, *, date_verified: str) -> list[dict]:
     """Beim App-Start: jede Lieferungs-CSV unter csv_dir, die noch nicht in library_deliveries steht, einmal
     einpflegen (Selbstheilung wie bei den Zusatz-Labels — andere Installationen bekommen die Daten so
-    ohne Handarbeit). Gemerkt wird je Datei: UPM liefert bei jedem Download eine neue CSV, „einmal je
+    ohne Handarbeit). Gemerkt wird je Datei: Eine Library kann mehrere Lieferungen haben, „einmal je
     Library" hätte ab der zweiten nichts mehr übernommen. Rückgabe: Reports je importierter Datei."""
     from . import songsdb
     done = []
@@ -342,7 +376,7 @@ def ensure_imported(songs_con, csv_dir: str | Path, code2name, *, date_verified:
     known = songsdb.imported_deliveries(songs_con)
     if not known:
         # Erstlauf nach dem Umbau auf Datei-Ebene: was die alte Regel („einmal je Library") schon eingepflegt
-        # hat, gilt als erledigt — sonst liefe Cezame auf jeder bestehenden Installation ein zweites Mal durch.
+        # hat, gilt als erledigt — sonst liefe dieselbe Lieferung auf jeder bestehenden Installation ein zweites Mal durch.
         for p in files:
             if songsdb.library_files_count(songs_con, library_name(p)):
                 songsdb.mark_delivery(songs_con, p.name, library_name(p), rows=None, date=date_verified)

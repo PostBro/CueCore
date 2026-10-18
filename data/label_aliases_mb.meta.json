@@ -10,5 +10,6 @@
  "dropped_generic": 100,
  "dropped_gvl_known": 5461,
  "dropped_ambiguous": 8,
- "rows": 2860
+ "dropped_contact": 1,
+ "rows": 2859
 }

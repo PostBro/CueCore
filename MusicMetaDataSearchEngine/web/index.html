@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- Teile der Symbole folgen Feather Icons (MIT) und Lucide (ISC), Lizenztexte in ICONS-LICENSE.txt -->
 <html lang="de">
 <head>
 <meta charset="utf-8">
@@ -790,7 +791,7 @@
           <div class="gvladmin-head" data-i18n="Library-Liste hochladen (Kürzel → Labelcode)">Library-Liste hochladen (Kürzel → Labelcode)</div>
           <p class="hint" data-i18n="Eine Liste einer Production-Music-Library (CSV/XLSX mit Spalten Kürzel, Label, LC — z.B. die Labelcode-Liste des Anbieters). CueCore zeigt zuerst, was übernommen würde und was nicht (Code nicht im GVL-Master, Kürzel mehrdeutig oder schon vergeben, GVL widerspricht). Nichts wird ohne deine Bestätigung geschrieben. Die mitgelieferte Kürzel-Tabelle gewinnt bei gleichem Kürzel; der GVL-Name gewinnt beim Labelnamen.">Eine Liste einer Production-Music-Library (CSV/XLSX mit Spalten Kürzel, Label, LC — z.B. die Labelcode-Liste des Anbieters). CueCore zeigt zuerst, was übernommen würde und was nicht (Code nicht im GVL-Master, Kürzel mehrdeutig oder schon vergeben, GVL widerspricht). Nichts wird ohne deine Bestätigung geschrieben. Die mitgelieferte Kürzel-Tabelle gewinnt bei gleichem Kürzel; der GVL-Name gewinnt beim Labelnamen.</p>
           <div class="pickrow">
-            <input class="inp" id="lllib" placeholder="Library-Name (optional, z.B. Fresh Tracks)" data-i18n-ph="Library-Name (optional, z.B. Fresh Tracks)" style="max-width:320px">
+            <input class="inp" id="lllib" placeholder="Library-Name (optional, z.B. Cezame)" data-i18n-ph="Library-Name (optional, z.B. Cezame)" style="max-width:320px">
             <button class="btn ghost sm" id="llupload" data-i18n="Liste auswählen …">Liste auswählen …</button>
             <span class="hint" id="llname"></span>
           </div>
@@ -997,7 +998,7 @@ const I18N_EN = {
   "Dateiname → Titel, Interpret, Autoren, Label, LC. Mehrere Partner möglich (je Name, Host, Client-ID, Secret aus den Zugangsdaten des Anbieters); „Metadaten vervollständigen“ im Cue-Sheet-Tab fragt sie der Reihe nach.":"File name → title, artist, writers, label, LC. Several partners possible (name, host, client ID, secret from the provider's credentials each); “Complete metadata” in the Cue Sheet tab asks them in order.",
   "+ Partner hinzufügen":"+ Add partner", "Partner entfernen":"Remove partner", "Noch kein Partner eingetragen.":"No partner configured yet.",
   "Name":"Name", "Host":"Host", "Client-ID":"Client ID", "Client-Secret":"Client secret",
-  "Anzeigename, z.B. Fresh Tracks — steht später als Quelle am Cue.":"Display name, e.g. Fresh Tracks — shown as the source on the cue.",
+  "Anzeigename, z.B. Partner A — steht später als Quelle am Cue.":"Display name, e.g. Partner A — shown as the source on the cue.",
   "z.B. api.library-partner.com (ohne https://, ohne Pfad — der API-Pfad wird automatisch ergänzt).":"e.g. api.library-partner.com (no https://, no path — the API path is appended automatically).",
     "Client-Secret aus den Zugangsdaten des Anbieters. Wird maskiert gespeichert; leer lassen zum Behalten.":"Client secret from the provider's credentials. Stored masked; leave empty to keep.",
   "Track-API nicht konfiguriert — Partner (Host, Client-ID, Secret) in den Einstellungen eintragen.":"Track API not configured — add a partner (host, client ID, secret) in Settings.",
@@ -1042,7 +1043,7 @@ const I18N_EN = {
   "Keine Cues erkannt — CMX3600-EDL, Avid Assemble List, Final Cut Pro XML (xmeml), FCPXML oder Pro Tools „Session Info as Text“?":"No cues recognised — CMX3600 EDL, Avid Assemble List, Final Cut Pro XML (xmeml), FCPXML or Pro Tools “Session Info as Text”?",
   "Library-Liste hochladen (Kürzel → Labelcode)":"Upload library list (prefix → label code)",
   "Eine Liste einer Production-Music-Library (CSV/XLSX mit Spalten Kürzel, Label, LC — z.B. die Labelcode-Liste des Anbieters). CueCore zeigt zuerst, was übernommen würde und was nicht (Code nicht im GVL-Master, Kürzel mehrdeutig oder schon vergeben, GVL widerspricht). Nichts wird ohne deine Bestätigung geschrieben. Die mitgelieferte Kürzel-Tabelle gewinnt bei gleichem Kürzel; der GVL-Name gewinnt beim Labelnamen.":"A production-music library list (CSV/XLSX with columns prefix, label, LC — e.g. the provider’s label-code list). CueCore first shows what would be taken over and what not (code not in the GVL master, prefix ambiguous or already taken, GVL contradicts). Nothing is written without your confirmation. The bundled prefix table wins on equal prefixes; the GVL name wins for the label name.",
-  "Library-Name (optional, z.B. Fresh Tracks)":"Library name (optional, e.g. Fresh Tracks)", "Liste auswählen …":"Choose list …",
+  "Library-Name (optional, z.B. Cezame)":"Library name (optional, e.g. Cezame)", "Liste auswählen …":"Choose list …",
   "{n} Zeile(n) gelesen · Spalten: {cols}":"{n} row(s) read · columns: {cols}", "Kürzel":"Prefix", "Library":"Library",
   "Würde übernommen: {n} Kürzel":"Would be taken over: {n} prefixes", "Nichts — jede Zeile ist unten begründet.":"Nothing — every row is explained below.",
   "Nicht übernommen: {n}":"Not taken over: {n}", "Hinweise: {n}":"Notes: {n}", "ohne Kürzel oder Code":"no prefix or code",
@@ -1368,8 +1369,8 @@ const I18N_EN = {
   "Für Labels, die der GVL-Master (noch) nicht kennt, z.B. aus einer Library-Lieferung.":"For labels the GVL master does not know (yet), e.g. from a library delivery.",
   "Label anlegen":"Add label", "Labelcode *":"Label code *", "Labelname *":"Label name *",
   "Hersteller / Verlag (optional)":"Manufacturer / publisher (optional)", "Notiz (optional)":"Note (optional)",
-  "z. B. 24584 oder LC 100148":"e.g. 24584 or LC 100148", "z. B. Fresh Tracks Music":"e.g. Fresh Tracks Music",
-  "z. B. Fresh Tracks GmbH":"e.g. Fresh Tracks GmbH", "z. B. Quelle: Lieferung der Library":"e.g. source: library delivery",
+  "z. B. 24584 oder LC 100148":"e.g. 24584 or LC 100148", "z. B. Partner A Music":"e.g. Partner A Music",
+  "z. B. Partner A GmbH":"e.g. Partner A GmbH", "z. B. Quelle: Lieferung der Library":"e.g. source: library delivery",
   "Anlegen|label":"Add", "Lege an …|label":"Adding …", "Angelegt: LC{lc} {label}":"Added: LC{lc} {label}",
   "Der GVL-Master führt diesen Code bereits: {names} — dein Label steht jetzt zusätzlich dabei (ein Code, mehrere Label).":"The GVL master already lists this code: {names} — your label is now listed in addition (one code, several labels).",
   "manuell":"manual", "Händisch angelegt — nicht aus dem GVL-Master":"Added manually — not from the GVL master",
@@ -1996,7 +1997,7 @@ async function loadSettings(){
     }
     wrap.appendChild(card);
   });
-  // Lokaler Track-Index (Vorbefüllen aus den Dumps): Stand plus Download aus der App.
+  // Lokaler Track-Index: Stand plus Download aus der App.
   try{
     const ix=await fetchJson('/api/index/status');
     const card=el('section','sgroup');
@@ -2846,8 +2847,8 @@ function openAddLabelModal(){
   const h=el('div','ititle'); h.style.gridColumn='1/-1'; tFn(h, ()=>t('Label anlegen')); wrap.appendChild(h);
   const inputs={};
   Object.values(inputs);
-  [['labelcode','Labelcode *','z. B. 24584 oder LC 100148'],['label','Labelname *','z. B. Fresh Tracks Music'],
-   ['hersteller','Hersteller / Verlag (optional)','z. B. Fresh Tracks GmbH'],['note','Notiz (optional)','z. B. Quelle: Lieferung der Library']].forEach(([k,lab,ph])=>{
+  [['labelcode','Labelcode *','z. B. 24584 oder LC 100148'],['label','Labelname *','z. B. Partner A Music'],
+   ['hersteller','Hersteller / Verlag (optional)','z. B. Partner A GmbH'],['note','Notiz (optional)','z. B. Quelle: Lieferung der Library']].forEach(([k,lab,ph])=>{
     const f=el('div','field'); const l=el('label'); tFn(l, ()=>t(lab)); f.appendChild(l);
     const i=el('input','inp'); tFn(i, ()=>t(ph), 'placeholder'); inputs[k]=i; f.appendChild(i); wrap.appendChild(f);
     i.addEventListener('input', ()=>{ if(typeof resetCheck==='function') resetCheck(); });
@@ -3859,7 +3860,7 @@ async function libraryScan(src, missing){
   return {matched, n:missing.length, error:null, report:(data.partners||[]).length ? perPartner : null};
 }
 
-// --- Schritt 2: EIN Knopf. Reihenfolge: konfigurierte Library-Quellen (Dateiname) -> Netz
+// --- EIN Knopf. Reihenfolge: konfigurierte Library-Quellen (Dateiname) -> Netz
 // (Interpret+Titel) in 5er-Batches mit Fortschritt. Schreibt nur in die songs.db,
 // nie in Dateien. Am Ende ein Satz: was wurde woher gefüllt.
 // Netz-Suche lohnt für: offen (kein LC), LC nur aus dem Dateinamen, Gleichstand — jeweils mit Interpret + Titel.
@@ -4173,8 +4174,8 @@ function renderScanPreview(folder, j){
     }catch(err){ logErr('Import', err); tFn(msg, ()=>t('Import fehlgeschlagen.')); go.disabled=false; }
   });
 }
-// PDF der Track-Datenbank ab dieser Zeilenzahl nur nach Rückfrage: die volle Datenbank sind rund 66.000 Zeilen,
-// als PDF über 3.500 Seiten — Excel ist dafür das Format. Gezählt wird, was der Export schreibt (Suche + Lücken-Filter).
+// PDF der Track-Datenbank ab dieser Zeilenzahl nur nach Rückfrage: eine große Datenbank ergibt ein sehr langes PDF,
+// Excel ist dafür das Format. Gezählt wird, was der Export schreibt (Suche + Lücken-Filter).
 const DB_PDF_ASK=10000;
 async function dbExportRows(){
   const p=new URLSearchParams({q:dbState.q, missing:dbState.missing||'', limit:1, offset:0, scope:'verified'});

@@ -17,7 +17,7 @@ from core.labelcheck import GvlMaster, LC_BY_NAME_NOTE
 MASTER = GvlMaster([
     ("00162", "COLUMBIA"), ("60459", "Colombia (COL)"), ("02061", "KPM MUSIC"), ("52738", "KPM Shorts"),
     ("30242", "Juice Music"), ("12345", "Doppel Records"), ("12346", "Doppel Records"), ("07573", "SONOTON"),
-    ("10347", "CMG"), ("04952", "CEZAME"), ("27926", "BBC Production Music"), ("99011", "ZONK SOUNDS"),
+    ("10347", "CMG"), ("04952", "CEZAME"), ("99126", "Nordwand Production Music"), ("99011", "ZONK SOUNDS"),
     ("23133", "KTV"), ("00383", "Verve"), ("35188", "TRILOGY"), ("77001", "Erstname"), ("77001", "Zweitname"),
 ])
 # Listen der Libraries selbst (data/library_prefixes.csv): Code -> normierte Library- und Listen-Namen
@@ -224,20 +224,20 @@ def test_lieferungen_gvl_code_und_code_ueber_den_namen(tmp_path):
     NICHT zur Prüfung markiert (Lieferungen sind verifiziert)."""
     lib = {"quelle": "library:upm", "review_status": "verified", "source_type": "library"}
     path = _db(tmp_path, [
-        {"interpret": "Bbc Test", "titel": "Herbst", "labelname": "BBC Production Music", "labelcode": "LC21110", **lib},
+        {"interpret": "Nord Test", "titel": "Herbst", "labelname": "Nordwand Production Music", "labelcode": "LC99110", **lib},
         {"interpret": "Zonk Test", "titel": "Nordlicht", **lib},
         {"interpret": "Neu Test", "titel": "Jung", "labelname": "Ganz Neu Music", "labelcode": "LC66666", **lib},
-    ], [{"file": "bbc_1", "interpret": "Bbc Test", "titel": "Herbst", "labelcode": "LC21110",
-         "labelname": "BBC Production Music", "sublibrary": "BBC Production Music"},
+    ], [{"file": "nord_1", "interpret": "Nord Test", "titel": "Herbst", "labelcode": "LC99110",
+         "labelname": "Nordwand Production Music", "sublibrary": "Nordwand Production Music"},
         {"file": "zonk_1", "interpret": "Zonk Test", "titel": "Nordlicht", "sublibrary": "Zonk Sounds"}])
     rep, rows = _clean(path)
-    bbc = rows[("Bbc Test", "Herbst")]
-    assert (bbc["labelcode"], bbc["label_geliefert"]) == ("LC27926", "BBC Production Music · LC21110")
+    bbc = rows[("Nord Test", "Herbst")]
+    assert (bbc["labelcode"], bbc["label_geliefert"]) == ("LC99126", "Nordwand Production Music · LC99110")
     zonk = rows[("Zonk Test", "Nordlicht")]
     assert (zonk["labelcode"], zonk["labelname"], zonk["label_geliefert"]) == ("LC99011", "ZONK SOUNDS", LC_BY_NAME_NOTE)
     neu = rows[("Neu Test", "Jung")]
     assert (neu["labelcode"], neu["review_status"]) == ("LC66666", "verified")
-    assert rep["rules"]["d1_lieferung"] == 2 and rep["rules"]["d7_lieferung"] == 2     # je Datei- + songs-Zeile
+    assert rep["rules"]["fremder_code_lieferung"] == 2 and rep["rules"]["ohne_code_lieferung"] == 2     # je Datei- + songs-Zeile
     assert "66666" in rep["library_unknown_codes"]
 
 

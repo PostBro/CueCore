@@ -4,13 +4,13 @@
   python refresh_seed.py              # Live-DB des Nutzers -> data/songs.db + data/songs.csv
   python refresh_seed.py --from <db> --dry-run
 
-Warum: `build_songs_db.py` baut den Seed aus kuratierten MP3s (`LC verified/`) — die liegen nicht überall,
-deshalb blieb der Seed klein, während die Live-DB auf über 66.000 Zeilen gewachsen ist. Der Seed soll den
+Warum: `build_songs_db.py` baut den Seed aus kuratierten MP3s (Ordner mit verifizierten Dateien) — die liegen nicht überall,
+deshalb blieb der Seed klein, während die Live-DB stark gewachsen ist. Der Seed soll den
 gesamten eigenen Korpus mitliefern, damit schon beim ersten Start eine große Datenbank vorhanden ist.
 
 Was NICHT in den Seed geht: die Zeilen der Library-Lieferungen (`quelle LIKE 'library:%'`). Die kommen
-beim Build aus `data/library_tracks/*.csv` dazu (`build_bundle_data.py`) — zweimal im Repo wären
-60.000 Zeilen doppelt, einmal als 80-MB-Binärdatei. Im fertigen Bundle ist trotzdem alles drin.
+beim Build aus `data/library_tracks/*.csv` dazu (`build_bundle_data.py`) — sonst läge jede
+Lieferung doppelt im Repo, einmal als große Binärdatei. Im fertigen Bundle ist trotzdem alles drin.
 
 Mitgenommen wird jede Spalte der Quelltabelle (Tabellenschema, nicht songsdb._ALL_FIELDS — sonst fehlten quelle
 und sublibraries). songs.csv bildet songs.db vollständig ab: alle Spalten außer id und dem aus

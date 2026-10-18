@@ -15,6 +15,7 @@ Der Ordner ist ein Build-Artefakt (gitignored), reproduzierbar aus dem Repo.
 from __future__ import annotations
 import argparse
 import shutil
+import sqlite3
 import sys
 from datetime import date
 from pathlib import Path
@@ -97,6 +98,11 @@ def build(out: Path, *, stamp: str | None = None, quiet: bool = False) -> dict:
         con.execute("VACUUM")          # keine gelöschten Reste in der ausgelieferten Datei
     finally:
         con.close()
+    lcon = sqlite3.connect(labels)
+    try:
+        lcon.execute("VACUUM")         # auch hier: keine gelöschten Reste (freie Seiten) in der ausgelieferten Datei
+    finally:
+        lcon.close()
     builtin_keys = write_builtin_keys(out)
     rep = {"out": str(out), "songs": n, "library_files": files, "builtin_keys": builtin_keys,
            "size_mb": round((labels.stat().st_size + songs.stat().st_size) / 1e6, 1)}

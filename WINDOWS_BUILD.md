@@ -1,10 +1,10 @@
 # CueCore — Windows-Programm über GitHub bauen (ohne Windows-Rechner)
 
 Dieses Repo baut per **GitHub Actions** auf Knopfdruck ein **Windows-Standalone**: ein
-`.exe` im Ordner, das auf den Test-Rechnern **ohne Installation und ohne Admin-Rechte**
+`.exe` im Ordner, das auf Rechnern **ohne Installation und ohne Admin-Rechte**
 läuft — Python ist eingebacken.
 
-## Schritt 1 — Stand auf GitHub bringen (an deinem Mac)
+## Schritt 1 — Stand auf GitHub bringen (lokal)
 Das Repo liegt auf GitHub unter **`PostBro/CueCore`**. Gebaut wird, was auf GitHub liegt: den Branch, aus dem das Programm
 entstehen soll, committen und pushen.
 
@@ -25,12 +25,12 @@ nur auf ausdrücklichen Wunsch). Starten: Reiter **Actions** → „Build Window
 ## Schritt 3 — Fertiges Programm herunterladen
 Der Lauf legt die ZIP im **Release „windows-beta"** ab (Reiter **Releases**, „CueCore Windows
 (Beta)", immer nur die letzte ZIP, `CueCore-Windows-<JJJJ-MM-TT>-<Commit>.zip`). Das ist ein
-**Entwurf**, nur für Mitglieder des Repos sichtbar; für Testende kommt die ZIP in ein Versions-Release.
+**Entwurf**, nur für Mitglieder des Repos sichtbar; für die Weitergabe kommt die ZIP in ein Versions-Release.
 Grund: Release-Assets zählen nicht gegen den Actions-Artefakt-Speicher des Accounts. Zusätzlich hängt die ZIP als Artefakt am Lauf (`CueCore-Windows.zip`, 7 Tage), wenn
 der Speicher es zulässt.
 
-## Schritt 4 — An die Tester geben
-Die ZIP aus dem Release verschicken. Der Tester:
+## Schritt 4 — Weitergeben
+Die ZIP aus dem Release verschicken. Wer sie erhält:
 1. entpackt die ZIP → Ordner **`CueCore`**,
 2. doppelklickt **`CueCore.exe`** (kein Setup, kein Admin),
 3. CueCore öffnet ein eigenes Fenster (WebView2-Runtime nötig — bei Windows 10/11 mit Edge
@@ -39,7 +39,7 @@ Die ZIP aus dem Release verschicken. Der Tester:
 
 Beim allerersten Start meldet Windows evtl. „Der Computer wurde durch Windows geschützt"
 → **Weitere Informationen → Trotzdem ausführen**. Normaler Nutzer, kein Admin —
-außer eure IT verbietet unsignierte Programme grundsätzlich per Richtlinie.
+sofern keine Richtlinie unsignierte Programme sperrt.
 
 ## Was drin ist
 Voller Funktionsumfang inkl. **Tagger** (schreibt die Tags lokaler MP3-, WAV-, AIFF-, FLAC- und M4A-Dateien,

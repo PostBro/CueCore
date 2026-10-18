@@ -77,14 +77,14 @@ KNOWN_PATHS = {
 # ohne Ordner-Wähler). Zurzeit leer — die Track-Metadata-API lebt in der Partnerliste (unten).
 KNOWN_TEXTS: dict[str, dict] = {}
 
-# --- Track-Metadata-Partner: Liste statt Einzelfeld (Fresh Tracks ist nur EINER von mehreren möglichen) ---
+# --- Track-Metadata-Partner: Liste statt Einzelfeld (ein Library-Partner ist nur einer von mehreren möglichen) ---
 # settings.json: "trackmeta_partners": [{"id","name","host","client_id","client_secret"}]. Die drei
 # alten Einzelfelder trackmeta_host/_client_id/_client_secret werden beim ersten Lesen in einen
 # Partner überführt und entfernt (Migration in partners()).
 PARTNERS_KEY = "trackmeta_partners"
 _LEGACY_PARTNER_KEYS = ("trackmeta_host", "trackmeta_client_id", "trackmeta_client_secret")
 PARTNER_FIELDS = {
-    "name": {"label": "Name", "hint": "Anzeigename, z.B. Fresh Tracks — steht später als Quelle am Cue."},
+    "name": {"label": "Name", "hint": "Anzeigename, z.B. Partner A — steht später als Quelle am Cue."},
     "host": {"label": "Host", "hint": "z.B. api.library-partner.com (ohne https://, ohne Pfad — der API-Pfad wird automatisch ergänzt)."},
     "client_id": {"label": "Client-ID", "hint": "Client-ID aus den Zugangsdaten des Anbieters."},
     "client_secret": {"label": "Client-Secret", "hint": "Client-Secret aus den Zugangsdaten des Anbieters. Wird maskiert gespeichert; leer lassen zum Behalten."},

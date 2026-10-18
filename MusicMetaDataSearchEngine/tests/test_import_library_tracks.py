@@ -17,7 +17,7 @@ def test_extract_and_import_end_to_end(tmp_path, capsys):
     assert ilt.main(["extract", "--xlsx", str(xlsx), "--library", "nope"]) == 1
 
     labels = tmp_path / "labels.db"
-    build_label_db([LabelRecord("10347", "CMG", "", "ja", "Frederic Leibovitz Editeur Sarl.", "")], labels, "2026-06-30")
+    build_label_db([LabelRecord("10347", "CMG", "", "ja", "Zzq Editions Sarl.", "")], labels, "2026-06-30")
     songs = tmp_path / "songs.db"
     assert ilt.main(["--songs", str(songs), "--labels", str(labels), "--date", "2026-09-20", "import", str(out)]) == 0
     o = capsys.readouterr().out
@@ -25,7 +25,7 @@ def test_extract_and_import_end_to_end(tmp_path, capsys):
     assert "LC104994 'Input/Output': nicht im GVL-Master (1 Tracks) -> manuelles Label angelegt" in o
     con = songsdb.open(songs)
     assert songsdb.count(con) == 3
-    assert songsdb.find(con, "Pierre-André Athané", "A Sunny Day")["labelname"] == "CMG"
+    assert songsdb.find(con, "Jean-Luc Nordmänn", "Nordwand Sonne")["labelname"] == "CMG"
     assert songsdb.find_by_file(con, "IOP001_1")["labelcode"] == "LC104994"
     con.close()
     manual = json.loads((tmp_path / "labels_manual.json").read_text(encoding="utf-8"))
@@ -40,7 +40,7 @@ def test_extract_and_import_end_to_end(tmp_path, capsys):
 
 
 def test_extract_liest_auch_upm_csv(tmp_path, capsys):
-    """UPM liefert CSV statt xlsx — der Extrakt muss beides können, sonst landen die Lieferungen nie
+    """Manche Lieferungen kommen als CSV statt xlsx — der Extrakt muss beides können, sonst landen die Lieferungen nie
     in data/library_tracks und damit nie im Bundle."""
     from core import librarytracks
     src = tmp_path / "music_metadata.csv"
@@ -48,8 +48,8 @@ def test_extract_liest_auch_upm_csv(tmp_path, capsys):
         "sep=,\n"
         "AUDITION LINK,EDIT ID,WORK TITLE,ALBUM,ALBUM ID,TRACK ID,YEAR OF RELEASE,COMPOSERS,PUBLISHERS,"
         "LABEL NAME,GERMAN LABEL CODE,ISRC\n"
-        "https://x/VM_40_11_Little_White_Lies_Anderson_1018801.mp3,1018801,Little White Lies,Witness,"
-        "VM040,VM040-11,2018,Anderson Matthew,Atmosphere Music Ltd.,Volta Music,LC 48731,GB-AXQ-18-11011\n",
+        "https://x/ZZQ_40_11_Nordwand_Elf_Testerin_1018801.mp3,1018801,Nordwand Elf,Testalbum,"
+        "ZZQ040,ZZQ040-11,2018,Tester Max,Testverlag,Nordwand Music,LC 99231,GB-AXQ-18-11011\n",
         encoding="utf-8")
     out = tmp_path / "upm_2026-10.csv"
     assert ilt.main(["--date", "2026-10-08", "extract", "--library", "upm",
@@ -57,11 +57,11 @@ def test_extract_liest_auch_upm_csv(tmp_path, capsys):
     rows = librarytracks.read_csv(out)
     assert len(rows) == 1
     r = rows[0]
-    assert r["file"] == "VM_40_11_Little_White_Lies_Anderson_1018801.mp3"
-    assert r["library"] == "upm" and r["sublibrary"] == "Volta Music"
-    assert r["title"] == "Little White Lies" and r["track_number"] == "11"
+    assert r["file"] == "ZZQ_40_11_Nordwand_Elf_Testerin_1018801.mp3"
+    assert r["library"] == "upm" and r["sublibrary"] == "Nordwand Music"
+    assert r["title"] == "Nordwand Elf" and r["track_number"] == "11"
     summary = capsys.readouterr().out
-    assert "LC48731" in summary and "LCLC" not in summary      # Code normalisiert, kein doppeltes Präfix
+    assert "LC99231" in summary and "LCLC" not in summary      # Code normalisiert, kein doppeltes Präfix
     assert ilt.cmd_extract(src, "gibtsnicht", out, "2026-10") == 1
 
 
@@ -69,13 +69,13 @@ def _upm_src(path, edit_id, title):
     path.write_text(
         "sep=,\nAUDITION LINK,EDIT ID,WORK TITLE,ALBUM,ALBUM ID,TRACK ID,YEAR OF RELEASE,COMPOSERS,PUBLISHERS,"
         "LABEL NAME,GERMAN LABEL CODE,ISRC\n"
-        f"https://x/VM_40_1_{title.replace(' ', '_')}_Testerin_{edit_id}.mp3,{edit_id},{title},Witness,VM040,VM040-1,2026,"
-        "Erika Testerin,Atmosphere Music Ltd.,Volta Music,LC 48731,\n", encoding="utf-8")
+        f"https://x/ZZQ_40_1_{title.replace(' ', '_')}_Testerin_{edit_id}.mp3,{edit_id},{title},Testalbum,ZZQ040,ZZQ040-1,2026,"
+        "Erika Testerin,Testverlag,Nordwand Music,LC 99231,\n", encoding="utf-8")
     return path
 
 
 def test_zweiter_upm_extrakt_im_selben_monat_ueberschreibt_nicht(tmp_path, monkeypatch, capsys):
-    """Der Default-Name trägt das volle Datum (upm_2026-10-08.csv). Eine zweite UPM-Lieferung im selben Monat
+    """Der Default-Name trägt das volle Datum (upm_2026-10-08.csv). Eine zweite Lieferung im selben Monat
     ersetzt die erste nicht still; sonst bekämen bestehende Installationen sie nie (Dateiname schon eingepflegt)."""
     from core import librarytracks
     out_dir = tmp_path / "library_tracks"
@@ -88,8 +88,8 @@ def test_zweiter_upm_extrakt_im_selben_monat_ueberschreibt_nicht(tmp_path, monke
     assert ilt.main(["--date", "2026-10-20", "extract", "--library", "upm", "--src", str(l2)]) == 0
     assert sorted(p.name for p in out_dir.glob("*.csv")) == ["upm_2026-10-08.csv", "upm_2026-10-20.csv"]
     librarytracks.ensure_imported(con, out_dir, {}.get, date_verified="2026-10-20")
-    assert songsdb.find_by_file(con, "VM_40_1_Erste_Probe_Testerin_9000001")["titel"] == "Erste Probe"
-    assert songsdb.find_by_file(con, "VM_40_1_Zweite_Probe_Testerin_9100001")["titel"] == "Zweite Probe"
+    assert songsdb.find_by_file(con, "ZZQ_40_1_Erste_Probe_Testerin_9000001")["titel"] == "Erste Probe"
+    assert songsdb.find_by_file(con, "ZZQ_40_1_Zweite_Probe_Testerin_9100001")["titel"] == "Zweite Probe"
     con.close()
     # derselbe Tag noch einmal: kein stilles Überschreiben, der erste Extrakt bleibt
     capsys.readouterr()
@@ -99,21 +99,21 @@ def test_zweiter_upm_extrakt_im_selben_monat_ueberschreibt_nicht(tmp_path, monke
 
 
 def test_cli_import_gvl_code_statt_manuellem_label(tmp_path, capsys):
-    """Im CLI-Weg (und damit im Bundle-Build): kein manuelles Label 'BBC Production Music' LC21110 mehr,
+    """Im CLI-Weg (und damit im Bundle-Build): kein manuelles Label 'Nordwand Production Music' LC99110 mehr,
     stattdessen der GVL-Code und eine Zeile im Bericht."""
     from core import librarytracks
     from tests.test_librarytracks import FOREIGN_CODE_ROWS
-    csvp = tmp_path / "upm_2026-10-archiv.csv"
+    csvp = tmp_path / "zzq_2026-01-01.csv"
     librarytracks.write_csv(FOREIGN_CODE_ROWS, csvp)
     labels = tmp_path / "labels.db"
-    build_label_db([LabelRecord("27926", "BBC Production Music", "", "Ja", "Universal Production Music GmbH", ""),
-                    LabelRecord("48731", "Volta Music", "", "Ja", "Universal Production Music GmbH", "")], labels, "x")
+    build_label_db([LabelRecord("99126", "Nordwand Production Music", "", "Ja", "Testhersteller GmbH", ""),
+                    LabelRecord("99231", "Nordwand Music", "", "Ja", "Testhersteller GmbH", "")], labels, "x")
     songs = tmp_path / "songs.db"
     assert ilt.main(["--songs", str(songs), "--labels", str(labels), "--date", "2026-10-12", "import", str(csvp)]) == 0
     o = capsys.readouterr().out
-    assert "LC21110 'BBC Production Music': GVL führt den Namen unter LC27926 -> LC27926" in o
+    assert "LC99110 'Nordwand Production Music': GVL führt den Namen unter LC99126 -> LC99126" in o
     manual = json.loads((tmp_path / "labels_manual.json").read_text(encoding="utf-8"))
     assert [(m["labelcode"], m["label"]) for m in manual] == [("88888", "Zzq Fantasy Label")]
     con = songsdb.open(songs)
-    assert songsdb.find_by_file(con, "BBCPM_117_10_The_Arrival_Of_Autumn_Merrison_1463879")["labelcode"] == "LC27926"
+    assert songsdb.find_by_file(con, "ZZQPM_117_10_Nordwand_Herbst_Testerin_1463879")["labelcode"] == "LC99126"
     con.close()

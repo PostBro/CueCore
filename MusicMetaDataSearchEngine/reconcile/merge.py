@@ -11,7 +11,7 @@ from core.models import LabelRecord
 from core.normalize import normalize_record
 from .diff import DiffReport
 
-# Acht bekannte Edge-Cases, die der Abgleich auflösen soll.
+# Codes mit auffälligen Zeilen, die der Abgleich im Bericht einzeln ausweist.
 EDGE_CASES = ["05205", "15507", "33780", "44566", "70306", "71848", "71851", "94248"]
 
 
@@ -106,7 +106,7 @@ def write_report(path: str | Path, rep: DiffReport, pdf_records: list[LabelRecor
     lines: list[str] = []
     lines.append(f"# GVL Reconcile-Report — {rep.source_version}")
     lines.append("")
-    lines.append("PDF (offiziell, maßgeblich) abgeglichen gegen `data/GVL_Labelcodes_clean.csv`.")
+    lines.append("PDF (offiziell, maßgeblich) abgeglichen gegen den bisherigen Master (`data/GVL_Labelcodes_synced.csv`).")
     lines.append("")
     lines.append("## Zusammenfassung")
     lines.append(f"- Quell-Version (PDF-Kopf): **{rep.source_version}**")
@@ -118,7 +118,7 @@ def write_report(path: str | Path, rep: DiffReport, pdf_records: list[LabelRecor
     lines.append(f"- DUPLIKATE (echte 1:n LC→Label): **{len(rep.duplikate)}** Codes")
     lines.append("")
 
-    lines.append("## Edge-Case-Auflösung (8 geflaggte Zeilen aus dem Cleaning)")
+    lines.append("## Auffällige Codes (im PDF aufgelöst)")
     lines.append("")
     lines.append("| Labelcode | im PDF aufgelöst als |")
     lines.append("|---|---|")

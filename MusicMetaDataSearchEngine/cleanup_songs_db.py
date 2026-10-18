@@ -7,9 +7,9 @@
 
 Regeln in dieser Reihenfolge, jede idempotent (ein zweiter Lauf ändert nichts):
   lc_format           Labelcode als 'LC' + Ziffern, in songs und library_files
-  d1_lieferung        Lieferungszeile mit fremdem Code, dessen Name im Master unter genau einem anderen Code steht ->
+  fremder_code_lieferung  Lieferungszeile mit fremdem Code, dessen Name im Master unter genau einem anderen Code steht ->
                       GVL-Code, gelieferter Code als Notiz (librarytracks.heal_library_codes)
-  d7_lieferung        Lieferungszeile ohne Code, Name im Master eindeutig -> GVL-Code mit Notiz (fill_codes_by_name)
+  ohne_code_lieferung Lieferungszeile ohne Code, Name im Master eindeutig -> GVL-Code mit Notiz (fill_codes_by_name)
   gvl_schreibweise    eigener Korpus: Labelname in GVL-Schreibweise zum Code
   labelname_ergaenzt  eigener Korpus: Code ohne Namen bekommt den GVL-Namen (nur bei genau einem)
   code_name_konflikt  eigener Korpus: Name passt nicht zum Code, steht im Master aber EINDEUTIG unter einem anderen
@@ -58,8 +58,8 @@ from core.normalize import clean_text, normalize_labelcode, single_labelcode   #
 DEFAULT_MASTER = PROJECT / "data" / "GVL_Labelcodes_synced.csv"
 DEFAULT_PREFIXES = PROJECT / "data" / "library_prefixes.csv"
 
-RULES = ("lc_format", "d1_lieferung", "d7_lieferung", "gvl_schreibweise", "labelname_ergaenzt", "code_name_konflikt",
-         "review", "wiki", "pro_marker", "leerzeichen", "dubletten", "cue_dauer")
+RULES = ("lc_format", "fremder_code_lieferung", "ohne_code_lieferung", "gvl_schreibweise", "labelname_ergaenzt",
+         "code_name_konflikt", "review", "wiki", "pro_marker", "leerzeichen", "dubletten", "cue_dauer")
 TEXT_FIELDS = ("interpret", "titel", "komponist", "texter", "verlag", "labelname", "album")
 PRO_FIELDS = ("interpret", "komponist", "texter", "verlag")
 _LIB = "COALESCE(quelle,'') LIKE 'library:%'"
@@ -72,8 +72,8 @@ R_CONFLICT = "Name passt nicht zum Code, im Master eindeutig unter einem anderen
 R_SUBLABEL = "Name ist die Dachmarke des Codes (gleicher Hersteller), Code bleibt, GVL-Schreibweise"
 R_GVL_WINS = "Name nur in der Zusatzliste, der Code steht im GVL-Master (GVL gewinnt), GVL-Schreibweise"
 R_UNKNOWN_FIXED = "Code nicht im Master, Name dort eindeutig"
-R_D1 = "Lieferung: Code nicht im Master, Name dort eindeutig"
-R_D7 = "Lieferung ohne Code, Name im Master eindeutig"
+R_FREMDER_CODE = "Lieferung: Code nicht im Master, Name dort eindeutig"
+R_OHNE_CODE = "Lieferung ohne Code, Name im Master eindeutig"
 R_UNKNOWN = "Code nicht im GVL-Master"
 R_UNREADABLE = "Labelcode nicht als genau ein Code lesbar"
 
@@ -345,13 +345,13 @@ def _label_rules(con: sqlite3.Connection, master: GvlMaster, lib_names: dict, re
 def _library_rules(con: sqlite3.Connection, master: GvlMaster, rep: dict) -> None:
     heal = librarytracks.heal_library_codes(con, master)
     for c in heal["corrected"]:
-        rep["rules"]["d1_lieferung"] += c["files"] + c["songs"]
-        rep["_codes"][("LC" + c["from"], c["label"], "LC" + c["to"], c["label"], R_D1)] += c["files"] + c["songs"]
+        rep["rules"]["fremder_code_lieferung"] += c["files"] + c["songs"]
+        rep["_codes"][("LC" + c["from"], c["label"], "LC" + c["to"], c["label"], R_FREMDER_CODE)] += c["files"] + c["songs"]
     rep["library_unknown_codes"] = heal["unknown_codes"]
     fill = librarytracks.fill_codes_by_name(con, master)
     for c in fill["filled"]:
-        rep["rules"]["d7_lieferung"] += c["files"] + c["songs"]
-        rep["_codes"][("", c["label"], "LC" + c["code"], master(c["code"]) or c["label"], R_D7)] += c["files"] + c["songs"]
+        rep["rules"]["ohne_code_lieferung"] += c["files"] + c["songs"]
+        rep["_codes"][("", c["label"], "LC" + c["code"], master(c["code"]) or c["label"], R_OHNE_CODE)] += c["files"] + c["songs"]
     rep["d7_ambiguous"] = fill["ambiguous"]
 
 
@@ -465,8 +465,8 @@ def run(path: str | Path, *, apply: bool = False, master: GvlMaster | None = Non
 
 _RULE_TEXT = {
     "lc_format": "Labelcode als LC + Ziffern, Track- und Dateizeilen",
-    "d1_lieferung": "Lieferung: fremder Code -> GVL-Code, Track- und Dateizeilen",
-    "d7_lieferung": "Lieferung ohne Code -> GVL-Code über den Namen, Track- und Dateizeilen",
+    "fremder_code_lieferung": "Lieferung: fremder Code -> GVL-Code, Track- und Dateizeilen",
+    "ohne_code_lieferung": "Lieferung ohne Code -> GVL-Code über den Namen, Track- und Dateizeilen",
     "gvl_schreibweise": "Labelname in GVL-Schreibweise", "labelname_ergaenzt": "Labelname zum Code ergänzt",
     "code_name_konflikt": "Code-Name-Konflikt -> GVL-Code zum Namen", "review": "zur Prüfung markiert",
     "wiki": "Wiki-Reste entfernt", "pro_marker": "PRO-Marker entfernt", "leerzeichen": "Leerzeichen bereinigt",

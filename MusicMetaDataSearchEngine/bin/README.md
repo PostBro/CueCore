@@ -11,8 +11,8 @@ Nicht selbst gebaut, sondern das offizielle Release:
 - SHA-256 von `fpcalc`:  `e2913e40da41f596dd547360fc09d685cfff04a24460c3b0f90ca20a5d98e0ca`
 
 Es haengt nur an System-Bibliotheken (libSystem, Accelerate, libz, libc++) — FFmpeg ist statisch
-drin. Deshalb laeuft es ueberall, ohne Homebrew. Das Homebrew-`fpcalc` taugt dafuer nicht: es
-verlinkt gegen `libavformat.62`, waehrend ffmpeg schon bei 63 ist, und startet dann gar nicht.
+drin. Deshalb laeuft es ueberall, ohne Homebrew. Ein Homebrew-`fpcalc` haengt dagegen an den FFmpeg-Bibliotheken der Homebrew-Installation und startet nur,
+solange diese zusammenpassen.
 
 Windows (`fpcalc.exe`) liegt nicht im Repo: `.github/workflows/build-windows.yml` laedt es beim Build aus
 demselben Release (`chromaprint-fpcalc-1.6.1-windows-x86_64.zip`, geprueft 12.10.2026) und bricht ab, wenn

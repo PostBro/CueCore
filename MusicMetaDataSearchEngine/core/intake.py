@@ -27,7 +27,7 @@ def is_schema_named(name: str) -> bool:
 
 
 def scan_folder(folder: str | Path, *, label_lookup=None, library_lookup=None) -> list[dict]:
-    """Audiodateien direkt im Ordner (nicht rekursiv -> 'LC verified'/'_done'
+    """Audiodateien direkt im Ordner (nicht rekursiv -> Zielordner/'_done'
     bleiben aussen vor). Pro Datei: Pfad, Name, identifizierte(r) Artist/Titel,
     aktuelle Tags, Flags.
 
@@ -42,7 +42,7 @@ def scan_folder(folder: str | Path, *, label_lookup=None, library_lookup=None) -
     folder = Path(folder)
     cards: list[dict] = []
     # case-insensitiv + nicht-rekursiv (iterdir, kein glob): '.MP3' wird mitgenommen,
-    # Unterordner wie 'LC verified' bleiben aussen vor.
+    # Unterordner (z.B. der Zielordner) bleiben aussen vor.
     audio_files = sorted(
         (p for p in folder.iterdir() if p.is_file() and p.suffix.lower() in tags.SUPPORTED_EXTENSIONS),
         key=lambda p: p.name.lower(),

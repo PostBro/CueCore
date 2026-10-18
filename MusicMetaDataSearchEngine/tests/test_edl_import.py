@@ -141,7 +141,7 @@ def test_export_excel_writes_header_rows_and_total(tmp_path):
     assert rows[-1][-1] == 10  # Gesamtdauer = 6 + 4
 
 
-# --- Schritt 4: Merge-Optionen (merge_identical / unify_stems) ---
+# --- Merge-Optionen (merge_identical / unify_stems) ---
 
 def test_strip_stem_removes_known_markers_only():
     assert strip_stem("Sunrise (Drums)") == "Sunrise"
@@ -286,7 +286,7 @@ def test_attach_rights_follows_the_current_lc():
 
 def test_export_has_rechterueckruf_column_after_lc(tmp_path):
     """Spalte 'Rechterückruf' direkt nach der LC-Spalte, in CSV, XLSX und PDF."""
-    cards = [{"artist": "Birdy", "title": "Skinny Love", "labelname": "Atlantic", "labelcode": "00121",
+    cards = [{"artist": "Zzq Band", "title": "Nordwand", "labelname": "Atlantic", "labelcode": "00121",
               "rechterueckrufe": "R6;R9;R12;R13", "duration_sec": 5},
              {"artist": "AURORA", "title": "Runaway", "labelcode": "LC00171", "duration_sec": 4}]
     assert EXPORT_COLUMNS.index("Rechterückruf") == EXPORT_COLUMNS.index("LC") + 1
@@ -433,10 +433,10 @@ def test_cross_check_library_file_without_lc_still_gets_catalog_proposal(tmp_pat
     from core.resolver import Candidate
     con = _db(tmp_path)
     songsdb.import_library_tracks(con, [
-        {"file": "CAP_108_3_Flight_Of_An_Eagle_Spoof_1373121.mp3", "interpret": "Someone", "titel": "Flight Of An Eagle",
+        {"file": "CAP_108_3_Nordwand_Zzq_1373121.mp3", "interpret": "Someone", "titel": "Nordwand",
          "komponist": "Someone", "sublibrary": "Capitol Studio Masters"},
-        {"file": "HKD_7_7_I_m_Going_Crazy_Connolly_Rowat_1420031.mp3", "interpret": "David Thomas Connolly",
-         "titel": "I'm Going Crazy", "sublibrary": "Hooked"},
+        {"file": "HKD_7_7_Zzq_Goes_North_Testerin_1420031.mp3", "interpret": "Erika Testerin",
+         "titel": "Zzq Goes North", "sublibrary": "Hooked"},
         {"file": "XYZ_1_1_Nameless_1999999.mp3", "interpret": "Nobody", "titel": "Nameless", "sublibrary": "Unbekannt"},
     ], library="upm", date_verified="2026-10-08")
     asked = []
@@ -450,70 +450,70 @@ def test_cross_check_library_file_without_lc_still_gets_catalog_proposal(tmp_pat
             return Candidate(labelcode="96451", label="Hooked", confidence=0.65, sources=["TPUB = Label"])
         return None
 
-    res = cross_check([_ev("001", "UPM_CAP108_3_FLIGHT_OF_AN_EAGLE_SPOOF_1373121.wav"),
-                       _ev("002", "UPM_HKD7_7_IM_GOING_CRAZY_1420031.wav"),
+    res = cross_check([_ev("001", "UPM_CAP108_3_NORDWAND_ZZQ_1373121.wav"),
+                       _ev("002", "UPM_HKD7_7_ZZQ_GOES_NORTH_1420031.wav"),
                        _ev("003", "XYZ_1_1_Nameless_1999999.wav")], con, catalog_fn=cat, dedupe=False)
     assert [c["matched_by"] for c in res] == ["file", "file", "file"]
     assert (res[0]["status"], res[0]["labelcode"], res[0]["labelname"]) == ("catalog_hint", "92154", "Capitol Studio Masters")
-    assert res[0]["title"] == "Flight Of An Eagle" and res[0]["komponist"] == "Someone"
+    assert res[0]["title"] == "Nordwand" and res[0]["komponist"] == "Someone"
     assert (res[1]["status"], res[1]["labelcode"], res[1]["catalog_hint"]) == ("catalog_hint", "96451", "TPUB = Label")
     assert (res[2]["status"], res[2]["labelcode"]) == ("found_in_db", "")      # kein Signal: offen wie bisher
-    assert asked[0] == ("UPM_CAP108_3_FLIGHT_OF_AN_EAGLE_SPOOF_1373121.wav", "")   # Kürzel zuerst, ohne Namen
+    assert asked[0] == ("UPM_CAP108_3_NORDWAND_ZZQ_1373121.wav", "")   # Kürzel zuerst, ohne Namen
 
 
 def test_base_title_strips_version_markers():
     from core.edl_import import base_title
-    assert base_title("IF THIS IS LOVE (INSTRUMENTAL)") == "IF THIS IS LOVE"
-    assert base_title("BLOOM (BONUS TRACK) (INSTRUMENTAL)") == "BLOOM"
-    assert base_title("SKINNY LOVE INSTRUMENTAL GUITAR") == "SKINNY LOVE"
+    assert base_title("NORDWAND (INSTRUMENTAL)") == "NORDWAND"
+    assert base_title("NORDLICHT (BONUS TRACK) (INSTRUMENTAL)") == "NORDLICHT"
+    assert base_title("ZZQ SONG INSTRUMENTAL GUITAR") == "ZZQ SONG"
     assert base_title("LOVE LOVE LOVE") == "LOVE LOVE LOVE" and base_title("") == ""
 
 
 def test_siblings_inherit_index_hit_and_keep_filename_lc_note():
-    """'IF THIS IS LOVE' trifft den Index, '(INSTRUMENTAL)' nicht: die Fassung erbt den
+    """'NORDWAND' trifft den Index, '(INSTRUMENTAL)' nicht: die Fassung erbt den
     Vorschlag (gelb), der abweichende Dateinamen-LC bleibt als Notiz."""
     from core.edl_import import inherit_from_siblings
     cards = [
-        {"event_num": "038", "artist": "RUTH B", "title": "IF THIS IS LOVE", "labelcode": "00162", "labelname": "COLUMBIA",
-         "komponist": "Ruth Berhe", "texter": "", "status": "index_hit"},
-        {"event_num": "036", "artist": "RUTH B", "title": "IF THIS IS LOVE (INSTRUMENTAL)", "labelcode": "06667",
+        {"event_num": "038", "artist": "ZZQ BAND", "title": "NORDWAND", "labelcode": "00162", "labelname": "COLUMBIA",
+         "komponist": "Erika Testerin", "texter": "", "status": "index_hit"},
+        {"event_num": "036", "artist": "ZZQ BAND", "title": "NORDWAND (INSTRUMENTAL)", "labelcode": "06667",
          "labelname": "SONY", "komponist": "", "status": "filename_lc"},
         {"event_num": "050", "artist": "OTHER", "title": "SONG (INSTRUMENTAL)", "labelcode": "", "status": "unresolved"},
     ]
     assert inherit_from_siblings(cards) == 1
     c = cards[1]
     assert c["status"] == "sibling_hit" and c["labelcode"] == "00162" and c["labelname"] == "COLUMBIA"
-    assert c["komponist"] == "Ruth Berhe" and c["sibling_of"] == "038" and "LC06667" in c["note"]
+    assert c["komponist"] == "Erika Testerin" and c["sibling_of"] == "038" and "LC06667" in c["note"]
     assert cards[2]["status"] == "unresolved"                                    # kein Geschwister, kein Treffer
 
 
 def test_siblings_fall_back_to_base_title_lookup():
     from core.edl_import import inherit_from_siblings
-    cards = [{"event_num": "1", "artist": "BIRDY", "title": "SKINNY LOVE INSTRUMENTAL GUITAR", "labelcode": "", "status": "unresolved"}]
+    cards = [{"event_num": "1", "artist": "ZZQ BAND", "title": "ZZQ SONG INSTRUMENTAL GUITAR", "labelcode": "", "status": "unresolved"}]
     seen = []
     def local_fn(a, t):
         seen.append((a, t)); return {"labelcode": "02986", "labelname": "DINE-A-MITE JAZZ", "index_hit": True}
     assert inherit_from_siblings(cards, None, local_fn) == 1
-    assert seen == [("BIRDY", "SKINNY LOVE")] and cards[0]["status"] == "sibling_hit" and cards[0]["sibling_title"] == "SKINNY LOVE"
+    assert seen == [("ZZQ BAND", "ZZQ SONG")] and cards[0]["status"] == "sibling_hit" and cards[0]["sibling_title"] == "ZZQ SONG"
 
 
 def test_cross_check_picks_candidate_pair_that_hits_locally(tmp_path):
-    """'Show (SOURCE)_Interpret_Titel_192' — das erste Paar trifft nichts, das zweite den Index."""
+    """'Projekt (SOURCE)_Interpret_Titel_192' — das erste Paar trifft nichts, das zweite den Index."""
     from core import edl, songsdb
     from core.edl_import import cross_check
     con = songsdb.open(tmp_path / "songs.db")
     text = ("TITLE: X\nFCM: NON-DROP FRAME\n001  AX       AA    C        00:00:00:00 00:00:05:00 00:00:00:00 00:00:05:00\n"
-            "* FROM CLIP NAME: ZZQ TESTSHOW SEASON 2 (SOURCE)_KACEY MUSGRAVES_IF THE WORLD BURNS DOWN_192_L 01846.MP3\n")
+            "* FROM CLIP NAME: ZZQ TESTPROJEKT (SOURCE)_ZZQ BAND_NORDWAND LIED_192_L 01846.MP3\n")
     asked = []
     def local_fn(a, t):
         asked.append((a, t))
-        return {"labelcode": "01846", "labelname": "UNIVERSAL", "index_hit": True} if (a, t) == ("KACEY MUSGRAVES", "IF THE WORLD BURNS DOWN") else None
+        return {"labelcode": "01846", "labelname": "UNIVERSAL", "index_hit": True} if (a, t) == ("ZZQ BAND", "NORDWAND LIED") else None
     cards = cross_check(edl.parse_edl(text), con, resolve_fn=local_fn, local_fn=local_fn,
                         label_lookup=lambda c: ("UNIVERSAL", "") if c == "01846" else ("", ""))
     c = cards[0]
-    assert (c["artist"], c["title"]) == ("KACEY MUSGRAVES", "IF THE WORLD BURNS DOWN")
+    assert (c["artist"], c["title"]) == ("ZZQ BAND", "NORDWAND LIED")
     assert c["status"] == "index_hit" and c["labelcode"] == "01846"
-    assert asked[0] != ("KACEY MUSGRAVES", "IF THE WORLD BURNS DOWN")            # das Show-Paar kam zuerst dran
+    assert asked[0] != ("ZZQ BAND", "NORDWAND LIED")            # das Projekt-Paar kam zuerst dran
 
 
 def test_cross_check_filename_lc_is_a_proposal_status(tmp_path):
@@ -521,32 +521,32 @@ def test_cross_check_filename_lc_is_a_proposal_status(tmp_path):
     from core.edl_import import cross_check
     con = songsdb.open(tmp_path / "songs.db")
     text = ("TITLE: X\nFCM: NON-DROP FRAME\n001  AX       AA    C        00:00:00:00 00:00:05:00 00:00:00:00 00:00:05:00\n"
-            "* FROM CLIP NAME: RUTH B -  IF THIS IS LOVE (INSTRUMENTAL)_LC06667.MP3\n")
+            "* FROM CLIP NAME: ZZQ BAND -  NORDWAND (INSTRUMENTAL)_LC06667.MP3\n")
     cards = cross_check(edl.parse_edl(text), con, resolve_fn=lambda a, t: None, label_lookup=lambda c: ("SONY", ""))
     assert cards[0]["status"] == "filename_lc" and cards[0]["labelcode"] == "06667"
 
 
 def test_cross_check_unswaps_pair_when_index_matched_swapped(tmp_path):
-    """'CHARLIE CUNNINGHAM_MINIMUM_192' wird als Titel_Interpret gelesen; der Index findet es nur vertauscht
-    (swapped=True) — die Karte zeigt danach Interpret CHARLIE CUNNINGHAM, Titel MINIMUM."""
+    """'ERIKA TESTERIN_NORDLICHT_192' wird als Titel_Interpret gelesen; der Index findet es nur vertauscht
+    (swapped=True) — die Karte zeigt danach Interpret ERIKA TESTERIN, Titel NORDLICHT."""
     from core import edl, songsdb
     from core.edl_import import cross_check
     con = songsdb.open(tmp_path / "songs.db")
     text = ("TITLE: X\nFCM: NON-DROP FRAME\n001  AX       AA    C        00:00:00:00 00:00:05:00 00:00:00:00 00:00:05:00\n"
-            "* FROM CLIP NAME: CHARLIE CUNNINGHAM_MINIMUM_192_LC07005.MP3\n")
+            "* FROM CLIP NAME: ERIKA TESTERIN_NORDLICHT_192_LC07005.MP3\n")
     def local_fn(a, t):
-        if (a, t) == ("MINIMUM", "CHARLIE CUNNINGHAM"):
+        if (a, t) == ("NORDLICHT", "ERIKA TESTERIN"):
             return {"labelcode": "58564", "labelname": "Dumont Dumont", "index_hit": True, "swapped": True}
         return None
     cards = cross_check(edl.parse_edl(text), con, resolve_fn=local_fn, local_fn=local_fn, label_lookup=lambda c: ("", ""))
-    assert (cards[0]["artist"], cards[0]["title"]) == ("CHARLIE CUNNINGHAM", "MINIMUM") and cards[0]["labelcode"] == "58564"
+    assert (cards[0]["artist"], cards[0]["title"]) == ("ERIKA TESTERIN", "NORDLICHT") and cards[0]["labelcode"] == "58564"
 
 
 def test_pdf_export_schneidet_lange_dateinamen_nicht_ab(tmp_path):
     """Ein Dateiname ohne Leerzeichen als Titel nahm ohne feste Spaltenbreiten die halbe Seite und
     drückte „Länge Sek." aus dem Blatt, bei 113 Zeichen fehlte die Spalte ganz."""
     import fitz
-    long = ("ZZQ_TESTSHOW_EINS_SEASON_2_SOURCE_GIVEON_DANCING_IN_THE_SMOKE_192_LC01846_"
+    long = ("ZZQ_TESTPROJEKT_EINS_SOURCE_ZZQ_BAND_NORDWAND_LIED_192_LC01846_"
             "EXTRA_LANGER_DATEINAME_OHNE_LEERZEICHEN")
     cards = [{"artist": "", "title": long, "duration_sec": 5},
              {"artist": "Matt Black", "title": "Scars (A)", "composer": "Matt Black",
@@ -570,7 +570,7 @@ def test_pdf_export_haelt_spaltenbreiten_auch_ohne_trennzeichen(tmp_path):
     ein Stück breiter ist als seine Spalte. Jede Spalte steht dort, wo die Breitentabelle sie hinlegt."""
     import fitz
     from core.edl_import import _PDF_WIDTHS
-    camel = "".join(w.capitalize() for w in ("zzq testshow season two source giveon dancing in the smoke "
+    camel = "".join(w.capitalize() for w in ("zzq testprojekt eins source zzq band nordwand lied "
                                              "extra langer dateiname ohne leerzeichen").split())
     komma = ",".join(["Johnson", "Smith", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez",
                       "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson"])
@@ -601,5 +601,5 @@ def test_pdf_export_haelt_spaltenbreiten_auch_ohne_trennzeichen(tmp_path):
 def test_soft_break_nur_in_langen_wortketten():
     assert _soft_break("Scars (A)") == "Scars (A)"          # kurz: unverändert
     assert _soft_break("Agnes Obel – Dorian") == "Agnes Obel – Dorian"
-    out = _soft_break("ZZQ_CONTENTBUMPER_EINE+ZZQ+TESTSENDER+SERIE_1920X1080")
-    assert "​" in out and out.replace("​", "") == "ZZQ_CONTENTBUMPER_EINE+ZZQ+TESTSENDER+SERIE_1920X1080"
+    out = _soft_break("ZZQ_TESTPROJEKT_EINS+ZZQ+NORDWAND+SERIE_1920X1080")
+    assert "​" in out and out.replace("​", "") == "ZZQ_TESTPROJEKT_EINS+ZZQ+NORDWAND+SERIE_1920X1080"

@@ -47,6 +47,9 @@ jobs:
           CUECORE_TRACKMETA_PROFILE: ${{ secrets.TRACKMETA_PROFILE }}
         run: python build_bundle_data.py --out ../build_data
 
+      - name: Drittlizenzen sammeln (THIRD-PARTY-LICENSES.txt in die App)
+        run: python packaging/collect_licenses.py --out build_data/THIRD-PARTY-LICENSES.txt
+
       # fpcalc (Chromaprint) für AcoustID: im Repo liegt nur das macOS-Binary, cuecore.spec sucht unter Windows
       # MusicMetaDataSearchEngine/bin/fpcalc.exe. Offizielles Release, Prüfsumme festgeschrieben (Entscheidung
       # 12.10.2026, derselbe Wert steht in bin/README.md) — weicht sie ab, bricht der Build ab.

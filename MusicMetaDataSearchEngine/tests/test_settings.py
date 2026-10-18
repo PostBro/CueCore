@@ -32,10 +32,10 @@ def test_partners_migrate_legacy_single_fields_once(tmp_path):
     """Die drei alten Einzelfelder (Host, Client-ID, Secret) werden beim ersten Lesen in EINEN
     Partner überführt und aus der Datei entfernt; ohne vollständiges Tripel bleibt die Liste leer."""
     p = tmp_path / "settings.json"
-    settings.save({"trackmeta_host": "api.fresh.example", "trackmeta_client_id": "test-client",
+    settings.save({"trackmeta_host": "api.partner.example", "trackmeta_client_id": "test-client",
                    "trackmeta_client_secret": "S", "discogs_token": "d"}, p)
     ps = settings.partners(path=p)
-    assert len(ps) == 1 and ps[0]["host"] == "api.fresh.example" and ps[0]["client_secret"] == "S"
+    assert len(ps) == 1 and ps[0]["host"] == "api.partner.example" and ps[0]["client_secret"] == "S"
     assert ps[0]["id"].startswith("p") and ps[0]["name"] == "Library-Partner"
     d = settings.load(p)
     assert settings.PARTNERS_KEY in d and not any(k.startswith("trackmeta_") and k != settings.PARTNERS_KEY for k in d)
@@ -51,16 +51,16 @@ def test_set_partners_keeps_secret_when_ui_sends_empty(tmp_path):
     """Die UI schickt Secrets nie zurück: leeres Secret + bekannte id behält das gespeicherte,
     ohne Host/Client-ID fliegt der Eintrag raus, der Status zeigt kein Secret."""
     p = tmp_path / "settings.json"
-    st = settings.set_partners([{"name": " Fresh  Tracks ", "host": "a.example", "client_id": "test-client", "client_secret": "S1"},
+    st = settings.set_partners([{"name": " Partner  A ", "host": "a.example", "client_id": "test-client", "client_secret": "S1"},
                                 {"name": "Zwei", "host": "b.example", "client_id": "test-client-2", "client_secret": "S2"},
                                 {"name": "Kaputt", "host": "", "client_id": "test-client-3", "client_secret": "S3"}], path=p)
-    assert [x["name"] for x in st] == ["Fresh Tracks", "Zwei"]
+    assert [x["name"] for x in st] == ["Partner A", "Zwei"]
     assert all("client_secret" not in x and x["secret_set"] and x["complete"] for x in st)
     pid = st[0]["id"]
-    st2 = settings.set_partners([{"id": pid, "name": "Fresh Tracks", "host": "a.example", "client_id": "test-client", "client_secret": ""}], path=p)
+    st2 = settings.set_partners([{"id": pid, "name": "Partner A", "host": "a.example", "client_id": "test-client", "client_secret": ""}], path=p)
     assert len(st2) == 1 and st2[0]["id"] == pid and st2[0]["secret_set"] is True
     assert settings.partners(path=p)[0]["client_secret"] == "S1"
-    st3 = settings.set_partners([{"id": pid, "name": "Fresh Tracks", "host": "a.example", "client_id": "test-client", "client_secret": "S9"}], path=p)
+    st3 = settings.set_partners([{"id": pid, "name": "Partner A", "host": "a.example", "client_id": "test-client", "client_secret": "S9"}], path=p)
     assert settings.partners(path=p)[0]["client_secret"] == "S9"      # rotiert
     assert settings.set_partners([], path=p) == []
 

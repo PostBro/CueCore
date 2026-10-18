@@ -45,15 +45,15 @@ def test_identify_unparseable(tmp_path):
 
 def test_parse_underscore_title_album_artist_bitrate():
     a, ti = watch.parse_artist_title_from_stem(
-        "American Woman (David Lynch Remix)_Zzq Testserie (Limited Event Series)_ MUDDY MAGNOLIAS_192")
-    assert a == "MUDDY MAGNOLIAS"
-    assert ti == "American Woman (David Lynch Remix)"
+        "Nordwand (Zzq Remix)_Zzq Testserie (Limited Event Series)_ ZZQ BAND_192")
+    assert a == "ZZQ BAND"
+    assert ti == "Nordwand (Zzq Remix)"
 
 
 def test_parse_underscore_hyphenated_artist():
     a, ti = watch.parse_artist_title_from_stem(
-        "FALLING_ZZQ TESTSERIE SOUNDTRACK_ANGELO BADALAMENTI-DAVID LYNCH_192")
-    assert a == "ANGELO BADALAMENTI-DAVID LYNCH" and ti == "FALLING"
+        "NORDWAND_ZZQ TESTSERIE SOUNDTRACK_ERIKA TESTERIN-ZZQ BAND_192")
+    assert a == "ERIKA TESTERIN-ZZQ BAND" and ti == "NORDWAND"
 
 
 def test_parse_underscore_without_album():
@@ -217,38 +217,38 @@ import pytest
 _CUE_CASES = [
     # (clip_name, interpret, titel, labelcode, label)
     # Klammer-Schema '{Interpret} - {Titel} - [Label_LCxxxxx]'
-    ("LÉON - TIRED OF TALKING - [COLUMBIA_LC00162].MP3", "LÉON", "TIRED OF TALKING", "00162", "COLUMBIA"),
-    ("SIGRID - HIGH FIVE - [ISLAND RECORDS_LC00407].MP3", "SIGRID", "HIGH FIVE", "00407", "ISLAND RECORDS"),
-    ("The Paper Kites - Bloom - [NETTWERK PRODUCTIONS_LC11269]", "The Paper Kites", "Bloom", "11269", "NETTWERK PRODUCTIONS"),
-    ("Chloe Moriondo - Teeth - [ATLANTIC_LC00121]", "Chloe Moriondo", "Teeth", "00121", "ATLANTIC"),
+    ("ZZQ BAND - NORDWAND - [COLUMBIA_LC00162].MP3", "ZZQ BAND", "NORDWAND", "00162", "COLUMBIA"),
+    ("ERIKA TESTERIN - NORDLICHT - [ISLAND RECORDS_LC00407].MP3", "ERIKA TESTERIN", "NORDLICHT", "00407", "ISLAND RECORDS"),
+    ("Zzq Chor - Morgenrot - [NETTWERK PRODUCTIONS_LC11269]", "Zzq Chor", "Morgenrot", "11269", "NETTWERK PRODUCTIONS"),
+    ("Nordwand Trio - Kiesel - [ATLANTIC_LC00121]", "Nordwand Trio", "Kiesel", "00121", "ATLANTIC"),
     # '{Interpret} - {Titel} LCxxxxx' bzw. 'LC xxxxx' (ohne Klammer, inline)
-    ("JORDAN DAVIS - BAR NONE LC00317.MP3.NEW.01", "JORDAN DAVIS", "BAR NONE", "00317", ""),
-    ("CALUM SCOTT - ROOTS LC 00304.MP3", "CALUM SCOTT", "ROOTS", "00304", ""),
+    ("ZZQ SOLO - BAR NORD LC00317.MP3.NEW.01", "ZZQ SOLO", "BAR NORD", "00317", ""),
+    ("ERIKA TESTERIN - WURZELN LC 00304.MP3", "ERIKA TESTERIN", "WURZELN", "00304", ""),
     # '{Interpret} - {Titel}_LCxxxxx' (LC ohne Space an Titel geklebt)
-    ("COLBY! - BREAK ME TWICE_LC02604.M4A.NEW.01", "COLBY!", "BREAK ME TWICE", "02604", ""),
-    ("BIRDY & RHODES - LET IT ALL GO_LC00121.M4A.NEW.01", "BIRDY & RHODES", "LET IT ALL GO", "00121", ""),
-    ("LEON - Fade Into A Dream_LC19813.m4a", "LEON", "Fade Into A Dream", "19813", ""),
+    ("ZZQ! - NORDWIND ZWEI_LC02604.M4A.NEW.01", "ZZQ!", "NORDWIND ZWEI", "02604", ""),
+    ("ZZQ & NORDWAND - LET IT GO_LC00121.M4A.NEW.01", "ZZQ & NORDWAND", "LET IT GO", "00121", ""),
+    ("ZZQ SOLO - Fade Into Dusk_LC19813.m4a", "ZZQ SOLO", "Fade Into Dusk", "19813", ""),
     # Underscore '{Titel}_{Interpret}_LCxxxxx'
-    ("Where's My Love_SYML_LC11269.Copy.01.Copy.01.new.01", "SYML", "Where's My Love", "11269", ""),
-    ("Be the Bird_RHODES_LC11269.Copy.01.new.01", "RHODES", "Be the Bird", "11269", ""),
-    ("I Found_Amber Run_LC12723.Copy.01.new.01", "Amber Run", "I Found", "12723", ""),
+    ("Where's My Zzq_NORDWAND_LC11269.Copy.01.Copy.01.new.01", "NORDWAND", "Where's My Zzq", "11269", ""),
+    ("Be the Fox_ZZQ DUO_LC11269.Copy.01.new.01", "ZZQ DUO", "Be the Fox", "11269", ""),
+    ("I Found It_Zzq Run_LC12723.Copy.01.new.01", "Zzq Run", "I Found It", "12723", ""),
     # Underscore-Ripper mit Bitrate '{Titel}_…_{Interpret}_{Bitrate}[_LC xxxxx]'
-    ("DONT FORGET ABOUT ME_ZZQ TESTFILM - TEST MOVIE (SOURCE)_ CLOVES_192_LC 06406.MP3.NEW.01",
-     "CLOVES", "DONT FORGET ABOUT ME", "06406", ""),
-    ("READ ALL ABOUT IT PT III_ZZQ SAMPLER 29 CD1 (D)_EMELI SANDE_48_LC27996.WAV.NEW.01",
-     "EMELI SANDE", "READ ALL ABOUT IT PT III", "27996", ""),
-    ("BAD BLOOD_VSQ PERFORMS TAYLOR SWIFT_ VITAMIN STRING QUARTET_128.MP3",
-     "VITAMIN STRING QUARTET", "BAD BLOOD", "", ""),
+    ("DONT FORGET ABOUT US_ZZQ TESTFILM - TEST MOVIE (SOURCE)_ ZZQ CLOVES_192_LC 06406.MP3.NEW.01",
+     "ZZQ CLOVES", "DONT FORGET ABOUT US", "06406", ""),
+    ("READ ALL ABOUT NORDWAND PT III_ZZQ SAMPLER 29 CD1 (D)_ERIKA TESTERIN_48_LC27996.WAV.NEW.01",
+     "ERIKA TESTERIN", "READ ALL ABOUT NORDWAND PT III", "27996", ""),
+    ("BAD WATER_ZZQ PERFORMS NORDWAND_ ZZQ STRING QUARTET_128.MP3",
+     "ZZQ STRING QUARTET", "BAD WATER", "", ""),
     # Track-Nummer-Prefix '{NN} - {Titel}_{Interpret}' bzw. nur Titel
-    ("05 - LOOK AT MY LIFE_GRACIE ABRAMS.MP3", "GRACIE ABRAMS", "LOOK AT MY LIFE", "", ""),
-    ("04 - SAME MISTAKE_JAMES BLUNT.MP3", "JAMES BLUNT", "SAME MISTAKE", "", ""),
-    ("01 - CIRCLES (INSTRUMENTAL).MP3", "", "CIRCLES (INSTRUMENTAL)", "", ""),
+    ("05 - LOOK AT MY ROOM_ZZQ DUO.MP3", "ZZQ DUO", "LOOK AT MY ROOM", "", ""),
+    ("04 - SAME ERROR_ERIKA TESTERIN.MP3", "ERIKA TESTERIN", "SAME ERROR", "", ""),
+    ("01 - ORBITS (INSTRUMENTAL).MP3", "", "ORBITS (INSTRUMENTAL)", "", ""),
     # Sync-/Source-Cue '{Titel} - songs in cinema…' -> erstes Feld ist der Titel, Interpret leer
-    ("An Invitation To London - songs in cinema_From _Zzq Testserie_LC02604.Copy.01.Copy.01.new.01",
-     "", "An Invitation To London", "02604", ""),
+    ("An Invitation To Nordwand - songs in cinema_From _Zzq Testserie_LC02604.Copy.01.Copy.01.new.01",
+     "", "An Invitation To Nordwand", "02604", ""),
     # Titel-Underscore-Junk wird abgeschnitten
-    ("Lily Williams - Learning Curve_instrumental.mp3.Copy.01.new.01", "Lily Williams", "Learning Curve", "", ""),
-    ("Lily Meola - Daydream_LC11269_instrumental_poppopai.mp3", "Lily Meola", "Daydream", "11269", ""),
+    ("Erika Testerin - Learning Curve_instrumental.mp3.Copy.01.new.01", "Erika Testerin", "Learning Curve", "", ""),
+    ("Zzq Duo - Daydream_LC11269_instrumental_zzqjunk.mp3", "Zzq Duo", "Daydream", "11269", ""),
     # Atmo/SFX: kein Interpret
     ("ATMO - WALD 21.AIF.NEW.01", "", "WALD 21", "", ""),
     # Reine Katalognummern (Library-Dateien): NICHT splitten — vorher Interpret '1' / Titel 'CEZ4030';
@@ -327,20 +327,20 @@ def test_process_one_leaves_fields_alone_without_swap(tmp_path):
 def test_lc_token_with_missing_c_at_end():
     """EDL-Export kappt Zeichen: '…_192_L 01846.MP3' trägt LC01846."""
     from core import watch
-    stem = "ZZQ TESTSHOW SEASON 2 (SOURCE)_KACEY MUSGRAVES_IF THE WORLD BURNS DOWN_192_L 01846"
+    stem = "ZZQ TESTPROJEKT (SOURCE)_ZZQ BAND_NORDWAND LIED_192_L 01846"
     assert watch.extract_lc_from_stem(stem) == "01846"
     assert watch.extract_lc_from_stem("REAL 12345 Title") == ""                  # kein L-Token mitten im Wort
     assert "L 01846" not in watch.parse_cue_from_stem(stem)["titel"]
 
 
-def test_parse_cue_candidates_cover_artist_title_and_show_artist_title():
+def test_parse_cue_candidates_cover_artist_title_and_project_artist_title():
     from core import watch
-    c = watch.parse_cue_candidates("ZZQ TESTSHOW SEASON 2 (SOURCE)_KACEY MUSGRAVES_IF THE WORLD BURNS DOWN_192_L 01846")
-    assert ("KACEY MUSGRAVES", "IF THE WORLD BURNS DOWN") in c
-    assert all("(SOURCE)" not in a for a, _ in c[1:])                              # Show-Feld ist nie Interpret
-    c = watch.parse_cue_candidates("BILLIE EILISH_WHEN THE PARTYS OVER_WHEN WE ALL FALL ASLEEP WHERE DO WE GO_ 192_LC06406")
-    assert c[1] == ("BILLIE EILISH", "WHEN THE PARTYS OVER")
-    c = watch.parse_cue_candidates("ZZQ TESTFILM 2 - TEST MOVIE 2 (SCORE)_I ALWAYS KNEW__THEODORE SHAPIRO_192_LC99999")
-    assert ("THEODORE SHAPIRO", "I ALWAYS KNEW") in c
+    c = watch.parse_cue_candidates("ZZQ TESTPROJEKT (SOURCE)_ZZQ BAND_NORDWAND LIED_192_L 01846")
+    assert ("ZZQ BAND", "NORDWAND LIED") in c
+    assert all("(SOURCE)" not in a for a, _ in c[1:])                              # Projekt-Feld ist nie Interpret
+    c = watch.parse_cue_candidates("ZZQ BAND_NORDWAND LIED_ZZQ ALBUM EINS ZWEI DREI_ 192_LC06406")
+    assert c[1] == ("ZZQ BAND", "NORDWAND LIED")
+    c = watch.parse_cue_candidates("ZZQ TESTFILM 2 - TEST MOVIE 2 (SCORE)_NORDLICHT ALWAYS__ERIKA TESTERIN_192_LC99999")
+    assert ("ERIKA TESTERIN", "NORDLICHT ALWAYS") in c
     assert watch.parse_cue_candidates("CEZ4030_1") == [("", "CEZ4030_1")]        # Katalognummer: nichts zu paaren
-    assert watch.parse_cue_candidates("AVERY ANNA_CHEERIOS_LC00392")[:2] == [("CHEERIOS", "AVERY ANNA"), ("AVERY ANNA", "CHEERIOS")]
+    assert watch.parse_cue_candidates("ZZQ DUO_NORDLICHT_LC00392")[:2] == [("NORDLICHT", "ZZQ DUO"), ("ZZQ DUO", "NORDLICHT")]

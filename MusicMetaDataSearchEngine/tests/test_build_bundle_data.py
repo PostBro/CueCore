@@ -104,3 +104,12 @@ def test_trackmeta_profil_nur_aus_der_umgebung_verschleiert_und_geprueft(tmp_pat
     monkeypatch.setenv("CUECORE_TRACKMETA_PROFILE", json.dumps({"base": "/zzq"}))
     with pytest.raises(SystemExit):
         build_bundle_data.write_builtin_keys(out)
+
+
+def test_ausgelieferte_dbs_ohne_freie_seiten(tmp_path):
+    """Gelöschte Reste stehen in freien Seiten und wären im Bundle lesbar: beide DBs nach VACUUM ohne freelist."""
+    build_bundle_data.build(tmp_path / "bd", stamp="2026-01-01", quiet=True)
+    for name in ("labels_prebuilt.db", "songs.db"):
+        con = sqlite3.connect(tmp_path / "bd" / name)
+        assert con.execute("PRAGMA freelist_count").fetchone()[0] == 0, name
+        con.close()

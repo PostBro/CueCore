@@ -377,7 +377,7 @@ def test_import_library_tracks_and_find_by_file(tmp_path):
 
 def test_clear_cue_durations_drops_project_durations_only(tmp_path):
     """Bereinigung: ältere Importe haben die Cue-Dauer eines Projekts als duration_sec gespeichert
-    (edl_import-Zeilen, z.B. Billie Eilish 4.0). Weg damit; die Tracklänge
+    (edl_import-Zeilen, mit 4.0 Sekunden). Weg damit; die Tracklänge
     einer Library-Lieferung bleibt, auch wenn ein späterer Lauf source_type auf edl_import gesetzt hat."""
     con = songsdb.open(tmp_path / "songs.db")
     songsdb.upsert(con, interpret="Billie Eilish", titel="When The Partys Over", labelcode="LC06406",

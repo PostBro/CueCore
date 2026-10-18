@@ -86,8 +86,8 @@
  "partners": [
   {
    "id": "p1",
-   "name": "Fresh Tracks",
-   "host": "api.fresh.example",
+   "name": "Partner A",
+   "host": "api.partner.example",
    "client_id": "test-client",
    "secret_set": true,
    "complete": true
@@ -96,7 +96,7 @@
  "partner_fields": {
   "name": {
    "label": "Name",
-   "hint": "Anzeigename, z.B. Fresh Tracks — steht später als Quelle am Cue."
+   "hint": "Anzeigename, z.B. Partner A — steht später als Quelle am Cue."
   },
   "host": {
    "label": "Host",
