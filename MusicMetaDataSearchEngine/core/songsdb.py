@@ -150,6 +150,29 @@ def seed(active_path: str | Path, source_path: str | Path) -> None:
         shutil.copy(source, active)
 
 
+def fill_codes_from_seed(con: sqlite3.Connection, seed_path: str | Path) -> int:
+    """Bestehende Installation: Zeilen ohne Labelcode bekommen Code, Labelname und Notiz aus dem mitgelieferten Seed,
+    wenn dort derselbe Interpret und Titel einen Code trägt. Der Seed wird nur bei der Neuinstallation kopiert; ohne
+    das kämen spätere Korrekturen (recherchierte Codes) nie bei bestehenden Datenbanken an. Nur leere Felder werden
+    gefüllt, eigene Werte bleiben. Rückgabe: Anzahl gefüllter Zeilen."""
+    seed = Path(seed_path)
+    if not seed.is_file():
+        return 0
+    con.execute("ATTACH DATABASE ? AS seed", (str(seed),))           # nur gelesen
+    try:
+        n = con.execute(
+            "UPDATE songs SET labelcode=t.labelcode, "
+            "labelname=CASE WHEN COALESCE(songs.labelname,'')='' THEN t.labelname ELSE songs.labelname END, "
+            "label_geliefert=CASE WHEN COALESCE(songs.label_geliefert,'')='' THEN t.label_geliefert "
+            "ELSE songs.label_geliefert END "
+            "FROM seed.songs AS t WHERE t.interpret=songs.interpret AND t.titel=songs.titel "
+            "AND COALESCE(songs.labelcode,'')='' AND COALESCE(t.labelcode,'')<>''").rowcount
+        con.commit()
+    finally:
+        con.execute("DETACH DATABASE seed")
+    return n
+
+
 # Stand der Bestandsheilungen beim Start (Schlüssel, Code-Korrektur, Code über Labelnamen) als PRAGMA user_version. Eine
 # vorhandene songs.db mit kleinerem Stand wird vor dem ersten Umschreiben einmal gesichert (backup_before_heal).
 HEAL_VERSION = 20261012

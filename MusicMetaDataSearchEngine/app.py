@@ -259,6 +259,11 @@ def _load() -> None:
                 print(f"Selbstheilung: Sicherung vorher angelegt: {dst}", flush=True)
         SONGS_CON = songsdb.open(songs_path)
         _SONGS_PATH = songs_path
+        if existed and SONGS_SEED.resolve() != songs_path.resolve():
+            # Korrekturen eines neueren Seeds (recherchierte Codes) auch in bestehende Datenbanken bringen
+            n = songsdb.fill_codes_from_seed(SONGS_CON, SONGS_SEED)
+            if n:
+                print(f"songs.db: {n} Tracks ohne Labelcode aus der mitgelieferten Datenbank ergänzt", flush=True)
     DB_META["songs"] = songsdb.count(SONGS_CON)
     _load_track_index()
     if not DB_PATH.exists():

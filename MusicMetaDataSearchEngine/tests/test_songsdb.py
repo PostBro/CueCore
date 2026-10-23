@@ -751,3 +751,27 @@ def test_alte_songs_db_bekommt_die_neuen_schluessel_beim_oeffnen(tmp_path):
     con = songsdb.open(p)
     assert dict(con.execute("SELECT titel, nkey FROM songs").fetchall()) == keys
     con.close()
+
+
+def test_bestehende_db_bekommt_codes_aus_neuerem_seed(tmp_path):
+    """Der Seed wird nur bei der Neuinstallation kopiert. Später recherchierte Codes kommen trotzdem an: leere Codes
+    werden aus dem Seed gefüllt (gleicher Interpret und Titel), eigene Werte bleiben, unbekannte Zeilen kommen nicht dazu."""
+    from core import songsdb
+    seed = songsdb.open(tmp_path / "seed.db")
+    for t, lab, lc in (("Eins", "Zzq Library", "LC99001"), ("Zwei", "Zzq Library", "LC99001"), ("Drei", "Zzq Neu", "LC99003")):
+        songsdb.upsert(seed, interpret="Erika Testerin", titel=t, labelname=lab, labelcode=lc)
+    seed.execute("UPDATE songs SET label_geliefert='Notiz Zzq'")
+    seed.commit(); seed.close()
+    con = songsdb.open(tmp_path / "songs.db")
+    songsdb.upsert(con, interpret="Erika Testerin", titel="Eins", labelname="Eigene Schreibweise")
+    songsdb.upsert(con, interpret="Erika Testerin", titel="Zwei", labelname="Andere", labelcode="LC99002")
+    songsdb.upsert(con, interpret="Erika Testerin", titel="Vier")
+    con.commit()
+    assert songsdb.fill_codes_from_seed(con, tmp_path / "seed.db") == 1
+    eins = songsdb.find(con, "Erika Testerin", "Eins")
+    assert (eins["labelcode"], eins["labelname"], eins["label_geliefert"]) == ("LC99001", "Eigene Schreibweise", "Notiz Zzq")
+    assert songsdb.find(con, "Erika Testerin", "Zwei")["labelcode"] == "LC99002"
+    assert songsdb.find(con, "Erika Testerin", "Drei") is None
+    assert songsdb.fill_codes_from_seed(con, tmp_path / "seed.db") == 0
+    assert songsdb.fill_codes_from_seed(con, tmp_path / "fehlt.db") == 0
+    con.close()
