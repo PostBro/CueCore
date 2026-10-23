@@ -1349,10 +1349,11 @@ def db_lookup(body: ResolveIn) -> dict:
             "net": {}, "fields": [], "artist": artist, "title": title}
 
 
-def _local_label(isrc: str, album: str, verlag: str) -> dict | None:
+def _local_label(isrc: str, album: str, verlag: str, artist: str = "", title: str = "") -> dict | None:
     """Label/LC ohne Netz, für die „Auto-Suche“ im Editor, in dieser Reihenfolge: (1) verifizierte Zeilen der
     Track-Datenbank mit derselben ISRC tragen genau einen Code (z.B. die Library-Lieferung), (2) Katalog-Kürzel im
-    Album (APLS 138 -> APL Lifestyle), (3) Verlag, der eindeutig auf ein Production-Music-Label im Master führt.
+    Album (APLS 138 -> APL Lifestyle), (3) Verlag, der eindeutig auf ein Production-Music-Label im Master führt,
+    (4) lokaler Track-Index (Discogs-/MusicBrainz-Dump, unverifiziert) ohne Gleichstand.
     Rückgabe {labelname, labelcode, via} oder None."""
     from core.musicbrainz import normalize_isrc
     isrc = normalize_isrc(isrc)
@@ -1369,6 +1370,11 @@ def _local_label(isrc: str, album: str, verlag: str) -> dict | None:
         codes = sorted({c for part in verlag.split(";") for c in librarytracks.publisher_codes(GVL_MASTER, part.strip())})
         if len(codes) == 1 and codes[0] in GVL_MASTER.plm:
             return {"labelname": GVL_MASTER(codes[0]) or "", "labelcode": "LC" + codes[0], "via": "verlag"}
+    if artist and title:
+        res = _resolve_index(artist, title)
+        if res is not None and res.best and res.best.labelcode and not getattr(res, "ambiguous", False):
+            return {"labelname": res.best.label or "", "labelcode": "LC" + normalize_labelcode(res.best.labelcode),
+                    "via": "index"}
     return None
 
 
@@ -1381,7 +1387,7 @@ def resolve_merge(body: ResolveIn) -> dict:
         raise HTTPException(503, LABELS_DB_MISSING)
     artist, title = body.artist.strip(), body.title.strip()
     db_row = songsdb.find_row(SONGS_CON, artist, title) if SONGS_CON is not None else None
-    local = _local_label(body.isrc.strip(), body.album.strip(), body.verlag.strip())
+    local = _local_label(body.isrc.strip(), body.album.strip(), body.verlag.strip(), artist, title)
     res, fetcher = _resolve_net(artist, title, body.isrc.strip())
     best = res.best
     tie = bool(getattr(res, "ambiguous", False))     # Margin-Gate: Label/LC nicht vorbelegen

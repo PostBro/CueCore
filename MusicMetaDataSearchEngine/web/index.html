@@ -1179,17 +1179,17 @@ const I18N_EN = {
   "Labelcodes mit oder ohne „LC“, führende Nullen bleiben erhalten. Bestehende Einträge werden ergänzt, verifizierte Felder nicht überschrieben.":"Label codes with or without “LC”, leading zeros are kept. Existing entries are completed, verified fields are not overwritten.",
   "Beispiel-Kopfzeile (CSV mit Semikolon)":"Example header row (semicolon CSV)",
   "Interpret;Titel;Komponist;Texter;Verlag;Label;Labelcode;Album;Track-Nr.;ISRC;ISWC;GEMA-Werknr.":"Artist;Title;Composer;Lyricist;Publisher;Label;Label code;Album;Track no.;ISRC;ISWC;GEMA work no.",
-  "Erst die eigene Datenbank und den GVL-Master (ISRC, Katalog-Kürzel, Verlag), dann MusicBrainz, Discogs, Deezer und Wikidata befragen — leere Felder werden vorbelegt, gefüllte bleiben; nichts wird ohne Speichern geschrieben":"First the own database and the GVL master (ISRC, catalogue prefix, publisher), then MusicBrainz, Discogs, Deezer and Wikidata — empty fields are prefilled, filled ones stay; nothing is written without saving",
+  "Erst die eigene Datenbank, den GVL-Master (ISRC, Katalog-Kürzel, Verlag) und den lokalen Track-Index, dann MusicBrainz, Discogs, Deezer und Wikidata befragen — leere Felder werden vorbelegt, gefüllte bleiben; nichts wird ohne Speichern geschrieben":"First the own database, the GVL master (ISRC, catalogue prefix, publisher) and the local track index, then MusicBrainz, Discogs, Deezer and Wikidata — empty fields are prefilled, filled ones stay; nothing is written without saving",
   "Suche in der Datenbank und online …":"Searching the database and online …",
   "Eigene Datenbank: {lc} {label}, gefunden über {via}.":"Own database: {lc} {label}, found via {via}.",
-  "Eigene Datenbank: kein Beleg für Label/LC (ISRC, Katalog-Kürzel, Verlag geprüft).":"Own database: no evidence for label/LC (ISRC, catalogue prefix, publisher checked).",
+  "Eigene Datenbank: kein Beleg für Label/LC (ISRC, Katalog-Kürzel, Verlag, Track-Index geprüft).":"Own database: no evidence for label/LC (ISRC, catalogue prefix, publisher, track index checked).",
   "Online: sicherer Treffer ({p}).":"Online: confident match ({p}).", "Online: Treffer, bitte prüfen ({p}).":"Online: match, please check ({p}).",
   "Online: schwacher Treffer, bitte prüfen ({p}).":"Online: weak match, please check ({p}).", "Online: Treffer.":"Online: match.",
   "Online: kein passender Treffer bei MusicBrainz, Discogs, Deezer und Wikidata.":"Online: no matching result on MusicBrainz, Discogs, Deezer and Wikidata.",
   "{n} leere(s) Feld(er) vorbelegt (grün umrandet), gespeichert wird erst mit „Speichern“.":"{n} empty field(s) prefilled (green outline), nothing is stored until you save.",
   "Abweichungen: Der Eintrag behält seinen Wert, bis du den Vorschlag übernimmst.":"Differences: the entry keeps its value until you take the suggestion.",
   "im Eintrag":"in the entry", "eigene Datenbank, GVL-Schreibweise":"own database, GVL spelling", "online":"online",
-  "gleiche ISRC in der Track-Datenbank":"same ISRC in the track database", "Katalog-Kürzel im Album":"catalogue prefix in the album", "Verlag im GVL-Master":"publisher in the GVL master",
+  "gleiche ISRC in der Track-Datenbank":"same ISRC in the track database", "Katalog-Kürzel im Album":"catalogue prefix in the album", "Verlag im GVL-Master":"publisher in the GVL master", "lokaler Track-Index (unverifiziert)":"local track index (unverified)",
   "Interpret und Titel nötig.":"Artist and title required.",
   "Suche online …":"Searching online …",
   "{n} Feld(er) ergänzt":"{n} field(s) filled",
@@ -5658,7 +5658,7 @@ function dbEditor(r, onSaved, onClose, opts){
   const save=el('button','btn sm'); tFn(save, ()=>verify?'✓ '+t('Als verifiziert übernehmen'):t('Speichern'));
   const cancel=el('button','btn ghost sm'); tFn(cancel, ()=>verify?t('Abbrechen'):t('Schließen')); cancel.type='button';
   const auto=el('button','btn ghost sm'); tFn(auto, ()=>t('Auto-Suche')); auto.type='button';
-  tFn(auto, ()=>t('Erst die eigene Datenbank und den GVL-Master (ISRC, Katalog-Kürzel, Verlag), dann MusicBrainz, Discogs, Deezer und Wikidata befragen — leere Felder werden vorbelegt, gefüllte bleiben; nichts wird ohne Speichern geschrieben'), 'title');
+  tFn(auto, ()=>t('Erst die eigene Datenbank, den GVL-Master (ISRC, Katalog-Kürzel, Verlag) und den lokalen Track-Index, dann MusicBrainz, Discogs, Deezer und Wikidata befragen — leere Felder werden vorbelegt, gefüllte bleiben; nichts wird ohne Speichern geschrieben'), 'title');
   const msg=el('span','hint'); act.append(save,cancel,auto,msg); wrap.appendChild(act);
   // Löschen mit Rückfrage: falsch angelegte Einträge ließen sich vorher nur
   // überschreiben und blieben „verifiziert“. Nur an echten songs.db-Zeilen, nicht beim Verifizieren einer Index-Zeile.
@@ -5696,11 +5696,11 @@ function dbEditor(r, onSaved, onClose, opts){
       // Klartext statt Kürzel: was die eigene Datenbank belegt, was online herauskam, was vorbelegt wurde und wo der
       // Vorschlag vom Eintrag abweicht (mit beiden Werten und der Quelle)
       const head=el('div','sug-h autolines'); autoBox.appendChild(head);
-      const viaLabels={isrc:'gleiche ISRC in der Track-Datenbank',katalog:'Katalog-Kürzel im Album',verlag:'Verlag im GVL-Master'};
+      const viaLabels={isrc:'gleiche ISRC in der Track-Datenbank',katalog:'Katalog-Kürzel im Album',verlag:'Verlag im GVL-Master',index:'lokaler Track-Index (unverifiziert)'};
       const locLine=el('div'), netLine=el('div'), fillLine=el('div'); head.append(locLine, netLine, fillLine);
       tFn(locLine, ()=>j.local
         ? t('Eigene Datenbank: {lc} {label}, gefunden über {via}.',{lc:lcNum(j.local.labelcode), label:j.local.labelname||'', via:t(viaLabels[j.local.via]||j.local.via)})
-        : t('Eigene Datenbank: kein Beleg für Label/LC (ISRC, Katalog-Kürzel, Verlag geprüft).'));
+        : t('Eigene Datenbank: kein Beleg für Label/LC (ISRC, Katalog-Kürzel, Verlag, Track-Index geprüft).'));
       const pct=j.confidence?Math.round(j.confidence*100)+' %':'';
       const bandText={auto:'Online: sicherer Treffer ({p}).', review:'Online: Treffer, bitte prüfen ({p}).',
         review_low:'Online: schwacher Treffer, bitte prüfen ({p}).',

@@ -2820,3 +2820,15 @@ def test_auto_suche_prueft_erst_die_eigene_datenbank_und_den_master(tmp_path, mo
     assert j["local"] == {"labelname": "Zzq Lifestyle", "labelcode": "LC99555", "via": "verlag"}
     j = client.post("/api/resolve/merge", json={"artist": "Erika Testerin", "title": "Ohne Beleg"}).json()
     assert j["local"] is None and j["net"]["labelcode"] == "00121"
+
+
+def test_auto_suche_fragt_lokal_auch_den_track_index(tmp_path, monkeypatch):
+    """Ohne Beleg in der eigenen Datenbank und im Master kommt der lokale Track-Index vor dem Netz zum Zug
+    (als unverifizierter Vorschlag); der Netzfund ergänzt nur."""
+    from core import trackindex
+    _with_index(tmp_path, [trackindex.make_row(interpret="Zzq Indexed", titel="Only In Index", labelcode="00121",
+                                               source="discogs")])
+    _mock_net(monkeypatch, label_names=())
+    j = client.post("/api/resolve/merge", json={"artist": "Zzq Indexed", "title": "Only In Index"}).json()
+    assert j["local"]["via"] == "index" and j["local"]["labelcode"] == "LC00121"
+    assert j["net"]["labelcode"] == "LC00121"
