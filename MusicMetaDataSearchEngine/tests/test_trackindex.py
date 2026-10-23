@@ -416,3 +416,28 @@ def test_alter_index_mit_leerem_schluesselteil_trifft_weiter(tmp_path):
     hits = trackindex.lookup(con, "The Beatles", "グッド・デイ・サンシャイン")
     assert [(h["titel"], h["labelcode"]) for h in hits] == [("グッド・デイ・サンシャイン", "00287")]
     assert trackindex.lookup(con, "The Beatles", "Ψ") == []
+
+
+def test_index_result_traegt_pruefstufe():
+    """Mehrere Zeilen eines Songs sind Belege, keine Dubletten: die Prüfstufe fasst sie zusammen."""
+    assert index_result("A", "B", [_hit(source="discogs"), _hit(source="musicbrainz")], IDX).index_tier == "zwei_quellen"
+    assert index_result("A", "B", [_hit(n_releases=3)], IDX).index_tier == "mehrere_releases"
+    assert index_result("A", "B", [_hit(n_releases=1)], IDX).index_tier == "einzelbeleg"
+    assert index_result("A", "B", [_hit(labelcode="07552"), _hit(labelcode="00121")], IDX).index_tier == "widerspruechlich"
+    # ein Code, den die GVL nicht kennt, zählt nicht als Widerspruch
+    assert index_result("A", "B", [_hit(), _hit(labelcode="99999")], IDX).index_tier == "einzelbeleg"
+
+
+def test_regel_vorschlag_bei_widerspruch():
+    """Original vor Compilation, dann die meisten Veröffentlichungen, dann das früheste Jahr; Codes unter 00100 zählen
+    nicht. Nur Vorschlag: das Ergebnis bleibt uneindeutig."""
+    from core.resolver import index_rule_pick
+    orig = _hit(labelcode="07552", album="Debut Album", n_releases=1)
+    comp = _hit(labelcode="00121", album="Greatest Hits Vol. 2", n_releases=5)
+    assert index_rule_pick([orig, comp]) == "07552"
+    assert index_rule_pick([_hit(labelcode="07552", n_releases=3), _hit(labelcode="00121", n_releases=1)]) == "07552"
+    assert index_rule_pick([_hit(labelcode="07552", jahr="1999"), _hit(labelcode="00121", jahr="1985")]) == "00121"
+    assert index_rule_pick([_hit(labelcode="07552"), _hit(labelcode="00121")]) == ""
+    assert index_rule_pick([_hit(labelcode="00006"), _hit(labelcode="00121")]) == "00121"
+    res = index_result("A", "B", [orig, comp], IDX)
+    assert res.ambiguous and res.index_rule_pick == "07552"

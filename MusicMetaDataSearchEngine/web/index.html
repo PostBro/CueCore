@@ -1189,6 +1189,9 @@ const I18N_EN = {
   "{n} leere(s) Feld(er) vorbelegt (grün umrandet), gespeichert wird erst mit „Speichern“.":"{n} empty field(s) prefilled (green outline), nothing is stored until you save.",
   "Abweichungen: Der Eintrag behält seinen Wert, bis du den Vorschlag übernimmst.":"Differences: the entry keeps its value until you take the suggestion.",
   "im Eintrag":"in the entry", "eigene Datenbank, GVL-Schreibweise":"own database, GVL spelling", "online":"online",
+  "Regel-Vorschlag aus dem widersprüchlichen Track-Index (Original vor Compilation), bitte prüfen":"rule suggestion from the conflicting track index (original before compilation), please check",
+  "Discogs und MusicBrainz einig":"Discogs and MusicBrainz agree", "eine Quelle, mehrere Veröffentlichungen":"one source, several releases",
+  "Einzelbeleg, eine Veröffentlichung":"single evidence, one release", "widersprüchlich, mehrere Labelcodes":"conflicting, several label codes",
   "gleiche ISRC in der Track-Datenbank":"same ISRC in the track database", "Katalog-Kürzel im Album":"catalogue prefix in the album", "Verlag im GVL-Master":"publisher in the GVL master", "lokaler Track-Index (unverifiziert)":"local track index (unverified)",
   "Interpret und Titel nötig.":"Artist and title required.",
   "Suche online …":"Searching online …",
@@ -1923,6 +1926,7 @@ const I18N_EN_RX = [
   [/^Name in der Liste „(.*)“, GVL „(.*)“ — GVL-Name wird übernommen$/, 'Name in the list “$1”, GVL “$2” — the GVL name is used'],
   [/^Spalten für Kürzel und LC nicht erkannt — gefunden: (.*)\. Erwartet z\.B\. „Kürzel“, „Label“, „LC“\.$/, 'Columns for prefix and LC not recognised — found: $1. Expected e.g. “Kürzel”, “Label”, “LC”.'],
   [/^Gleichstand — mehrere Label gleich gut belegt, bitte Quellen prüfen: (.*)$/, 'Tie — several labels equally well supported, please check the sources: $1'],
+  [/^Track-Index uneindeutig \((.*)\) — Netz befragt; Regel-Vorschlag LC(\S+) \(Original vor Compilation, sonst die meisten Veröffentlichungen\), bitte prüfen$/, 'Track index ambiguous ($1) — web queried; rule suggestion LC$2 (original before compilation, otherwise most releases), please check'],
   [/^Track-Index uneindeutig \((.*)\) — Netz befragt$/, 'Track index ambiguous ($1) — web queried'],
   [/^(.+) aus dem lokalen Track-Index nachgefüllt — bitte prüfen$/, (_,f)=>f.split('/').map(x=>t(x)).join('/')+' filled in from the local track index — please verify'],
   [/^Library-Datei (.*) \(Lieferung, verifiziert\)$/, 'Library file $1 (delivery, verified)'],
@@ -2709,6 +2713,10 @@ $('#rform').addEventListener('submit', async e=>{
   }finally{ if(_rsearch===run){ _rsearch=null; $('#rbtn').disabled=false; } }
 });
 
+// Prüfstufe eines Index-Treffers (resolver.INDEX_TIERS): wie belastbar die Dump-Daten für diesen Song sind
+const INDEX_TIER_TEXT={zwei_quellen:'Discogs und MusicBrainz einig', mehrere_releases:'eine Quelle, mehrere Veröffentlichungen',
+  einzelbeleg:'Einzelbeleg, eine Veröffentlichung', widerspruechlich:'widersprüchlich, mehrere Labelcodes'};
+function indexTierText(tier){ return INDEX_TIER_TEXT[tier] ? t(INDEX_TIER_TEXT[tier]) : ''; }
 function renderResolve(res){
   rresult.innerHTML='';
   const meta = el('div','meta-line');
@@ -2719,7 +2727,7 @@ function renderResolve(res){
   const tie = !!res.ambiguous, best = res.best, band = cardBand(res);
   tFn(meta, ()=>netDown ? t('Netz <b>nicht erreichbar</b>') : (res.local
       ? t('<b>Verifizierte lokale DB</b> · kein Netz')
-      : res.index ? t('<b>Lokaler Track-Index</b> · Dump-Daten, kein Netz — bitte prüfen')
+      : res.index ? t('<b>Lokaler Track-Index</b> · Dump-Daten, kein Netz — bitte prüfen') + (res.index_tier ? ' · <b>'+esc(indexTierText(res.index_tier))+'</b>' : '')
       : t('MusicBrainz <b>{score}</b>',{score:res.matched?t('Score {n}',{n:res.mb_score}):t('kein Match')}))
     + ` &nbsp;·&nbsp; <span class="band ${esc(band)}">${bandLabels[band]?t(bandLabels[band]):esc(band)}</span>`, 'html');
   rresult.appendChild(meta);
@@ -5696,10 +5704,10 @@ function dbEditor(r, onSaved, onClose, opts){
       // Klartext statt Kürzel: was die eigene Datenbank belegt, was online herauskam, was vorbelegt wurde und wo der
       // Vorschlag vom Eintrag abweicht (mit beiden Werten und der Quelle)
       const head=el('div','sug-h autolines'); autoBox.appendChild(head);
-      const viaLabels={isrc:'gleiche ISRC in der Track-Datenbank',katalog:'Katalog-Kürzel im Album',verlag:'Verlag im GVL-Master',index:'lokaler Track-Index (unverifiziert)'};
+      const viaLabels={isrc:'gleiche ISRC in der Track-Datenbank',katalog:'Katalog-Kürzel im Album',verlag:'Verlag im GVL-Master',index:'lokaler Track-Index (unverifiziert)',index_regel:'Regel-Vorschlag aus dem widersprüchlichen Track-Index (Original vor Compilation), bitte prüfen'};
       const locLine=el('div'), netLine=el('div'), fillLine=el('div'); head.append(locLine, netLine, fillLine);
       tFn(locLine, ()=>j.local
-        ? t('Eigene Datenbank: {lc} {label}, gefunden über {via}.',{lc:lcNum(j.local.labelcode), label:j.local.labelname||'', via:t(viaLabels[j.local.via]||j.local.via)})
+        ? t('Eigene Datenbank: {lc} {label}, gefunden über {via}.',{lc:lcNum(j.local.labelcode), label:j.local.labelname||'', via:t(viaLabels[j.local.via]||j.local.via)+(j.local.tier?', '+indexTierText(j.local.tier):'')})
         : t('Eigene Datenbank: kein Beleg für Label/LC (ISRC, Katalog-Kürzel, Verlag, Track-Index geprüft).'));
       const pct=j.confidence?Math.round(j.confidence*100)+' %':'';
       const bandText={auto:'Online: sicherer Treffer ({p}).', review:'Online: Treffer, bitte prüfen ({p}).',

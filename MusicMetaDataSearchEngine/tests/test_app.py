@@ -2830,5 +2830,5 @@ def test_auto_suche_fragt_lokal_auch_den_track_index(tmp_path, monkeypatch):
                                                source="discogs")])
     _mock_net(monkeypatch, label_names=())
     j = client.post("/api/resolve/merge", json={"artist": "Zzq Indexed", "title": "Only In Index"}).json()
-    assert j["local"]["via"] == "index" and j["local"]["labelcode"] == "LC00121"
+    assert j["local"]["via"] == "index" and j["local"]["labelcode"] == "LC00121" and j["local"]["tier"] == "einzelbeleg"
     assert j["net"]["labelcode"] == "LC00121"

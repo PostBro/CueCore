@@ -1374,7 +1374,10 @@ def _local_label(isrc: str, album: str, verlag: str, artist: str = "", title: st
         res = _resolve_index(artist, title)
         if res is not None and res.best and res.best.labelcode and not getattr(res, "ambiguous", False):
             return {"labelname": res.best.label or "", "labelcode": "LC" + normalize_labelcode(res.best.labelcode),
-                    "via": "index"}
+                    "via": "index", "tier": res.index_tier}
+        if res is not None and res.index_rule_pick:          # Widerspruch: Regel-Vorschlag, deutlich markiert
+            return {"labelname": GVL_MASTER(res.index_rule_pick) or "", "labelcode": "LC" + res.index_rule_pick,
+                    "via": "index_regel", "tier": res.index_tier}
     return None
 
 
@@ -1447,6 +1450,8 @@ def _resolve_dict(res, fetcher) -> dict:
         "incomplete": res.incomplete,
         "local": fetcher is None and not res.from_index,   # verifizierte songs.db
         "index": res.from_index,                           # lokaler Track-Index (Dump-Daten, kein Netz)
+        "index_tier": res.index_tier,                      # Prüfstufe des Index-Treffers (resolver.INDEX_TIERS)
+        "index_rule_pick": res.index_rule_pick,            # bei Widerspruch: Regel-Vorschlag, nie auto
         "best": best,
         "label_hints": res.label_hints,
         "candidates": candidates, "notes": res.notes,

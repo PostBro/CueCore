@@ -68,6 +68,8 @@ class ResolveResult:
     ambiguous: bool = False    # Margin-Gate: Top-Kandidaten liegen innerhalb MARGIN -> nie auto
     tied: list[str] = field(default_factory=list)   # die gleichauf liegenden Codes, Top zuerst
     from_index: bool = False   # Treffer aus dem lokalen Track-Index (Dump-Daten, kein Netz, nie auto)
+    index_tier: str = ""       # Prüfstufe des Index-Treffers, s. INDEX_TIERS
+    index_rule_pick: str = ""  # bei Widerspruch: Code nach Regel (index_rule_pick), nur Vorschlag, nie auto
     version: str = ""          # erkannte Version im Titel („Remix (Mark Ronson)“, „Live“), s. core/versions.py
     version_mismatch: bool = False   # gesucht war eine Version, MusicBrainz fand nur die Originalfassung -> nie auto
 
@@ -595,6 +597,59 @@ def resolve_by_title(title: str, idx: LabelIndex, *, wikidata_items_lookup) -> T
 
 INDEX_SOURCE = "index:"           # Quellen-Präfix der Kandidaten: 'index:discogs' | 'index:musicbrainz'
 INDEX_NOTE = "Treffer im lokalen Track-Index (Dump-Daten, nutzergepflegt) — bitte prüfen, kein Netz"
+# Prüfstufe eines Songs im Index, aus allen seinen Zeilen: ein Song steht je Quelle und Labelcode einmal drin,
+# mehrere Zeilen sind also mehrere Belege, keine Dubletten. Stufen, stärkste zuerst:
+INDEX_TIERS = ("zwei_quellen",       # ein Code, Discogs UND MusicBrainz nennen ihn
+               "mehrere_releases",   # ein Code, eine Quelle, auf mindestens zwei Veröffentlichungen
+               "einzelbeleg",        # ein Code, eine Quelle, eine Veröffentlichung
+               "widerspruechlich")   # mehrere GVL-Codes (Original und Compilation, Imprints, Länderausgaben)
+
+
+# Albumtitel, die auf eine Zusammenstellung deuten (Sampler, Best-of, Box): ihr Code verliert gegen das Original
+_COMPILATION = re.compile(r"\b(best of|greatest|hits|vol\.?|volume|collection|box|anthology|sampler|compilation|"
+                          r"megamix|essential|the very|gold|complete|series|now that|bravo|various)\b", re.I)
+
+
+def index_rule_pick(hits: list[dict]) -> str:
+    """Vorschlag bei widersprüchlichem Index (mehrere GVL-Codes für einen Song), offline und ohne neue Daten:
+    Codes unter 00100 fallen weg (meist Fehlzuordnungen kleiner Labels); dann gewinnt der einzige Code mit einem
+    Album ohne Compilation-Merkmal, sonst der mit den meisten Veröffentlichungen, sonst das früheste Jahr.
+    Stichprobe von 300 Widersprüchen: trifft bei Original-gegen-Compilation in rund 9 von 10 Fällen. Nur ein
+    markierter Vorschlag, nie automatisch. '' = keine Entscheidung."""
+    by: dict[str, list[dict]] = {}
+    for h in hits:
+        code = h.get("labelcode") or ""
+        if code.isdigit() and int(code) < 100:
+            continue
+        by.setdefault(code, []).append(h)
+    if len(by) == 1:
+        return next(iter(by))
+    if len(by) < 2:
+        return ""
+    plain = [c for c, hs in by.items() if any(h.get("album") and not _COMPILATION.search(h["album"]) for h in hs)]
+    if len(plain) == 1:
+        return plain[0]
+    pool = plain or list(by)
+    n = {c: sum(int(h.get("n_releases") or 1) for h in by[c]) for c in pool}
+    top = sorted(n.values(), reverse=True)
+    if top[0] > top[1]:
+        return max(n, key=n.get)
+    years = {c: min((h["jahr"] for h in by[c] if (h.get("jahr") or "").isdigit()), default="") for c in pool}
+    dated = sorted((y, c) for c, y in years.items() if y)
+    if dated and (len(dated) == 1 or dated[0][0] < dated[1][0]):
+        return dated[0][1]
+    return ""
+
+
+def index_tier(hits: list[dict]) -> str:
+    """Prüfstufe aus den Index-Zeilen eines Songs (nur Zeilen mit GVL-Code übergeben)."""
+    if not hits:
+        return ""
+    if len({h.get("labelcode") for h in hits}) > 1:
+        return "widerspruechlich"
+    if len({h.get("source") for h in hits}) >= 2:
+        return "zwei_quellen"
+    return "mehrere_releases" if sum(int(h.get("n_releases") or 1) for h in hits) >= 2 else "einzelbeleg"
 
 
 def index_result(artist: str, title: str, hits: list[dict], idx: LabelIndex) -> ResolveResult | None:
@@ -624,6 +679,9 @@ def index_result(artist: str, title: str, hits: list[dict], idx: LabelIndex) -> 
         by_code.setdefault(code, []).append(h)
     if not cand:
         return res
+    res.index_tier = index_tier([h for hs in by_code.values() for h in hs])
+    if res.index_tier == "widerspruechlich":
+        res.index_rule_pick = index_rule_pick([h for hs in by_code.values() for h in hs])
     for c in cand.values():
         c.dual_source = len(c.sources) >= 2
         c.confidence = 0.65 if c.dual_source else 0.5
@@ -663,7 +721,9 @@ def merge_index_writers(res: ResolveResult, index_res: ResolveResult | None) -> 
         res.notes.append(f"{'/'.join(filled)} aus dem lokalen Track-Index nachgefüllt — bitte prüfen")
     if index_res.ambiguous:
         res.notes.append("Track-Index uneindeutig (" + " / ".join(f"LC{c}" for c in index_res.tied)
-                         + ") — Netz befragt")
+                         + ") — Netz befragt" + (f"; Regel-Vorschlag LC{index_res.index_rule_pick} (Original vor "
+                         "Compilation, sonst die meisten Veröffentlichungen), bitte prüfen"
+                                                 if index_res.index_rule_pick else ""))
     return res
 
 
