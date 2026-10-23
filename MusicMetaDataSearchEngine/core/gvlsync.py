@@ -51,6 +51,39 @@ def is_older(pdf_version: str, master: str) -> bool:
     return bool(_ISO_DATE.fullmatch(pdf_version or "") and _ISO_DATE.fullmatch(master or "")) and pdf_version < master
 
 
+def db_version(labels_db: str | Path) -> str:
+    """Stand, aus dem labels.db gebaut wurde ('' ohne DB oder Meta)."""
+    if not Path(labels_db).exists():
+        return ""
+    import sqlite3
+    con = sqlite3.connect(labels_db)
+    try:
+        row = con.execute("SELECT value FROM meta WHERE key='source_version'").fetchone()
+        return str(row[0]) if row else ""
+    except sqlite3.Error:
+        return ""
+    finally:
+        con.close()
+
+
+def needs_rebuild(labels_db: str | Path, master_csv: str | Path) -> bool:
+    """labels.db älter als der mitgelieferte Master? Eine Installation behält sonst den GVL-Stand ihres ersten
+    Starts (neue Codes fehlen, geänderte PLM-Kennzeichen bleiben alt). Ein selbst eingespieltes, neueres PDF
+    bleibt (dann ist der Master nicht neuer)."""
+    return Path(labels_db).exists() and is_older(db_version(labels_db), master_version(master_csv))
+
+
+def rebuild_from_master(master_csv: str | Path, labels_db: str | Path,
+                        supplemental_path: str | Path) -> tuple[str, int]:
+    """labels.db aus dem Master neu bauen, mit den Zusatz-Codes wie beim PDF-Update. Manuelle Labels, Namens-
+    korrekturen und eigene Änderungen trägt das Laden danach wieder ein. Rückgabe (Stand, Zeilen)."""
+    from core.normalize import normalize_labelcode
+    records = read_csv(master_csv)
+    existing = {normalize_labelcode(r.labelcode) for r in records}
+    version = master_version(master_csv)
+    return version, build_label_db(records + read_supplemental(Path(supplemental_path), existing), labels_db, version)
+
+
 def preview(pdf_path: str | Path, csv_path: str | Path, *, limit: int = 25,
             name_fixes_path: str | Path | None = None) -> dict:
     """PDF parsen + gegen den aktuellen Master diffen. Schreibt nichts. Meldet, ob das PDF älter ist als

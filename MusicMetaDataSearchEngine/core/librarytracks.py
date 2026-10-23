@@ -421,6 +421,21 @@ def fill_codes_by_name(songs_con, master) -> dict:
     return {"filled": filled, "ambiguous": ambiguous}
 
 
+_LEGAL_SUFFIX = re.compile(r"[\s,]+(ltd\.?|limited|gmbh|inc\.?|llc|b\.?v\.?|ab|s\.?a\.?|s\.?r\.?l\.?|oy|aps|as|co\.? kg|kg)$", re.I)
+_GENERIC_SUFFIX = re.compile(r"\s+(music|musik|publishing|productions?)$", re.I)
+
+
+def publisher_codes(master, name: str) -> list[str]:
+    """GVL-Codes zu einem Verlagsnamen, stufenweise: wie geschrieben, ohne Rechtsform („KPM Music Ltd“ -> „KPM
+    Music“), dann ohne „Music/Publishing“ am Ende („Swimming Pool Music“ -> „Swimming Pool“). Die erste Stufe mit
+    Treffer zählt; ob er eindeutig und PLM ist, prüft der Aufrufer."""
+    for cand in (name, _LEGAL_SUFFIX.sub("", name)):
+        if codes := master.codes_for_name(cand):
+            return codes
+    bare = _GENERIC_SUFFIX.sub("", _LEGAL_SUFFIX.sub("", name))
+    return master.codes_for_name(bare) if bare and bare != name else []
+
+
 def fill_song_codes_by_name(songs_con, master, song_id: int | None = None) -> dict:
     """Wie fill_codes_by_name, aber für jede songs-Zeile (eigene Einträge, Seed, Importe): ohne Labelcode, mit
     Labelname, der im Master unter genau EINEM Code steht -> Code, GVL-Name und Notiz LC_BY_NAME_NOTE. Eindeutig heißt
@@ -458,7 +473,7 @@ def fill_song_codes_by_name(songs_con, master, song_id: int | None = None) -> di
         (" AND id=?" if song_id is not None else "")
     for verlag, n in songs_con.execute(f"SELECT verlag, COUNT(*) FROM songs WHERE {where} GROUP BY verlag "
                                        "ORDER BY verlag", args).fetchall():
-        codes = sorted({c for part in verlag.split(";") for c in master.codes_for_name(part.strip())})
+        codes = sorted({c for part in verlag.split(";") for c in publisher_codes(master, part.strip())})
         if len(codes) != 1 or codes[0] not in master.plm:
             continue
         lc, label = "LC" + codes[0], master(codes[0])

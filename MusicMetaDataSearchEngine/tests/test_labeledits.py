@@ -75,9 +75,9 @@ def test_apply_korrektur_gewinnt_vor_master_und_kuerzel():
 def test_liste_seitenweise_und_filter(tmp_path):
     _setup(tmp_path)
     j = client.get("/api/labels/list", params={"limit": 2}).json()
-    assert j["total"] == 4 and [r["label"] for r in j["rows"]] == ["Quorx Sounds", "Testprojekt Records"]
+    assert j["total"] == 4 and [r["labelcode"] for r in j["rows"]] == ["91001", "91002"]   # numerisch nach LC
     j2 = client.get("/api/labels/list", params={"limit": 2, "offset": 2}).json()
-    assert [r["label"] for r in j2["rows"]] == ["Zzq Archive", "Zzq Library"]
+    assert [r["labelcode"] for r in j2["rows"]] == ["91003", "91004"]
     assert {r["labelcode"] for r in client.get("/api/labels/list", params={"plm": True}).json()["rows"]} == {"91001", "91002"}
     k = client.get("/api/labels/list", params={"kuerzel": True}).json()["rows"]
     assert [(r["labelcode"], [x["prefix"] for x in r["kuerzel"]]) for r in k] == [("91004", ["QXA"])]
@@ -87,7 +87,7 @@ def test_liste_seitenweise_und_filter(tmp_path):
 def test_liste_suche_nach_lc_name_und_kuerzel(tmp_path):
     _setup(tmp_path)
     assert [r["labelcode"] for r in client.get("/api/labels/list", params={"q": "LC 91003"}).json()["rows"]] == ["91003"]
-    assert [r["labelcode"] for r in client.get("/api/labels/list", params={"q": "zzq"}).json()["rows"]] == ["91002", "91001"]
+    assert [r["labelcode"] for r in client.get("/api/labels/list", params={"q": "zzq"}).json()["rows"]] == ["91001", "91002"]
     assert [r["labelcode"] for r in client.get("/api/labels/list", params={"q": "zzq library"}).json()["rows"]][0] == "91001"
     assert [r["labelcode"] for r in client.get("/api/labels/list", params={"q": "qxa"}).json()["rows"]] == ["91004"]
 

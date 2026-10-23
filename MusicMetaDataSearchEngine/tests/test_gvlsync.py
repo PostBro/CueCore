@@ -157,3 +157,25 @@ def test_merge_counts_supplemental_from_given_path(tmp_path):
     res = gvlsync.merge(token, csv_path=p["csv"], data_dir=p["data_dir"], docs_dir=p["docs_dir"],
                         labels_db=tmp_path / "labels.db", supplemental_path=supp)
     assert res["rows"] == 2
+
+
+def test_aelterer_labels_db_stand_wird_aus_dem_mitgelieferten_master_neu_gebaut(tmp_path):
+    """Ein Update behält sonst den GVL-Stand des ersten Starts: neue Codes fehlen, geänderte PLM-Kennzeichen bleiben
+    alt. Gleicher oder neuerer Stand (eigenes PDF eingespielt) bleibt unangetastet."""
+    from core.labeldb import build_label_db
+    from core.models import LabelRecord
+    data_dir = tmp_path / "data"; data_dir.mkdir()
+    csv_path = _write_master(data_dir, version="2026-10-13")
+    csv_path.write_text("labelcode,label,kurzname,plm,hersteller,rechterueckrufe\n"
+                        "99555,Zzq Lifestyle,,Ja,Zzq GmbH,\n", encoding="utf-8")
+    db = tmp_path / "labels.db"
+    build_label_db([LabelRecord("99555", "Zzq Lifestyle", "", "", "Zzq GmbH", "")], db, "2026-09-15")
+    assert gvlsync.needs_rebuild(db, csv_path)
+    assert gvlsync.rebuild_from_master(csv_path, db, data_dir / "labelcodes_supplemental.csv") == ("2026-10-13", 1)
+    con = sqlite3.connect(db)
+    assert con.execute("SELECT plm FROM labels WHERE labelcode='99555'").fetchone()[0] == 1
+    con.close()
+    assert gvlsync.db_version(db) == "2026-10-13" and not gvlsync.needs_rebuild(db, csv_path)
+    build_label_db([], db, "2026-11-01")            # eigenes, neueres PDF
+    assert not gvlsync.needs_rebuild(db, csv_path)
+    assert not gvlsync.needs_rebuild(tmp_path / "fehlt.db", csv_path)

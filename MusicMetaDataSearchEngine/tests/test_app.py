@@ -2767,6 +2767,15 @@ def test_beispielprojekt_einmal_aus_partner_lieferungen(tmp_path, monkeypatch):
     assert appmod._ensure_example_project() is None                       # gelöscht bleibt gelöscht
 
 
+def test_beispielprojekt_wird_erst_nach_allen_helfern_angelegt():
+    """Der Aufruf beim Import des Moduls lag vor _label_lookup und _catalog_fn: in einer echten Installation scheiterte
+    das Beispielprojekt still mit NameError. Er muss hinter beiden Definitionen stehen."""
+    from pathlib import Path
+    src = Path(appmod.__file__).read_text(encoding="utf-8")
+    call = src.index("\n    _ensure_example_project()\nexcept Exception")
+    assert call > src.index("\ndef _label_lookup(") and call > src.index("\ndef _catalog_fn(")
+
+
 def test_kuerzel_ohne_festen_code_kommt_als_suchhinweis_an_die_karte(tmp_path, monkeypatch):
     """Ein Clip, dessen Kürzel nur in der Hinweisliste steht (Listen uneinig), bekommt die Kandidaten als Hinweis,
     aber keinen Labelcode."""
@@ -2778,3 +2787,36 @@ def test_kuerzel_ohne_festen_code_kommt_als_suchhinweis_an_die_karte(tmp_path, m
     card = client.post("/api/edl/import", json={"content": edl, "online": False}).json()["cards"][0]
     assert not card.get("labelcode")
     assert card["prefix_hints"]["prefix"] == "ZQX" and [h["labelcode"] for h in card["prefix_hints"]["candidates"]] == ["24584", "00100"]
+
+
+def test_labelliste_ist_numerisch_nach_lc_sortiert(tmp_path):
+    """Befund 23.10.2026: zur Übersicht nach Labelcode, numerisch (5- und 6-stellige gemischt), nicht nach Name."""
+    _setup_split_codes(tmp_path)          # 00024, 24584, 00100, 100148
+    rows = client.get("/api/labels/list", params={"limit": 200}).json()["rows"]
+    codes = [r["labelcode"] for r in rows]
+    assert codes == sorted(codes, key=int)
+    total = client.get("/api/labels/list", params={"limit": 1}).json()["total"]
+    last = [r["labelcode"] for r in client.get("/api/labels/list", params={"limit": 50, "offset": total - 50}).json()["rows"]]
+    assert last == sorted(last, key=int) and int(last[-1]) >= 100148 and int(last[0]) > int(codes[-1])
+
+
+def test_auto_suche_prueft_erst_die_eigene_datenbank_und_den_master(tmp_path, monkeypatch):
+    """„Auto-Suche“ im Editor: gleiche ISRC einer verifizierten Zeile, Katalog-Kürzel im Album oder ein Verlag, der
+    eindeutig auf ein PLM-Label führt, belegen Label/LC ohne Netz und gehen dem Netzfund vor."""
+    from core import songsdb
+    db = tmp_path / "labels.db"
+    build_label_db([LabelRecord("99555", "Zzq Lifestyle", "", "Ja", "Zzq Publishing GmbH", ""),
+                    LabelRecord("00121", "Atlantic", "", "", "Warner", "")], db, "2026-06-23")
+    appmod.configure(db)
+    _mock_net(monkeypatch, label_names=("Atlantic",))
+    songsdb.upsert(appmod.SONGS_CON, interpret="Erika Testerin", titel="Lieferung", labelname="Zzq Lifestyle",
+                   labelcode="LC99555", isrc="DEZZQ2600001", review_status="verified")
+    appmod.SONGS_CON.commit()
+    j = client.post("/api/resolve/merge", json={"artist": "Erika Testerin", "title": "Andere Zeile",
+                                                "isrc": "DE-ZZQ-26-00001"}).json()
+    assert j["local"]["via"] == "isrc" and j["net"]["labelcode"] == "LC99555"
+    j = client.post("/api/resolve/merge", json={"artist": "Erika Testerin", "title": "Nur Verlag",
+                                                "verlag": "Zzq Lifestyle Music"}).json()
+    assert j["local"] == {"labelname": "Zzq Lifestyle", "labelcode": "LC99555", "via": "verlag"}
+    j = client.post("/api/resolve/merge", json={"artist": "Erika Testerin", "title": "Ohne Beleg"}).json()
+    assert j["local"] is None and j["net"]["labelcode"] == "00121"

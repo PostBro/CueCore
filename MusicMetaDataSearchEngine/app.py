@@ -115,8 +115,9 @@ def _gvl_paths() -> tuple[Path, Path, Path]:
     d.mkdir(parents=True, exist_ok=True)
     for name in ("GVL_Labelcodes_synced.csv", "GVL_Labelcodes_synced.meta.json"):
         src = _bundle_base() / "data" / name
-        if not (d / name).exists() and src.exists():
-            shutil.copy(src, d / name)
+        if src.exists() and (not (d / name).exists() or gvlsync.is_older(
+                gvlsync.master_version(d / "GVL_Labelcodes_synced.csv"), gvlsync.master_version(src))):
+            shutil.copy(src, d / name)   # auch nach einem Update mit neuerem Master (eigenes neueres PDF bleibt)
     return d / "GVL_Labelcodes_synced.csv", d, d / "docs"
 SONGS_CON = None                              # aktive, indizierte Verbindung (außerhalb von Cloud-Ordnern)
 # GVL-Master + Zusatzliste OHNE manuelle Labels — Prüfmaßstab für gelieferte Codes (core/labelcheck)
@@ -265,6 +266,18 @@ def _load() -> None:
         _PREFIX_BASE.clear()
         DB_META.update(ready=False, rows=0, source_version="—")
         return
+    # Update einer älteren Installation: labels.db trägt noch den GVL-Stand des ersten Starts -> aus dem
+    # mitgelieferten, neueren Master neu bauen (vorher sichern); manuelle Labels und Korrekturen folgen unten
+    shipped = _data_file("GVL_Labelcodes_synced.csv")
+    if not os.environ.get("CUECORE_SKIP_MASTER_REBUILD") and gvlsync.needs_rebuild(DB_PATH, shipped):
+        old = gvlsync.db_version(DB_PATH)
+        c = connect(DB_PATH)
+        try:
+            _backup_before_heal(c)
+        finally:
+            c.close()
+        version, n = gvlsync.rebuild_from_master(shipped, DB_PATH, _data_file("labelcodes_supplemental.csv"))
+        print(f"labels.db: GVL-Stand {old} -> {version} aus dem mitgelieferten Master ({n} Zeilen)", flush=True)
     con = connect(DB_PATH)
     try:
         labeldb.add_manual_labels(con, _manual_labels())   # überleben den Neuaufbau aus dem PDF
@@ -685,7 +698,7 @@ def labels_list(q: str = "", offset: int = 0, limit: int = 50, plm: bool = False
         labeldb.ensure_source_column(con)
         total = con.execute("SELECT COUNT(*) FROM labels" + sql_where, args).fetchone()[0]
         rows = con.execute("SELECT labelcode,label,kurzname,plm,hersteller,rechterueckrufe,source FROM labels"
-                           + sql_where + " ORDER BY lower(label)=lower(?) DESC, label COLLATE NOCASE, labelcode "
+                           + sql_where + " ORDER BY lower(label)=lower(?) DESC, CAST(labelcode AS INTEGER), label COLLATE NOCASE "
                            "LIMIT ? OFFSET ?", [*args, q, limit, max(0, offset)]).fetchall()
     finally:
         con.close()
@@ -975,11 +988,6 @@ def _ensure_example_project() -> dict | None:
     return meta
 
 
-try:
-    _ensure_example_project()
-except Exception as e:                                     # ein Beispiel darf den Start nie verhindern
-    print(f"[beispielprojekt] {e.__class__.__name__}: {e}", flush=True)
-
 
 def _open_folder(path: Path) -> None:
     """Ordner im Finder/Explorer öffnen."""
@@ -1025,6 +1033,7 @@ class ResolveIn(BaseModel):
     limit: int = 20       # Titel-only: Index-Zeilen je Seite
     offset: int = 0       # Titel-only: „mehr zeigen“ (Recall vor Präzision — Runaway hat 1.879 Schlüssel)
     net: bool = False     # Titel-only: Wikidata auch fragen, wenn Datenbank/Index schon Treffer haben
+    verlag: str = ""      # optional (Track-Datenbank „Auto-Suche“): Verlag für die lokale Label-Prüfung
 
 
 # Ein Fetcher für eine ganze Anfrage mit mehreren Auflösungen (Cue-Sheet-Batch, Online-Import, Autoren): das
@@ -1335,6 +1344,29 @@ def db_lookup(body: ResolveIn) -> dict:
             "net": {}, "fields": [], "artist": artist, "title": title}
 
 
+def _local_label(isrc: str, album: str, verlag: str) -> dict | None:
+    """Label/LC ohne Netz, für die „Auto-Suche“ im Editor, in dieser Reihenfolge: (1) verifizierte Zeilen der
+    Track-Datenbank mit derselben ISRC tragen genau einen Code (z.B. die Library-Lieferung), (2) Katalog-Kürzel im
+    Album (APLS 138 -> APL Lifestyle), (3) Verlag, der eindeutig auf ein Production-Music-Label im Master führt.
+    Rückgabe {labelname, labelcode, via} oder None."""
+    from core.musicbrainz import normalize_isrc
+    isrc = normalize_isrc(isrc)
+    if isrc and SONGS_CON is not None:
+        rows = SONGS_CON.execute("SELECT DISTINCT labelname, labelcode FROM songs WHERE isrc=? AND "
+                                 "COALESCE(labelcode,'')<>'' AND review_status='verified'", (isrc,)).fetchall()
+        if len({normalize_labelcode(r[1]) for r in rows}) == 1:
+            return {"labelname": rows[0][0] or "", "labelcode": "LC" + normalize_labelcode(rows[0][1]), "via": "isrc"}
+    if album:
+        cand = catalog_candidate(album, INDEX, tpub=verlag)
+        if cand and cand.labelcode:
+            return {"labelname": cand.label, "labelcode": "LC" + normalize_labelcode(cand.labelcode), "via": "katalog"}
+    if verlag:
+        codes = sorted({c for part in verlag.split(";") for c in librarytracks.publisher_codes(GVL_MASTER, part.strip())})
+        if len(codes) == 1 and codes[0] in GVL_MASTER.plm:
+            return {"labelname": GVL_MASTER(codes[0]) or "", "labelcode": "LC" + codes[0], "via": "verlag"}
+    return None
+
+
 @app.post("/api/resolve/merge")
 def resolve_merge(body: ResolveIn) -> dict:
     """Bearbeiten & Abgleichen: liefert den DB-Stand (falls vorhanden, mit id) UND den
@@ -1344,6 +1376,7 @@ def resolve_merge(body: ResolveIn) -> dict:
         raise HTTPException(503, LABELS_DB_MISSING)
     artist, title = body.artist.strip(), body.title.strip()
     db_row = songsdb.find_row(SONGS_CON, artist, title) if SONGS_CON is not None else None
+    local = _local_label(body.isrc.strip(), body.album.strip(), body.verlag.strip())
     res, fetcher = _resolve_net(artist, title, body.isrc.strip())
     best = res.best
     tie = bool(getattr(res, "ambiguous", False))     # Margin-Gate: Label/LC nicht vorbelegen
@@ -1354,7 +1387,10 @@ def resolve_merge(body: ResolveIn) -> dict:
            "album": res.album or "", "isrc": res.isrcs[0] if res.isrcs else "",
            "iswc": res.iswcs[0] if len(res.iswcs) == 1 else "",     # mehrere ISWCs: nicht raten
            "gema_werknummer": res.gema_werknummer}
+    if local:   # lokale Belege (eigene Datenbank, GVL-Master) gehen dem Netz beim Label vor
+        net.update(labelname=local["labelname"], labelcode=local["labelcode"])
     return {
+        "local": local,
         "db": _suggestion(db_row) if db_row else None,
         "db_id": db_row.get("id") if db_row else None,
         "net": net, "matched": res.matched,
@@ -2736,3 +2772,11 @@ def quit_app() -> dict:
     import threading
     threading.Timer(0.3, _QUIT["fn"]).start()
     return {"quitting": True}
+
+
+# Erst am Ende des Moduls: das Beispielprojekt braucht _label_lookup und _catalog_fn, die weiter oben noch nicht
+# definiert wären (der Aufruf mitten im Modul scheiterte beim ersten Start still mit NameError)
+try:
+    _ensure_example_project()
+except Exception as e:                                     # ein Beispiel darf den Start nie verhindern
+    print(f"[beispielprojekt] {e.__class__.__name__}: {e}", flush=True)

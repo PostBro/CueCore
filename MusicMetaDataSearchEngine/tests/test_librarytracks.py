@@ -347,6 +347,24 @@ def test_ohne_label_zaehlt_der_verlag_nur_bei_eindeutigem_production_music_label
     con.close()
 
 
+def test_verlag_mit_rechtsform_oder_music_am_ende_trifft_das_label(tmp_path):
+    """„Zzq Music Ltd“ heißt im Master „Zzq Music“, „Badeteich Music“ dort „Badeteich“. Stufenweise: wie geschrieben,
+    ohne Rechtsform, dann ohne „Music“; die erste Stufe mit Treffer zählt (sonst träfe „Zzq“ ein anderes Label)."""
+    from core.labelcheck import GvlMaster
+    master = GvlMaster([("99601", "ZZQ MUSIC"), ("99602", "Zzq"), ("99603", "Badeteich")],
+                       plm_codes=["99601", "99602", "99603"])
+    assert librarytracks.publisher_codes(master, "Zzq Music Ltd") == ["99601"]
+    assert librarytracks.publisher_codes(master, "Zzq Music Ltd.") == ["99601"]
+    assert librarytracks.publisher_codes(master, "Badeteich Music") == ["99603"]
+    assert librarytracks.publisher_codes(master, "Badeteich GmbH") == ["99603"]
+    assert librarytracks.publisher_codes(master, "Unbekannt Music") == []
+    con = songsdb.open(tmp_path / "songs.db")
+    songsdb.create_song(con, {"interpret": "Erika Testerin", "titel": "Eins", "verlag": "Badeteich Music"})
+    librarytracks.fill_song_codes_by_name(con, master)
+    assert songsdb.find(con, "Erika Testerin", "Eins")["labelcode"] == "LC99603"
+    con.close()
+
+
 def test_nicht_plm_code_ueber_den_namen_nur_mit_beleg_in_der_datenbank(tmp_path):
     """„Indigo“ steht im Master als fremdes, nicht-PLM-Label — ein Production-Music-Sublabel gleichen Namens bekäme sonst
     den falschen Code. Ohne Beleg bleibt die Zeile offen; tragen andere Zeilen desselben Labels den Code, gilt er."""

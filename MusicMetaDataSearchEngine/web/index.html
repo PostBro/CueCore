@@ -224,7 +224,8 @@
   .chip.lock{background:var(--good-soft);color:var(--good);border-color:transparent}
   .inp.autofilled{border-color:var(--good);box-shadow:0 0 0 2px var(--good-soft)}
   .autobox{margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--raised);display:flex;flex-direction:column;gap:8px}
-  .autorow{display:flex;align-items:center;gap:8px;font-size:12.5px}
+  .autorow{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;font-size:12.5px}
+  .autolines{display:flex;flex-direction:column;gap:3px;margin-bottom:0}
   .warnlist{display:flex;flex-direction:column;gap:8px}
   .warnitem{border:1px solid var(--line-strong);border-left:3px solid var(--warn);border-radius:var(--r-sm);padding:8px 10px;font-size:12.5px}
   .warnitem.error{border-left-color:var(--accent)} .warnitem.info{border-left-color:var(--good)}
@@ -242,6 +243,12 @@
   .chip.korr{font-family:var(--mono);margin-left:6px}
   .gtable .lcv.struck{text-decoration:line-through;color:var(--muted-2)}
   .gtable td.gkz{white-space:normal;max-width:22rem}
+  /* Feste Spalten innerhalb der Rahmenbreite: sonst ragt die Aktionsspalte rechts hinaus (Befund 23.10.2026) */
+  /* Labelliste: alles einzeilig außer Kürzel-Chips und Hersteller (.wrap) */
+  .etable.gtable th,.etable.gtable td{white-space:nowrap;padding-left:8px;padding-right:8px}
+  .etable.gtable td:nth-child(3){white-space:normal;min-width:10ch}
+  .etable.gtable td .chip{white-space:nowrap}
+  .etable.gtable td:last-child{text-align:right}
   .gfilt{font-size:12px;font-weight:500;padding:6px 12px;border-radius:99px;border:1px solid var(--line-strong);background:none;color:var(--muted);cursor:pointer;font-family:inherit}
   .gfilt:hover{color:var(--text)} .gfilt.on{color:var(--text);border-color:var(--accent);background:var(--accent-soft)}
   .gmsg{min-height:1.2em;margin-top:6px} .gmsg.err{color:var(--warn)}
@@ -331,6 +338,7 @@
   .appver{margin-top:10px;font-size:10.5px;color:var(--muted-2);text-align:center;letter-spacing:.02em}
   .quitbtn{margin-top:12px;width:100%;background:var(--raised);color:var(--muted);border:1px solid var(--line-strong);border-radius:var(--r-sm);padding:8px;font-size:12px;cursor:pointer;transition:color .14s,border-color .14s}
   .quitbtn:hover{color:var(--text);border-color:var(--accent)}
+  .quithint{margin-top:4px;font-size:10.5px;line-height:1.35;color:var(--muted-2);text-align:center}
   .railctl{display:flex;gap:8px;margin-top:12px}
   .ctlbtn{flex:1;background:var(--raised);color:var(--muted);border:1px solid var(--line-strong);border-radius:var(--r-sm);padding:7px 8px;font-size:12px;font-weight:600;letter-spacing:.04em;cursor:pointer;transition:color .14s,border-color .14s;display:flex;align-items:center;justify-content:center;gap:6px}
   .ctlbtn:hover{color:var(--text);border-color:var(--accent)}
@@ -417,7 +425,10 @@
   .etable th,.etable td{white-space:nowrap;padding:8px 12px;text-align:left}
   .etable th{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted-2);background:var(--raised);font-weight:600}
   .etable td{border-top:1px solid var(--line);font-size:12.5px;vertical-align:middle}
-  .etable td.ell{max-width:30rem;white-space:normal}   /* Hybrid-Umbruch ab ~30rem, Wortbruch s. unten */
+  /* Spalten nach Inhalt (Regel 23.10.2026): Titel, Interpret, Label, Album einzeilig, die Tabelle scrollt
+     im Rahmen; umbrechen dürfen nur Mehrfach-Namen (Komponist, Texter, Verlag, Hersteller) und Meldungen (.wrap) */
+  .etable td.ell{white-space:nowrap}
+  .etable td.ell.wrap{white-space:normal}
   .etable td.eact,.etable th:last-child{text-align:right}
   .etable td.num,.etable th.num{font-variant-numeric:tabular-nums;text-align:right}
   .prow.builtin .pbuiltin{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px} .prow.builtin .pbuiltin .hint{flex-basis:100%}
@@ -445,6 +456,8 @@
   .est.miss{color:var(--muted-2);background:var(--raised)}
   /* ---------- Datenbank-Editor ---------- */
   .dbtable{width:100%;border-collapse:collapse;margin-top:8px}
+  /* Vorschau- und Berichtstabellen: einzeilig nach Inhalt, zu breit -> eigener Scrollbalken; Meldungen (.wrap) brechen um */
+  .dbtable{display:block;overflow-x:auto;max-width:100%} .dbtable td,.ptable td{white-space:nowrap} .dbtable td.wrap,.ptable td.wrap{white-space:normal;min-width:16rem}
   .dbrow{border:1px solid var(--line);border-radius:var(--r-md);margin-top:8px;overflow:hidden;transition:border-color .14s}
   .dbrow.open{border-color:var(--accent)}
   .dbhead{display:grid;grid-template-columns:1.1fr 1.3fr 1fr 1fr auto;gap:14px;align-items:center;padding:12px 15px;cursor:pointer}
@@ -628,7 +641,6 @@
   .gap:hover,.gap.active{border-color:var(--warn)} .gap.active{color:#1a1200;background:var(--warn)}
   .gaps .none{font-size:11.5px;color:var(--muted-2)}
   .dbtools .dbexport .hint{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted-2)}
-  .etable .clamp,.dtable .clamp{white-space:normal;max-width:16rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .seg button:focus-visible,.gap:focus-visible,.btn:focus-visible,.est[role=button]:focus-visible,.rc:focus-visible,.drop:focus-visible{outline:none;box-shadow:0 0 0 3px var(--accent-soft),0 0 0 1px var(--accent)}
   .verifybox{border:1px solid var(--accent);border-radius:var(--r-md);padding:14px 16px;margin-bottom:6px;background:var(--accent-soft)}
   .verifybox .verifyh{font-family:var(--disp);font-weight:700;font-size:17px;text-transform:uppercase;letter-spacing:.02em;margin-bottom:6px}
@@ -658,7 +670,7 @@
     .dot{margin:0}
     .railctl{flex-direction:column;gap:6px} .ctlbtn{padding:6px 2px;font-size:10.5px;letter-spacing:0}
     #themebtn{font-size:0} #themebtn::before{content:"◐";font-size:14px}
-    .quitbtn{font-size:0;padding:6px} .quitbtn::before{content:"⏻";font-size:13px}
+    .quitbtn{font-size:0;padding:6px} .quitbtn::before{content:"⏻";font-size:13px} .quithint{display:none}
     .head{padding:22px 20px 14px} .wrap{padding:20px 20px 48px} #tool-edl #eresult{padding:0 20px 48px}
   }
 .ival{font-size:13px;padding:6px 0;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;color:var(--text)}
@@ -719,7 +731,8 @@
         <button class="ctlbtn" id="langbtn" type="button" data-tip></button>
       </div>
       <div class="appver" id="appver" aria-live="off"></div>
-      <button class="quitbtn" id="quitbtn" data-i18n="CueCore beenden" data-tip="narrow" data-i18n-aria="CueCore beenden" aria-label="CueCore beenden">CueCore beenden</button>
+      <button class="quitbtn" id="quitbtn" data-i18n="CueCore beenden" data-tip data-i18n-aria="Stoppt den CueCore-Dienst, der im Hintergrund läuft. Nur im Browser nötig: das Schließen des Tabs lässt ihn weiterlaufen. Im App-Fenster genügt Schließen." aria-label="Stoppt den CueCore-Dienst, der im Hintergrund läuft. Nur im Browser nötig: das Schließen des Tabs lässt ihn weiterlaufen. Im App-Fenster genügt Schließen.">CueCore beenden</button>
+      <div class="quithint" id="quithint" data-i18n="Stoppt den Dienst im Hintergrund (nur im Browser nötig)">Stoppt den Dienst im Hintergrund (nur im Browser nötig)</div>
     </div>
   </aside>
 
@@ -1166,7 +1179,17 @@ const I18N_EN = {
   "Labelcodes mit oder ohne „LC“, führende Nullen bleiben erhalten. Bestehende Einträge werden ergänzt, verifizierte Felder nicht überschrieben.":"Label codes with or without “LC”, leading zeros are kept. Existing entries are completed, verified fields are not overwritten.",
   "Beispiel-Kopfzeile (CSV mit Semikolon)":"Example header row (semicolon CSV)",
   "Interpret;Titel;Komponist;Texter;Verlag;Label;Labelcode;Album;Track-Nr.;ISRC;ISWC;GEMA-Werknr.":"Artist;Title;Composer;Lyricist;Publisher;Label;Label code;Album;Track no.;ISRC;ISWC;GEMA work no.",
-  "MusicBrainz, Discogs, Deezer und Wikidata befragen — leere Felder werden vorbelegt, gefüllte bleiben; nichts wird ohne Speichern geschrieben":"Query MusicBrainz, Discogs, Deezer and Wikidata — empty fields are pre-filled, filled ones stay; nothing is written until you save",
+  "Erst die eigene Datenbank und den GVL-Master (ISRC, Katalog-Kürzel, Verlag), dann MusicBrainz, Discogs, Deezer und Wikidata befragen — leere Felder werden vorbelegt, gefüllte bleiben; nichts wird ohne Speichern geschrieben":"First the own database and the GVL master (ISRC, catalogue prefix, publisher), then MusicBrainz, Discogs, Deezer and Wikidata — empty fields are prefilled, filled ones stay; nothing is written without saving",
+  "Suche in der Datenbank und online …":"Searching the database and online …",
+  "Eigene Datenbank: {lc} {label}, gefunden über {via}.":"Own database: {lc} {label}, found via {via}.",
+  "Eigene Datenbank: kein Beleg für Label/LC (ISRC, Katalog-Kürzel, Verlag geprüft).":"Own database: no evidence for label/LC (ISRC, catalogue prefix, publisher checked).",
+  "Online: sicherer Treffer ({p}).":"Online: confident match ({p}).", "Online: Treffer, bitte prüfen ({p}).":"Online: match, please check ({p}).",
+  "Online: schwacher Treffer, bitte prüfen ({p}).":"Online: weak match, please check ({p}).", "Online: Treffer.":"Online: match.",
+  "Online: kein passender Treffer bei MusicBrainz, Discogs, Deezer und Wikidata.":"Online: no matching result on MusicBrainz, Discogs, Deezer and Wikidata.",
+  "{n} leere(s) Feld(er) vorbelegt (grün umrandet), gespeichert wird erst mit „Speichern“.":"{n} empty field(s) prefilled (green outline), nothing is stored until you save.",
+  "Abweichungen: Der Eintrag behält seinen Wert, bis du den Vorschlag übernimmst.":"Differences: the entry keeps its value until you take the suggestion.",
+  "im Eintrag":"in the entry", "eigene Datenbank, GVL-Schreibweise":"own database, GVL spelling", "online":"online",
+  "gleiche ISRC in der Track-Datenbank":"same ISRC in the track database", "Katalog-Kürzel im Album":"catalogue prefix in the album", "Verlag im GVL-Master":"publisher in the GVL master",
   "Interpret und Titel nötig.":"Artist and title required.",
   "Suche online …":"Searching online …",
   "{n} Feld(er) ergänzt":"{n} field(s) filled",
@@ -1695,6 +1718,7 @@ const I18N_EN = {
   "GVL-Code statt des gelieferten: {list} — der gelieferte Code bleibt als Notiz am Track.":"GVL code instead of the delivered one: {list} — the delivered code stays as a note on the track.",
   "geliefert: {v}":"delivered: {v}",
   "LC aus dem GVL-Master über den Labelnamen":"LC from the GVL master via the label name",
+  "LC aus Recherche: Anbieterangabe, gegen den GVL-Master geprüft":"LC from research: provider data, checked against the GVL master",
   "LC aus dem GVL-Master über den Verlag (Production Music)":"LC from the GVL master via the publisher (production music)",
   "Ohne Labelcode geliefert, LC über den Labelnamen aus dem GVL-Master: {list} — die Notiz steht am Track.":"Delivered without a label code, LC taken from the GVL master via the label name: {list} — the note stays on the track.",
   "{n} Zeile(n) ohne Labelcode.":"{n} row(s) without a label code.",
@@ -1713,6 +1737,8 @@ const I18N_EN = {
   /* ---- Quit ---- */
   "CueCore beenden? Der lokale Server wird gestoppt.":"Quit CueCore? The local server will be stopped.",
   "CueCore beendet":"CueCore stopped",
+  "Stoppt den CueCore-Dienst, der im Hintergrund läuft. Nur im Browser nötig: das Schließen des Tabs lässt ihn weiterlaufen. Im App-Fenster genügt Schließen.":"Stops the CueCore service running in the background. Only needed in a browser: closing the tab keeps it running. In the app window, closing is enough.",
+  "Stoppt den Dienst im Hintergrund (nur im Browser nötig)":"Stops the background service (only needed in a browser)",
   "Du kannst dieses Fenster jetzt schließen.":"You can close this window now.",
 
   /* ---- Backend-Fehler/Warnungen (HTTPException.detail, res.error, plan.warnings) ----
@@ -3135,7 +3161,7 @@ function gvlTable(rows){
     (r.kuerzel||[]).forEach(k=>kz.appendChild(gvlChip(k)));
     if(r.kurzname && !(r.kuerzel||[]).some(k=>_gTok(k.prefix)===_gTok(r.kurzname))) kz.appendChild(gvlChip({prefix:r.kurzname, origin:'gvl'}));
     if(!kz.childNodes.length) kz.appendChild(el('span','dim','–'));
-    const her=el('td','ell col-w', r.hersteller||''); if(!r.hersteller) her.appendChild(el('span','dim','–'));
+    const her=el('td','ell wrap col-w', r.hersteller||''); if(!r.hersteller) her.appendChild(el('span','dim','–'));
     const plm=el('td'); if(r.plm) plm.appendChild(el('span','chip plm','PLM'));
     const rr=el('td'); if(r.rechterueckrufe){ const c=el('span','chip rr','RR '+r.rechterueckrufe); c.dataset.tip=''; c.tabIndex=-1;
       tFn(c, ()=>t('Rechterückruf — manuell auf labelrecherche.gvl.de prüfen'), 'aria-label'); rr.appendChild(c); }
@@ -5010,7 +5036,7 @@ function renderEdl(data){
       if(c.library_name && !c.artist){ ta.textContent=c.library_name; ta.classList.add('mono'); }   // Titel aus dem Library-Dateinamen, Katalogname darunter
       tc.append(tt,ta); if((c.note||'').trim()) tc.appendChild(el('div','tnote', c.note.trim()));
       tc.title=[c.artist,c.title,c.clip_name].filter(Boolean).join(' · '); tr.appendChild(tc);
-      [c.komponist,c.texter,c.verlag].forEach((v,i)=>{ const d=el('td','ell col-w', v||''); d.title=v||'';
+      [c.komponist,c.texter,c.verlag].forEach((v,i)=>{ const d=el('td','ell wrap col-w', v||''); d.title=v||''; wrapWidth(d, v);
         if(i===0 && !v && c.composer_hint){ d.textContent=c.composer_hint; d.classList.add('hintv'); tFn(d, ()=>t('Aus dem Dateinamen — unverifiziert, im Editor prüfen'), 'title'); }
         if(v && c.author_new && i<3){ d.classList.add('hintv'); tFn(d, ()=>(c.author_source==='genius' ? t('Vorschlag aus Genius (Songwriter, community-gepflegt) — nicht gespeichert, im Editor prüfen und speichern') : t('Vorschlag aus dem Netz — nicht gespeichert, im Editor prüfen und speichern'))+(c.author_source_url?' · '+c.author_source_url:''), 'title'); }
         if(i===0 && v && c.author_source_url){ const a=document.createElement('a'); a.className='srcdot'; a.href=c.author_source_url; a.target='_blank'; a.rel='noopener'; a.title='Genius ↗'; a.textContent='↗'; d.appendChild(a); }
@@ -5140,7 +5166,7 @@ function renderScanPreview(folder, j){
   (j.items||[]).forEach(it=>{ const tr=document.createElement('tr');
     tr.appendChild(el('td','ell', (it.parent?it.parent+'/':'')+(it.name||it.file)));
     tr.appendChild(el('td','num', nfmt(it.rows)));
-    tr.appendChild(el('td','ell', ()=>t(it.error||''))); tb.appendChild(tr); });
+    tr.appendChild(el('td','ell wrap', ()=>t(it.error||''))); tb.appendChild(tr); });
   tbl.appendChild(tb); p.appendChild(tbl);
   const act=el('div','actions');
   const go=el('button','btn sm'); tFn(go, ()=>t('{n} Tracks übernehmen',{n:nfmt(j.rows)}));
@@ -5283,7 +5309,7 @@ function renderImportPreview(name, j){
 
 // Notiz am LC einer Lieferungszeile (label_geliefert): der gelieferte Code, den der GVL-Code ersetzt hat, oder
 // der feste Hinweis, dass der Code über Labelnamen oder Verlag aus dem Master kam (labelcheck.LC_BY_*_NOTE).
-const _LC_NOTES=['LC aus dem GVL-Master über den Labelnamen','LC aus dem GVL-Master über den Verlag (Production Music)'];
+const _LC_NOTES=['LC aus dem GVL-Master über den Labelnamen','LC aus dem GVL-Master über den Verlag (Production Music)','LC aus Recherche: Anbieterangabe, gegen den GVL-Master geprüft'];
 function lcNoteText(v){ return _LC_NOTES.includes(v) ? t(v) : t('geliefert: {v}',{v}); }
 
 // Label-Chips einer Lieferung, für Upload- und Ordner-Vorschau gleich: „Name · LC · n Tracks“. Zeilen ohne Code
@@ -5327,7 +5353,7 @@ function renderTeamPreview(p, box, j){
     const tbl=el('table','dbtable'); const tb=document.createElement('tbody');
     (j.conflicts||[]).forEach(c=>c.diffs.forEach(d=>{ const tr=document.createElement('tr');
       tr.append(el('td','ell', c.interpret+' – '+c.titel), el('td',null,()=>t(labs[d.field]||d.field)),
-        el('td','ell', ()=>t('deins: {v}',{v:d.own||'—'})), el('td','ell', ()=>t('Team: {v}',{v:d.team||'—'}))); tb.appendChild(tr); }));
+        el('td','ell wrap', ()=>t('deins: {v}',{v:d.own||'—'})), el('td','ell wrap', ()=>t('Team: {v}',{v:d.team||'—'}))); tb.appendChild(tr); }));
     tbl.appendChild(tb); p.appendChild(tbl);
   }
   const act=el('div','actions');
@@ -5510,12 +5536,14 @@ async function loadDb(offset){
   }catch(err){ logErr('Track-Datenbank', err); box.innerHTML=''; box.appendChild(el('div','empty',()=>t('Laden fehlgeschlagen. Backend läuft?'))); }
 }
 
+// Mehrfach-Namen (Komponist, Texter, Verlag): nie abschneiden. Die Zelle wird so breit, dass der Text in etwa zwei
+// Zeilen passt (höchstens 45 Zeichen breit, längere Listen werden höher statt gekürzt)
+function wrapWidth(td, v){ td.style.minWidth=Math.min(Math.ceil(String(v||'').length/2)+2, 45)+'ch'; }
 function dbCell(r, k){
   const v = r[k]==null ? '' : String(r[k]);
   if(k==='labelcode'){ const td=el('td'); if(v){ td.appendChild(el('span','lcv', lcNum(v))); if(r.label_geliefert) td.appendChild(el('span','lcnote', ()=>lcNoteText(r.label_geliefert))); } else td.appendChild(el('span','dim','–')); return td; }
-  const td=el('td','ell'); if(!v){ td.appendChild(el('span','dim','–')); return td; }
-  if(k==='komponist'||k==='texter'||k==='verlag'){ const d=el('div','clamp'); d.textContent=v; td.appendChild(d); }   // vier Namen sprengen sonst die Zeile
-  else td.textContent=v;
+  const td=el('td','ell'+(k==='komponist'||k==='texter'||k==='verlag'?' wrap':'')); if(!v){ td.appendChild(el('span','dim','–')); return td; }
+  td.textContent=v; if(td.classList.contains('wrap')) wrapWidth(td, v);
   td.title=v; return td;
 }
 function dbStatusCell(r){
@@ -5630,7 +5658,7 @@ function dbEditor(r, onSaved, onClose, opts){
   const save=el('button','btn sm'); tFn(save, ()=>verify?'✓ '+t('Als verifiziert übernehmen'):t('Speichern'));
   const cancel=el('button','btn ghost sm'); tFn(cancel, ()=>verify?t('Abbrechen'):t('Schließen')); cancel.type='button';
   const auto=el('button','btn ghost sm'); tFn(auto, ()=>t('Auto-Suche')); auto.type='button';
-  tFn(auto, ()=>t('MusicBrainz, Discogs, Deezer und Wikidata befragen — leere Felder werden vorbelegt, gefüllte bleiben; nichts wird ohne Speichern geschrieben'), 'title');
+  tFn(auto, ()=>t('Erst die eigene Datenbank und den GVL-Master (ISRC, Katalog-Kürzel, Verlag), dann MusicBrainz, Discogs, Deezer und Wikidata befragen — leere Felder werden vorbelegt, gefüllte bleiben; nichts wird ohne Speichern geschrieben'), 'title');
   const msg=el('span','hint'); act.append(save,cancel,auto,msg); wrap.appendChild(act);
   // Löschen mit Rückfrage: falsch angelegte Einträge ließen sich vorher nur
   // überschreiben und blieben „verifiziert“. Nur an echten songs.db-Zeilen, nicht beim Verifizieren einer Index-Zeile.
@@ -5656,34 +5684,52 @@ function dbEditor(r, onSaved, onClose, opts){
   auto.addEventListener('click', async ()=>{
     const artist=inputs.interpret.value.trim(), title=inputs.titel.value.trim();
     if(!artist||!title){ tFn(msg, ()=>t('Interpret und Titel nötig.')); return; }
-    auto.disabled=true; tFn(msg, ()=>t('Suche online …')); autoBox.hidden=true; autoBox.innerHTML='';
+    auto.disabled=true; tFn(msg, ()=>t('Suche in der Datenbank und online …')); autoBox.hidden=true; autoBox.innerHTML='';
     try{
       const resp=await fetch('/api/resolve/merge',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({artist, title, isrc:(inputs.isrc.value||'').trim()})});
+        body:JSON.stringify({artist, title, isrc:(inputs.isrc.value||'').trim(),
+          album:(inputs.album?inputs.album.value:'').trim(), verlag:(inputs.verlag?inputs.verlag.value:'').trim()})});
       const j=await resp.json();
       if(!resp.ok){ tFn(msg, ()=>t(j.detail)||t('Fehler.')); return; }
-      let filled=0, conflicts=0;
+      let filled=0;
       autoBox.hidden=false;
-      const head=el('div','sug-h'); autoBox.appendChild(head);
+      // Klartext statt Kürzel: was die eigene Datenbank belegt, was online herauskam, was vorbelegt wurde und wo der
+      // Vorschlag vom Eintrag abweicht (mit beiden Werten und der Quelle)
+      const head=el('div','sug-h autolines'); autoBox.appendChild(head);
+      const viaLabels={isrc:'gleiche ISRC in der Track-Datenbank',katalog:'Katalog-Kürzel im Album',verlag:'Verlag im GVL-Master'};
+      const locLine=el('div'), netLine=el('div'), fillLine=el('div'); head.append(locLine, netLine, fillLine);
+      tFn(locLine, ()=>j.local
+        ? t('Eigene Datenbank: {lc} {label}, gefunden über {via}.',{lc:lcNum(j.local.labelcode), label:j.local.labelname||'', via:t(viaLabels[j.local.via]||j.local.via)})
+        : t('Eigene Datenbank: kein Beleg für Label/LC (ISRC, Katalog-Kürzel, Verlag geprüft).'));
+      const pct=j.confidence?Math.round(j.confidence*100)+' %':'';
+      const bandText={auto:'Online: sicherer Treffer ({p}).', review:'Online: Treffer, bitte prüfen ({p}).',
+        review_low:'Online: schwacher Treffer, bitte prüfen ({p}).',
+        no_match:'Online: kein passender Treffer bei MusicBrainz, Discogs, Deezer und Wikidata.'};
+      tFn(netLine, ()=>t(bandText[j.band]||(j.matched?'Online: Treffer.':bandText.no_match),{p:pct}));
+      const diffs=[];
       (j.fields||[]).forEach(f=>{
         const inp=inputs[f.key]; if(!inp) return;
         const netv=f.key==='labelcode'?lcNum(f.net||''):(f.net||'');
         if(!netv) return;
         if(!inp.value.trim()){ inp.value=netv; inp.classList.add('autofilled'); filled++; return; }
         if((f.key==='labelcode'?lcNum(inp.value):inp.value.trim().toLowerCase())===(f.key==='labelcode'?netv:netv.toLowerCase())) return;
-        conflicts++;
-        const row=el('div','autorow');
-        row.appendChild(el('span','autok', ()=>t(f.label||f.key)+': '));
-        row.appendChild(el('span','autov', netv));
-        const take=el('button','btn xs ghost',()=>t('Übernehmen')); take.type='button';
-        take.addEventListener('click', ()=>{ inp.value=netv; inp.classList.add('autofilled'); row.remove(); });
-        row.appendChild(take); autoBox.appendChild(row);
+        const fromLocal=j.local && (f.key==='labelname'||f.key==='labelcode');
+        diffs.push({f, inp, netv, src:fromLocal?'eigene Datenbank, GVL-Schreibweise':'online'});
       });
-      const bandLabels={auto:'AUTO',review:'REVIEW',review_low:'PRÜFEN',no_match:'KEIN MATCH'};
-      tFn(head, ()=>{ const parts=[t('{n} Feld(er) ergänzt',{n:filled})];
-        if(conflicts) parts.push(t('{n} Abweichung(en) — einzeln übernehmen',{n:conflicts}));
-        if(j.band) parts.push((bandLabels[j.band]?t(bandLabels[j.band]):j.band)+(j.confidence?' · '+Math.round(j.confidence*100)+'%':''));
-        return t('Netzfund')+': '+parts.join(' · '); });
+      tFn(fillLine, ()=>filled?t('{n} leere(s) Feld(er) vorbelegt (grün umrandet), gespeichert wird erst mit „Speichern“.',{n:filled}):'');
+      if(diffs.length){
+        autoBox.appendChild(el('div','sug-h', ()=>t('Abweichungen: Der Eintrag behält seinen Wert, bis du den Vorschlag übernimmst.')));
+        diffs.forEach(({f, inp, netv, src})=>{
+          const row=el('div','autorow');
+          row.appendChild(el('span','autok', ()=>t(f.label||f.key)+':'));
+          row.appendChild(el('span','', ()=>t('im Eintrag')+' „'+inp.value.trim()+'“ →'));
+          row.appendChild(el('span','autov', ()=>t('Vorschlag')+' „'+netv+'“'));
+          row.appendChild(el('span','autok', ()=>'('+t(src)+')'));
+          const take=el('button','btn xs ghost',()=>t('Übernehmen')); take.type='button';
+          take.addEventListener('click', ()=>{ inp.value=netv; inp.classList.add('autofilled'); row.remove(); });
+          row.appendChild(take); autoBox.appendChild(row);
+        });
+      }
       if(j.ambiguous && (j.tied||[]).length){
         autoBox.appendChild(tieChip(j));
         const pick=el('div','albumcands');
@@ -5702,7 +5748,7 @@ function dbEditor(r, onSaved, onClose, opts){
       } else if((j.source_urls||[]).length){
         const src=el('div','badges'); j.source_urls.forEach(s=> src.appendChild(srcChip(s)) ); autoBox.appendChild(src);
       }
-      if(!j.matched && !filled && !conflicts) tFn(head, ()=>netFailures(j) ? netDownText(netFailures(j)) : t('Netzfund')+': '+t('nichts gefunden'));
+      if(!j.local && !j.matched && !filled && !diffs.length) tFn(netLine, ()=>netFailures(j) ? netDownText(netFailures(j)) : t(bandText.no_match));
       msg.textContent='';
     }catch(err){ logErr('Auto-Suche', err); tFn(msg, ()=>t('Suche fehlgeschlagen. Backend/Netz?')); }
     finally{ auto.disabled=false; }
@@ -5732,7 +5778,7 @@ renderDbCols();
    Im Browser-Tab dagegen läuft uvicorn nach dem Schließen weiter, da ist er der
    einzige saubere Ausgang. window.pywebview wird erst nachgereicht, deshalb auch auf das
    pywebviewready-Ereignis hören (die Hülle feuert es, sobald ihre API steht). */
-function hideQuitInShell(){ const b=$('#quitbtn'); if(b && window.pywebview) b.hidden=true; }
+function hideQuitInShell(){ if(!window.pywebview) return; ['#quitbtn','#quithint'].forEach(q=>{ const b=$(q); if(b) b.hidden=true; }); }
 hideQuitInShell();
 window.addEventListener('pywebviewready', hideQuitInShell);
 $('#quitbtn').addEventListener('click', async ()=>{

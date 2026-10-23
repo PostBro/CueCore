@@ -39,6 +39,8 @@ AUTO_NOTE_PREFIX = "Aus Library-Lieferung"
 LC_BY_NAME_NOTE = "LC aus dem GVL-Master über den Labelnamen"
 # Dasselbe über den Verlag: Zeile ohne Label, Verlag steht im Master unter genau EINEM Production-Music-Code.
 LC_BY_PUBLISHER_NOTE = "LC aus dem GVL-Master über den Verlag (Production Music)"
+# Von Hand recherchiert (Labelcode-Liste oder Trackdaten des Anbieters), Code steht im GVL-Master unter dem Namen
+LC_BY_RESEARCH_NOTE = "LC aus Recherche: Anbieterangabe, gegen den GVL-Master geprüft"
 
 
 class GvlMaster:
