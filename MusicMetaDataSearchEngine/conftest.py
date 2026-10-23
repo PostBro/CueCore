@@ -5,6 +5,7 @@ from pathlib import Path
 # Kein Library-Import beim App-Start in Tests (app._load): jede frische Test-songs.db bekäme sonst die
 # 60.938 Cezame-Zeilen aus data/library_tracks (3 s je Test). Der Import selbst hat eigene Tests.
 os.environ.setdefault("CUECORE_SKIP_LIBRARY_IMPORT", "1")
+os.environ.setdefault("CUECORE_SKIP_INDEX_AUTOLOAD", "1")   # nie 1,3 GB aus einem Testlauf laden
 # Tests laufen nie gegen die echte settings.json des Nutzers (API-Keys!): ein gesetzter Genius-/Discogs-Token würde
 # sonst Netz-Hooks scharf schalten, die Tests nicht mocken. Leere Datei im Temp-Ordner = alle Dienste unkonfiguriert.
 import tempfile

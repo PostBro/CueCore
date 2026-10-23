@@ -27,6 +27,8 @@ from core import labelcheck, labeldb, librarytracks, normalize, songsdb, trackin
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 DEFAULT_OUT_DIR = PROJECT_DIR / "data" / "library_tracks"
+TRACKS_DIR = DEFAULT_OUT_DIR
+PREFIXES_OUT = PROJECT_DIR / "data" / "library_prefixes_lieferungen.csv"
 
 
 def cmd_extract(src: Path, library: str, out: Path | None, stamp: str) -> int:
@@ -110,7 +112,14 @@ def main(argv: list[str] | None = None) -> int:
     x.add_argument("--out", default=None, help="Ziel-CSV (Default: data/library_tracks/<library>_<JJJJ-MM-TT>.csv)")
     i = sub.add_parser("import", help="CSV-Extrakt -> songs.db + library_files")
     i.add_argument("csv")
+    k = sub.add_parser("prefixes", help="Katalog-Kürzel aus allen Lieferungen -> data/library_prefixes_lieferungen.csv")
+    k.add_argument("--out", default=str(PREFIXES_OUT))
     a = ap.parse_args(argv)
+    if a.cmd == "prefixes":
+        rows = librarytracks.delivery_prefixes(TRACKS_DIR)
+        librarytracks.write_prefixes(rows, a.out)
+        print(f"{a.out}: {len(rows)} Kürzel")
+        return 0
     if a.cmd == "extract":
         return cmd_extract(Path(a.src).expanduser(), a.library.lower(), Path(a.out) if a.out else None, a.date)
     return cmd_import(Path(a.csv), Path(a.songs).expanduser(), Path(a.labels).expanduser(), a.date)

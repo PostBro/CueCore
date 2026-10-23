@@ -12,7 +12,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from .csv_io import read_csv, write_csv
+from .csv_io import apply_name_fixes, read_csv, read_name_fixes, write_csv
 from .diff import diff
 from .merge import archive_previous_master, build_synced, write_diff_csv, write_meta, write_report
 from .pdf_parser import parse_pdf
@@ -38,6 +38,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"[1/4] Parse PDF: {pdf_path.name} …", flush=True)
     pdf_records, version = parse_pdf(pdf_path)
     print(f"      {len(pdf_records)} Datensätze, Quell-Version {version}")
+    fixed = apply_name_fixes(pdf_records, read_name_fixes(Path(args.data_dir) / "gvl_name_fixes.csv"))
+    if fixed:
+        print(f"      {fixed} Name(n) aus gvl_name_fixes.csv korrigiert")
 
     print(f"[2/4] Lese CSV: {Path(args.csv).name} …", flush=True)
     csv_records = read_csv(args.csv)

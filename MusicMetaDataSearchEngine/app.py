@@ -26,15 +26,15 @@ from pydantic import BaseModel
 
 from core import (acoustid, albumresolve, audd, conncheck, cuelist, dbexport, deezer, discogs, edl, edl_import, editingtools, genius, librarytracks,
                   folderpick, gvlsync, ingest, intake, itunes, musicbrainz, musiksammler,
-                  netfetch, operations, settings, songsdb, tagging, trackindex, trackmeta, wikidata)
-from core import indexdownload, labelcheck, labeldb, librarylists
+                  netfetch, operations, settings, songsdb, tagging, tags, trackindex, trackmeta, wikidata)
+from core import indexdownload, labelcheck, labeldb, labeledits, librarylists, projects, teamdb
 from core.labeldb import connect, lookup_by_code, search_labels
-from core.labelmatch import (LabelIndex, attach_library_prefixes, attach_mb_aliases, build_index_from_db,
-                             match_hersteller, match_label)
+from core.labelmatch import (LabelIndex, attach_delivery_prefixes, attach_library_prefixes, attach_mb_aliases, attach_user_aliases, build_index_from_db,
+                             learn_user_alias, match_hersteller, match_label)
 from core.normalize import normalize_labelcode, strict_labelcode
 from core.resolver import (catalog_candidate, index_settles, local_result, merge_index_writers, resolve,
                            resolve_by_title, resolve_from_index, resolve_reliably)
-from reconcile.csv_io import read_supplemental
+from reconcile.csv_io import read_name_fixes, read_supplemental
 
 _noop = lambda *a, **k: None
 
@@ -62,7 +62,15 @@ DEFAULT_DB = _user_data_dir() / "labels.db"
 DB_PATH = Path(os.environ.get("CUECORE_DB", DEFAULT_DB))
 
 # Version der Auslieferung (Rückmeldungen von Testenden, Info.plist in cuecore.spec, Seitenleiste)
-APP_VERSION = "0.9.7-beta"
+APP_VERSION = "1.0.0-beta"
+
+# Fehlermeldungen in Alltagssprache mit nächstem Schritt (dieselben Texte an allen Stellen, EN in web/index.html)
+LABELS_DB_MISSING = ("Die GVL-Labelcode-Liste ist nicht geladen. CueCore beenden und neu starten; bleibt die Meldung, "
+                     "steht der Grund in cuecore.log im Datenordner (Einstellungen > Datenordner > Ordner öffnen).")
+SONGS_DB_MISSING = ("Die Track-Datenbank ist nicht geladen. CueCore beenden und neu starten; bleibt die Meldung, "
+                    "steht der Grund in cuecore.log im Datenordner (Einstellungen > Datenordner > Ordner öffnen).")
+FILE_NOT_TRANSFERRED = "Die Datei kam nicht vollständig an. Bitte noch einmal auswählen."
+EMPTY_FILE = "Die Datei ist leer. Bitte die richtige Datei auswählen."
 
 app = FastAPI(title="CueCore", version=APP_VERSION)
 
@@ -75,7 +83,8 @@ async def _unhandled(request, exc):
     from fastapi.responses import JSONResponse
     print(f"[500] {request.method} {request.url.path}: {exc.__class__.__name__}: {exc}", flush=True)
     traceback.print_exc()
-    return JSONResponse(status_code=500, content={"detail": f"{exc.__class__.__name__}: {exc}"})
+    return JSONResponse(status_code=500, content={"detail": f"Unerwarteter Fehler ({exc.__class__.__name__}: {exc}). Erneut versuchen; "
+                                                          "bleibt es, steht der Grund in cuecore.log im Datenordner."})
 
 # GVL-Index einmal beim Start laden (read-only, threadsicher geteilt).
 INDEX = LabelIndex()
@@ -187,8 +196,9 @@ def _save_manual_labels(rows: list[dict]) -> None:
 
 
 _INDEX_MAPS = ("code2name", "code2hersteller", "full", "stripped", "short2code", "prefix2code",
-               "hersteller", "hersteller_name", "squash2code", "mb_alias")
+               "hersteller", "hersteller_name", "squash2code", "mb_alias", "user_alias", "name_fix")
 _SONGS_PATH: Path | None = None
+_PREFIX_BASE: dict[str, dict] = {}   # Kürzel-Tabellen ohne label_edits.json — Grundlage für „Korrektur“ und Rückgängig
 
 
 def _swap_index(idx: LabelIndex | None) -> None:
@@ -252,6 +262,7 @@ def _load() -> None:
     _load_track_index()
     if not DB_PATH.exists():
         _swap_index(None)
+        _PREFIX_BASE.clear()
         DB_META.update(ready=False, rows=0, source_version="—")
         return
     con = connect(DB_PATH)
@@ -265,7 +276,20 @@ def _load() -> None:
             con, read_supplemental(_data_file("labelcodes_supplemental.csv"), set()), before_write=backup)
         if healed:
             print(f"labels.db: {healed} Zusatz-Codes aus labelcodes_supplemental.csv nachgetragen", flush=True)
+        # Offensichtliche Fehler der GVL-Quelle (abgeschnittene Namen) auch in bestehenden DBs korrigieren
+        fixes = read_name_fixes(_data_file("gvl_name_fixes.csv"))
+        if labeldb.apply_name_fixes(con, fixes, before_write=backup):
+            print("labels.db: Namen aus gvl_name_fixes.csv korrigiert", flush=True)
+        if SONGS_CON is not None and songsdb.apply_label_name_fixes(SONGS_CON, fixes):
+            print("songs.db: Labelnamen aus gvl_name_fixes.csv korrigiert", flush=True)
+        if SONGS_CON is not None and (n := songsdb.normalize_stored_isrcs(SONGS_CON)):
+            print(f"songs.db: {n} ISRCs in die 12-stellige Form gebracht", flush=True)
         GVL_MASTER = labelcheck.GvlMaster.from_db(con)
+        _alias_path = _data_file("label_aliases_anbieter.csv")    # Labelnamen laut Anbieter (Namensregel)
+        if Path(_alias_path).is_file():
+            import csv as _csv
+            with open(_alias_path, newline="", encoding="utf-8") as _f:
+                GVL_MASTER.add_aliases(list(_csv.DictReader(_f)))
         # Library-Lieferungen (data/library_tracks/*.csv, verifiziert): einmal je Datei in die songs.db —
         # wie die Zusatz-Codes eine Selbstheilung, damit jede Installation die Daten ohne Handarbeit hat
         # (60.938 Cezame-Zeilen, 3 s). Tests schalten das per CUECORE_SKIP_LIBRARY_IMPORT ab (conftest):
@@ -295,6 +319,10 @@ def _load() -> None:
         for c in librarytracks.fill_codes_by_name(SONGS_CON, GVL_MASTER)["filled"]:
             print(f"songs.db: „{c['label']}“ ohne Labelcode -> GVL LC{c['code']} über den Labelnamen "
                   f"({c['files']} Dateien, {c['songs']} Tracks)", flush=True)
+        # Alle übrigen Zeilen (eigene Einträge, Seed): eindeutiger GVL-Name -> Code mit Notiz, ohne Bestätigung
+        for c in librarytracks.fill_song_codes_by_name(SONGS_CON, GVL_MASTER)["filled"]:
+            print(f"songs.db: „{c['label']}“ ohne Labelcode -> GVL LC{c['code']} über den Labelnamen ({c['songs']} Tracks)",
+                  flush=True)
         # Automatisch angelegte Labels, die der GVL-Code überholt hat, stünden in der Suche vor ihm — aus der JSON
         # und aus labels.db (ältere labels_prebuilt.db-Stände trugen LC21110/LC26766 selbst)
         manual = _manual_labels()
@@ -307,13 +335,18 @@ def _load() -> None:
         DB_META["songs"] = songsdb.count(SONGS_CON)
         idx = build_index_from_db(con)
         attach_library_prefixes(idx, _data_file("library_prefixes.csv"))   # Sub-Label-Kürzel (fein)
+        attach_delivery_prefixes(idx, _data_file("library_prefixes_lieferungen.csv"))   # aus den Lieferungen gelernt
         librarylists.attach_user_prefixes(idx, DB_PATH.parent)               # vom Nutzer hochgeladene Listen (gelieferte Tabelle gewinnt)
         attach_mb_aliases(idx, _data_file("label_aliases_mb.csv"))          # MusicBrainz-Schreibvarianten (GVL-geprüfte Codes)
+        attach_user_aliases(idx, DB_PATH.parent / "label_aliases_user.csv")  # gelernte Korrekturen dieser Installation
+        prefix_base = dict(idx.prefix2code)                                  # Kürzel ohne eigene Änderungen (Liste)
+        labeledits.apply(idx, labeledits.read(DB_PATH.parent))              # eigene Kürzel und LC-Korrekturen gewinnen
         rows = con.execute("SELECT COUNT(*) FROM labels").fetchone()[0]
         row = con.execute("SELECT value FROM meta WHERE key='source_version'").fetchone()
     finally:
         con.close()
     _swap_index(idx)
+    _PREFIX_BASE.clear(); _PREFIX_BASE.update(prefix_base)
     DB_META.update(rows=rows, source_version=row[0] if row else "—", ready=True)
 
 
@@ -384,7 +417,7 @@ def _label_conflicts(con, code: str, label: str, hersteller: str) -> list[dict]:
 def manual_label_check(body: ManualLabelIn) -> dict:
     """Trockenlauf für „Label anlegen“: nur prüfen, nichts schreiben."""
     if not DB_META["ready"]:
-        raise HTTPException(503, "labels.db nicht geladen")
+        raise HTTPException(503, LABELS_DB_MISSING)
     digits = re.sub(r"\D", "", body.labelcode)
     label = " ".join(body.label.split())
     if not re.fullmatch(r"\d{4,6}", digits) or not label:
@@ -403,7 +436,7 @@ def manual_label_create(body: ManualLabelIn) -> dict:
     in der GVL schon existiert, darf einen weiteren Namen bekommen (1:n) — die bestehenden Zeilen
     kommen als `existing` zurück, damit der Mensch sieht, was die GVL dazu sagt."""
     if not DB_META["ready"]:
-        raise HTTPException(503, "labels.db nicht geladen")
+        raise HTTPException(503, LABELS_DB_MISSING)
     digits = re.sub(r"\D", "", body.labelcode)
     label = " ".join(body.label.split())
     if not re.fullmatch(r"\d{4,6}", digits):
@@ -436,7 +469,7 @@ def manual_label_create(body: ManualLabelIn) -> dict:
 @app.delete("/api/labels/manual")
 def manual_label_delete(body: ManualLabelIn) -> dict:
     if not DB_META["ready"]:
-        raise HTTPException(503, "labels.db nicht geladen")
+        raise HTTPException(503, LABELS_DB_MISSING)
     from core.labelmatch import norm
     code = normalize_labelcode(re.sub(r"\D", "", body.labelcode))   # dieselbe Vorbehandlung wie beim Anlegen
     target = norm(body.label)
@@ -478,7 +511,7 @@ def _library_list_check(body: LibraryListIn) -> tuple[dict, bytes, str]:
     import base64
     import tempfile
     if not DB_META["ready"]:
-        raise HTTPException(503, "labels.db nicht geladen")
+        raise HTTPException(503, LABELS_DB_MISSING)
     name = librarylists.safe_name(body.filename)
     suffix = Path(name).suffix.lower()
     if suffix not in ingest.SUPPORTED_EXTENSIONS:
@@ -487,9 +520,9 @@ def _library_list_check(body: LibraryListIn) -> tuple[dict, bytes, str]:
     try:
         raw = base64.b64decode(body.content_b64, validate=True)
     except Exception:
-        raise HTTPException(422, "Datei-Inhalt nicht dekodierbar (Base64 erwartet)")
+        raise HTTPException(422, FILE_NOT_TRANSFERRED)
     if not raw:
-        raise HTTPException(422, "Leere Datei")
+        raise HTTPException(422, EMPTY_FILE)
     # Unter dem hochgeladenen Namen in einen Temp-Ordner: read_user_list leitet Library und Quelle aus dem
     # Dateinamen ab — eine mkstemp-Datei zeigte in der Vorschau einen Zufallsnamen.
     import shutil
@@ -552,7 +585,7 @@ def library_lists_list() -> dict:
 @app.delete("/api/labels/lists")
 def library_list_delete(body: LibraryListDeleteIn) -> dict:
     if not DB_META["ready"]:
-        raise HTTPException(503, "labels.db nicht geladen")
+        raise HTTPException(503, LABELS_DB_MISSING)
     d = librarylists.user_lists_dir(DB_PATH.parent)
     target = d / librarylists.safe_name(body.name)
     if not target.exists() or target.parent != d:
@@ -565,6 +598,198 @@ def library_list_delete(body: LibraryListDeleteIn) -> dict:
     _load()
     return {"removed": target.name, "files": rebuilt["files"], "user_prefixes": len(rebuilt["kept"]),
             "attached": sum(1 for v in INDEX.prefix2code.values() if v.get("user"))}
+
+
+# --- Label-Datenbank als Liste: alle Codes seitenweise, Kürzel und LC-Korrekturen inline (label_edits.json) ---
+
+def _prefix_origin(key: str, v: dict) -> str:
+    """Herkunft eines wirksamen Kürzels: korrektur (eigene Zuordnung gegen eine gelieferte), eigen, nutzerliste
+    (hochgeladene Liste), lieferung (aus Library-Lieferungen gelernt), liste (mitgelieferte Tabelle)."""
+    if v.get("edit"):
+        base = _prefix_base_code(key)
+        return "korrektur" if base and base != v["labelcode"] else "eigen"
+    if v.get("user"):
+        return "nutzerliste"
+    return "lieferung" if "Lieferung" in (v.get("library") or "") else "liste"
+
+
+def _prefix_base_code(key: str) -> str:
+    """Code eines Kürzels ohne eigene Änderungen: Kürzel-Tabellen, sonst eindeutiger GVL-Kurzname."""
+    return (_PREFIX_BASE.get(key) or {}).get("labelcode") or INDEX.short2code.get(key, "")
+
+
+def _prefixes_by_code() -> dict[str, list[dict]]:
+    out: dict[str, list[dict]] = {}
+    for key, v in INDEX.prefix2code.items():
+        out.setdefault(v["labelcode"], []).append({"prefix": v.get("prefix") or key, "key": key,
+                                                   "library": v.get("library", ""), "note": v.get("note", ""),
+                                                   "origin": _prefix_origin(key, v)})
+    # Am bisherigen Code sichtbar lassen, was die eigene Schicht dort weggenommen hat (entfernt / umgehängt)
+    for key, base in _PREFIX_BASE.items():
+        now = INDEX.prefix2code.get(key)
+        if not now or now["labelcode"] != base["labelcode"]:
+            out.setdefault(base["labelcode"], []).append({
+                "prefix": base.get("prefix") or key, "key": key, "library": base.get("library", ""),
+                "note": (now or {}).get("note", ""), "origin": "verschoben" if now else "entfernt",
+                "to": now["labelcode"] if now else ""})
+    for lst in out.values():
+        lst.sort(key=lambda x: x["key"])
+    return out
+
+
+@app.get("/api/labels/list")
+def labels_list(q: str = "", offset: int = 0, limit: int = 50, plm: bool = False, kuerzel: bool = False,
+                herkunft: str = "") -> dict:
+    """Alle Labels seitenweise (Name, dann Code), Filter Production Music, „nur mit Kürzel“ und Herkunft
+    (manuell | eigen). Suche: LC-Nummer, Kürzel oder Volltext über Name und Hersteller."""
+    if not DB_META["ready"]:
+        raise HTTPException(503, LABELS_DB_MISSING)
+    from core.catalog import normalize_prefix
+    from core.labelmatch import norm
+    limit = max(1, min(limit, 200))
+    edits = labeledits.read(DB_PATH.parent)
+    fixes = {norm(r["name"]): r for r in edits["names"]}
+    by_code = _prefixes_by_code()
+    where, args = [], []
+    q = q.strip()
+    digits = re.sub(r"\D", "", q)
+    if q and re.fullmatch(r"(?i)\s*(lc)?[\s-]*\d{4,6}\s*", q):
+        where.append("labelcode=?"); args.append(normalize_labelcode(digits))
+    elif q:
+        terms = re.findall(r"\w+", q)
+        hit = INDEX.prefix2code.get(normalize_prefix(q))
+        codes = [hit["labelcode"]] if hit else []
+        if terms:
+            ph = ",".join("?" * len(codes)) or "''"
+            where.append(f"(id IN (SELECT rowid FROM labels_fts WHERE labels_fts MATCH ?) OR labelcode IN ({ph}))")
+            args += [" ".join(f'"{t}"*' for t in terms), *codes]
+        else:
+            return {"rows": [], "total": 0, "offset": offset, "limit": limit}
+    if plm:
+        where.append("plm=1")
+    sets = []
+    own = ("korrektur", "eigen", "entfernt", "verschoben")
+    if kuerzel:
+        sets.append({c for c, ks in by_code.items() if any(k["origin"] not in ("entfernt", "verschoben") for k in ks)})
+    if herkunft == "manuell":
+        where.append("source='manuell'")
+    elif herkunft == "eigen":            # alle eigenen Änderungen: Korrekturen, eigene, entfernte, umgehängte Kürzel
+        sets.append({r["from"] for r in edits["names"]}
+                    | {c for c, ks in by_code.items() if any(k["origin"] in own for k in ks)})
+    for codes in sets:
+        codes = sorted(codes) or [""]
+        where.append(f"labelcode IN ({','.join('?' * len(codes))})"); args += codes
+    sql_where = (" WHERE " + " AND ".join(where)) if where else ""
+    con = connect(DB_PATH)
+    try:
+        labeldb.ensure_source_column(con)
+        total = con.execute("SELECT COUNT(*) FROM labels" + sql_where, args).fetchone()[0]
+        rows = con.execute("SELECT labelcode,label,kurzname,plm,hersteller,rechterueckrufe,source FROM labels"
+                           + sql_where + " ORDER BY lower(label)=lower(?) DESC, label COLLATE NOCASE, labelcode "
+                           "LIMIT ? OFFSET ?", [*args, q, limit, max(0, offset)]).fetchall()
+    finally:
+        con.close()
+    out = []
+    for r in rows:
+        d = _row(r)
+        d["kuerzel"] = by_code.get(d["labelcode"], [])
+        fx = fixes.get(norm(d["label"]))
+        if fx:
+            d["korrektur"] = {**fx, "label": INDEX.code2name.get(fx["labelcode"], ""),
+                              "valid": fx["labelcode"] in INDEX.code2name}
+        d["herkunft"] = "korrektur" if fx or any(k["origin"] in ("korrektur", "entfernt", "verschoben")
+                                                    for k in d["kuerzel"]) \
+            else d["source"]
+        out.append(d)
+    return {"rows": out, "total": total, "offset": offset, "limit": limit,
+            "edits": {"prefixes": len(edits["prefixes"]), "names": len(edits["names"])}}
+
+
+class PrefixEditIn(BaseModel):
+    prefix: str
+    labelcode: str = ""      # leer = Kürzel entfernen
+    note: str = ""
+
+
+class NameEditIn(BaseModel):
+    name: str
+    from_code: str = ""      # Code der Zeile, an der korrigiert wird
+    labelcode: str = ""      # leer = Korrektur aufheben
+    note: str = ""
+
+
+def _known_code(raw: str) -> str:
+    digits = re.sub(r"\D", "", raw or "")
+    if not digits:
+        return ""
+    code = normalize_labelcode(digits)
+    if not re.fullmatch(r"\d{4,6}", digits) or code not in INDEX.code2name:
+        raise HTTPException(422, f"LC{code or digits} steht weder im GVL-Master noch unter den eigenen Labels — "
+                                 "erst als Label anlegen")
+    return code
+
+
+def _reapply_edits(data: dict) -> None:
+    INDEX.prefix2code.clear()
+    INDEX.prefix2code.update(_PREFIX_BASE)
+    labeledits.apply(INDEX, data)
+
+
+@app.post("/api/labels/edits/prefix")
+def label_prefix_edit(body: PrefixEditIn) -> dict:
+    """Kürzel einem Code zuordnen, umhängen oder entfernen. Umhängen gegen eine gelieferte Zuordnung ist eine
+    Korrektur und braucht eine Notiz (409 ohne). Rückgabe: vorher/nachher, damit die Liste es rückgängig machen kann."""
+    if not DB_META["ready"]:
+        raise HTTPException(503, LABELS_DB_MISSING)
+    from core.catalog import normalize_prefix
+    key = normalize_prefix(body.prefix)
+    if not key:
+        raise HTTPException(422, "Kürzel fehlt")
+    code = _known_code(body.labelcode)
+    table = (_PREFIX_BASE.get(key) or {}).get("labelcode", "")     # mitgelieferte/gelernte/hochgeladene Tabellen
+    base = table or INDEX.short2code.get(key, "")                    # dahinter der eindeutige GVL-Kurzname
+    before = (INDEX.prefix2code.get(key) or {}).get("labelcode") or INDEX.short2code.get(key, "")
+    before_note = (INDEX.prefix2code.get(key) or {}).get("note", "")
+    edited = key in INDEX.prefix2code and INDEX.prefix2code[key].get("edit")
+    if not code and not table and not edited and not INDEX.short2code.get(key):
+        raise HTTPException(404, f"Kürzel {body.prefix.strip().upper()} ist keinem Label zugeordnet")
+    if not code and not table and not edited:
+        raise HTTPException(422, f"{body.prefix.strip().upper()} ist ein GVL-Kurzname und bleibt — einem anderen "
+                                 "Label zuordnen geht als Korrektur mit Notiz")
+    if code and base and code != base and not body.note.strip():
+        # 409 = Korrektur ohne Notiz: die Oberfläche fragt nach der Notiz und schickt erneut
+        src = "Kürzel-Tabelle" if table else "GVL-Master"
+        raise HTTPException(409, f"{body.prefix.strip().upper()} gehört laut {src} "
+                                 f"zu LC{base} {INDEX.code2name.get(base, '')}. Umhängen ist eine Korrektur und braucht "
+                                 "eine Notiz.")
+    data = labeledits.read(DB_PATH.parent)
+    # Entfernen misst sich an den Tabellen (der GVL-Kurzname bleibt ohnehin), Zuordnen an allem, was ohne gilt
+    entry = labeledits.set_prefix(data, body.prefix, code, base_code=base if code else table,
+                                  note=body.note, date=date.today().isoformat())
+    labeledits.write(DB_PATH.parent, data)
+    _reapply_edits(data)
+    return {"entry": entry, "before": before, "before_note": before_note, "after": code, "base": base}
+
+
+@app.post("/api/labels/edits/name")
+def label_name_edit(body: NameEditIn) -> dict:
+    """LC eines Labelnamens überschreiben (eigene Korrektur mit Notiz, Master bleibt unverändert) oder aufheben."""
+    if not DB_META["ready"]:
+        raise HTTPException(503, LABELS_DB_MISSING)
+    from core.labelmatch import norm
+    name = " ".join(body.name.split())
+    if not name:
+        raise HTTPException(422, "Labelname fehlt")
+    code = _known_code(body.labelcode)
+    from_code = normalize_labelcode(re.sub(r"\D", "", body.from_code)) if body.from_code.strip() else ""
+    if code and code != from_code and not body.note.strip():
+        raise HTTPException(422, "Eine LC-Korrektur braucht eine Notiz (Quelle, Grund)")
+    data = labeledits.read(DB_PATH.parent)
+    before = next((r for r in data["names"] if norm(r["name"]) == norm(name)), None)
+    entry = labeledits.set_name(data, name, code, from_code=from_code, note=body.note, date=date.today().isoformat())
+    labeledits.write(DB_PATH.parent, data)
+    _reapply_edits(data)
+    return {"entry": entry, "before": before}
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -680,7 +905,8 @@ def index_download_start() -> dict:
             return dict(_INDEX_DL)
         cancel = threading.Event()
         _INDEX_DL_CANCEL = cancel
-        _INDEX_DL.update(state="running", phase="download", done=0, total=indexdownload.SIZE, error="")
+        _INDEX_DL.update(state="running", phase="download", done=0, total=indexdownload.SIZE, error="", auto=False)
+    settings.set_flag(INDEX_AUTOLOAD_KEY, "")            # von Hand gestartet: Autostart wieder erlaubt
     threading.Thread(target=_run_index_download, args=(cancel,), daemon=True).start()
     return dict(_INDEX_DL)
 
@@ -689,7 +915,70 @@ def index_download_start() -> dict:
 def index_download_cancel() -> dict:
     if _INDEX_DL_CANCEL is not None:
         _INDEX_DL_CANCEL.set()
+    settings.set_flag(INDEX_AUTOLOAD_KEY, "aus")          # abgebrochen: beim nächsten Start nicht wieder von selbst
     return dict(_INDEX_DL)
+
+
+# Track-Index beim ersten Start von selbst laden (Entscheidung 23.10.2026): wer den Download vergisst,
+# hält CueCore sonst für leer. Nicht, wenn er schon da ist, wenn jemand abgebrochen hat (Einstellung) oder in
+# Tests/Sandbox (CUECORE_SKIP_INDEX_AUTOLOAD). Scheitert er (Netz, Platz), versucht der nächste Start es wieder.
+INDEX_AUTOLOAD_KEY = "index_autoload"
+
+
+def _autostart_index_download() -> bool:
+    if os.environ.get("CUECORE_SKIP_INDEX_AUTOLOAD") or trackindex.path_for(DB_PATH.parent).exists() \
+            or settings.get(INDEX_AUTOLOAD_KEY) == "aus":
+        return False
+    index_download_start()
+    _INDEX_DL["auto"] = True
+    return True
+
+
+_autostart_index_download()
+
+
+# Beispielprojekt beim ersten Start (D19): ein kleines Cue-Sheet aus echten Partner-Lieferungen (Cezame, APL Music,
+# RipCue Music) unter einem erfundenen Projektnamen, damit man den Ablauf ohne eigene Schnittliste sieht. Einmal je
+# Installation (Merker example_project); wer es löscht, bekommt es nicht wieder. Ohne Lieferungen: nichts.
+EXAMPLE_KEY = "example_project"
+EXAMPLE_NAME = "Beispiel: Dokumentation Nordwand"
+EXAMPLE_LIBRARIES = ("cezame", "apl", "ripcue")
+
+
+def _ensure_example_project() -> dict | None:
+    if SONGS_CON is None or not DB_META["ready"] or settings.get(EXAMPLE_KEY) == "done" \
+            or projects.list_all(DB_PATH.parent):
+        return None
+    files = []
+    for lib in EXAMPLE_LIBRARIES:
+        files += [r[0] for r in SONGS_CON.execute(
+            "SELECT f.file_name FROM library_files f JOIN songs s ON s.id=f.song_id WHERE f.library=? "
+            "AND COALESCE(COALESCE(f.labelcode, s.labelcode),'')<>'' ORDER BY f.file LIMIT 2", (lib,))]
+    if not files:
+        return None
+    lines, pos = [], 0
+    for i, name in enumerate(files, 1):
+        dur = 20 + 7 * i                                   # erfundene Cue-Längen in Sekunden
+        tc = lambda sec: f"00:{sec // 60:02d}:{sec % 60:02d}:00"
+        lines += [f"{i:03d}  AX  AA  C  00:00:00:00 {tc(dur)} {tc(pos)} {tc(pos + dur)}", f"* FROM CLIP NAME: {name}"]
+        pos += dur + 5
+    cards = edl_import.cross_check(edl.parse_edl("\n".join(lines) + "\n"), SONGS_CON, resolve_fn=None,
+                                   label_lookup=_label_lookup, fps=25, catalog_fn=_catalog_fn)
+    edl_import.attach_rights(cards, _label_lookup)
+    ok = sum(1 for c in cards if c.get("labelcode") and c.get("status") == "found_in_db")
+    total = sum(c.get("duration_sec", 0) or 0 for c in cards)
+    lib_sec = sum(c.get("duration_sec", 0) or 0 for c in cards if c.get("matched_by") == "file")
+    meta = projects.save(DB_PATH.parent, {"name": EXAMPLE_NAME, "source_file": "beispiel.edl", "cards": cards,
+                                          "summary": {"cues": len(cards), "ok": ok, "warn": 0, "bad": len(cards) - ok,
+                                                      "library_sec": lib_sec, "total_sec": total}})
+    settings.set_flag(EXAMPLE_KEY, "done")
+    return meta
+
+
+try:
+    _ensure_example_project()
+except Exception as e:                                     # ein Beispiel darf den Start nie verhindern
+    print(f"[beispielprojekt] {e.__class__.__name__}: {e}", flush=True)
 
 
 def _open_folder(path: Path) -> None:
@@ -943,7 +1232,7 @@ def _title_tracks(title: str, limit: int = 20, offset: int = 0) -> dict:
 @app.post("/api/resolve")
 def resolve_endpoint(body: ResolveIn) -> dict:
     if not DB_META["ready"]:
-        raise HTTPException(503, "labels.db nicht geladen — zuerst build_label_db.py laufen lassen")
+        raise HTTPException(503, LABELS_DB_MISSING)
     artist, title, album = body.artist.strip(), body.title.strip(), body.album.strip()
     # Titel-only (Interpret fehlt, z.B. Sync-/Score-Cue): Interpret-Kandidaten anbieten,
     # statt blind zu raten. Der Nutzer wählt -> dann läuft der volle, verifizierte Resolve.
@@ -1003,7 +1292,8 @@ def resolve_endpoint(body: ResolveIn) -> dict:
 
 # Felder, die zwischen DB-Stand und Netzfund abgeglichen werden (Resolver-Merge).
 _MERGE_FIELDS = [("komponist", "Komponist"), ("texter", "Texter"), ("verlag", "Verlag"),
-                 ("labelname", "Label"), ("labelcode", "Labelcode"), ("album", "Album"), ("isrc", "ISRC")]
+                 ("labelname", "Label"), ("labelcode", "Labelcode"), ("album", "Album"), ("isrc", "ISRC"),
+                 ("iswc", "ISWC"), ("gema_werknummer", "GEMA-Werknr.")]
 
 
 def _merge_fields(db_row: dict | None, net: dict) -> list[dict]:
@@ -1037,7 +1327,7 @@ def db_lookup(body: ResolveIn) -> dict:
     songs.db-Zeile (mit id) zum direkten Bearbeiten, oder db=None (dann Neuanlage).
     Ohne net/fields, damit die UI ein reines Editier-Formular ohne Abgleich zeigt."""
     if SONGS_CON is None:
-        raise HTTPException(503, "songs.db nicht geladen")
+        raise HTTPException(503, SONGS_DB_MISSING)
     artist, title = body.artist.strip(), body.title.strip()
     row = songsdb.find_row(SONGS_CON, artist, title)
     return {"db": _suggestion(row) if row else None,
@@ -1051,7 +1341,7 @@ def resolve_merge(body: ResolveIn) -> dict:
     Netzfund nebeneinander, plus einen Feld-für-Feld-Status (Konflikt / Netz ergänzt /
     gleich). Der eigentliche Speichervorgang läuft danach über /api/db/song[/{id}]."""
     if not DB_META["ready"]:
-        raise HTTPException(503, "labels.db nicht geladen")
+        raise HTTPException(503, LABELS_DB_MISSING)
     artist, title = body.artist.strip(), body.title.strip()
     db_row = songsdb.find_row(SONGS_CON, artist, title) if SONGS_CON is not None else None
     res, fetcher = _resolve_net(artist, title, body.isrc.strip())
@@ -1061,7 +1351,9 @@ def resolve_merge(body: ResolveIn) -> dict:
            "verlag": res.publisher or "",
            "labelname": (best.label if best and not tie else "") or "",
            "labelcode": (best.labelcode if best and not tie else "") or "",
-           "album": res.album or "", "isrc": res.isrcs[0] if res.isrcs else ""}
+           "album": res.album or "", "isrc": res.isrcs[0] if res.isrcs else "",
+           "iswc": res.iswcs[0] if len(res.iswcs) == 1 else "",     # mehrere ISWCs: nicht raten
+           "gema_werknummer": res.gema_werknummer}
     return {
         "db": _suggestion(db_row) if db_row else None,
         "db_id": db_row.get("id") if db_row else None,
@@ -1098,6 +1390,8 @@ def _resolve_dict(res, fetcher) -> dict:
     return {
         "artist": res.artist, "title": res.title, "matched": res.matched,
         "mb_score": res.mb_score, "isrcs": res.isrcs, "band": res.band,
+        "iswcs": list(res.iswcs), "gema_werknummer": res.gema_werknummer, "gema_source": res.gema_source,
+        "version": res.version, "version_mismatch": res.version_mismatch,
         "ambiguous": getattr(res, "ambiguous", False), "tied": list(getattr(res, "tied", [])),
         "composer": res.composer, "lyricist": res.lyricist, "publisher": res.publisher,
         "album": res.album, "date": res.date,
@@ -1181,7 +1475,7 @@ def intake_scan(body: IntakeScanIn) -> dict:
     """MP3s eines Ordners + Identify. Nicht-destruktiv, kein Netz."""
     folder = body.folder.strip()
     if not folder or not Path(folder).is_dir():
-        raise HTTPException(400, f"Kein Ordner: {folder or '—'}")
+        raise HTTPException(400, f"Ordner nicht gefunden: {folder or '—'}. Bitte den Ordner erneut wählen oder hineinziehen.")
     # label_lookup nur, wenn der Master geladen ist — sonst kein Dateiname-LC-Vorschlag.
     lookup = _label_lookup if DB_META["ready"] else None
     files = intake.scan_folder(folder, label_lookup=lookup, library_lookup=_library_file)
@@ -1197,7 +1491,7 @@ def intake_resolve(body: IntakeResolveIn) -> dict:
     kostenpflichtig) — nur wenn einer der beiden Schlüssel in den Settings steht. Ohne
     Schlüssel bleibt es beim Hinweis, dass die Datei manuell benannt/getaggt werden muss."""
     if not DB_META["ready"]:
-        raise HTTPException(503, "labels.db nicht geladen")
+        raise HTTPException(503, LABELS_DB_MISSING)
     artist, title = body.artist.strip(), body.title.strip()
     if not (artist and title) and not (settings.effective("acoustid_api_key") or settings.get("audd_token")):
         raise HTTPException(400, "Artist und Titel nötig — Datei nicht identifiziert. Für automatische Erkennung "
@@ -1238,7 +1532,7 @@ def intake_plan(body: IntakePlanIn) -> dict:
     nur True, wenn der Code IM Master existiert — die Hartstopp-Regel gilt auch hier.
     """
     if not DB_META["ready"]:
-        raise HTTPException(503, "labels.db nicht geladen")
+        raise HTTPException(503, LABELS_DB_MISSING)
     artist, title = body.artist.strip(), body.title.strip()
     code = strict_labelcode(body.labelcode)
     unreadable = code is None                    # nie still auf den ersten Ziffernblock kürzen
@@ -1272,20 +1566,21 @@ def intake_apply(body: IntakeApplyIn) -> dict:
     if not body.confirm:
         raise HTTPException(400, "confirm fehlt — kein Schreiben ohne Bestätigung")
     if not DB_META["ready"]:
-        raise HTTPException(503, "labels.db nicht geladen")
+        raise HTTPException(503, LABELS_DB_MISSING)
     code = strict_labelcode(body.labelcode)
     if not code:                                 # leer oder nicht lesbar
         raise HTTPException(422, "Kein bestätigter Labelcode — kein Tagging (Default-Stopp)")
     lc_dir = settings.get("lc_verified_dir")
     if not lc_dir:
-        raise HTTPException(409, "Kein LC-verified-Ordner in den Settings konfiguriert")
+        raise HTTPException(409, "Noch kein Zielordner für fertige Dateien gewählt. In den Einstellungen unter Ordner den LC-verified-Ordner wählen, dann erneut taggen.")
     label, rr = _label_lookup(code)
     if not label:
         raise HTTPException(422, f"LC{code} nicht im GVL-Master — kein Tagging")
     src = Path(body.path)
     if not src.is_file():
-        raise HTTPException(404, f"Datei nicht gefunden: {src.name}")
+        raise HTTPException(404, f"Datei nicht gefunden: {src.name}. Wurde sie verschoben oder umbenannt? Ordner neu scannen.")
 
+    tag_label = (tags.read_tags(src) or {}).get("label", "") or ""   # Label im Tag VOR dem Schreiben (C7: lernen)
     pl = tagging.plan(src, body.artist.strip(), body.title.strip(), code, label,
                       isrc=body.isrc.strip(), rechterueckrufe=rr,
                       album=body.album.strip(), composer=body.composer.strip(),
@@ -1299,7 +1594,9 @@ def intake_apply(body: IntakeApplyIn) -> dict:
         # Tags sind evtl. schon geschrieben, das Verschieben scheiterte (Volume voll, Rechte, Ziel weg):
         # die Datei nicht halb verändert liegen lassen — den Tag-Schritt zurückrollen, Grund nennen.
         rolled = tagging.rollback_last_tag(op, str(src))
-        raise HTTPException(500, f"Verschieben fehlgeschlagen: {e}" + (" — Tags zurückgesetzt." if rolled else ""))
+        raise HTTPException(500, f"Datei konnte nicht verschoben werden ({e})." + (" Die Tags sind wieder wie vorher." if rolled else "")
+                            + " Prüfen, ob der Zielordner erreichbar ist und die Datei in keinem anderen Programm offen ist, "
+                              "dann erneut versuchen.")
     finally:
         op.close()
 
@@ -1327,8 +1624,13 @@ def intake_apply(body: IntakeApplyIn) -> dict:
     finally:
         op.close()
 
+    # C7: Trug die Datei ein Label, das der Master nicht kennt, und der Mensch hat einen Code bestätigt, merkt sich
+    # CueCore die Zuordnung für die nächsten Dateien (label_aliases_user.csv im Datenordner).
+    learned = bool(tag_label) and match_label(tag_label, INDEX) != code and learn_user_alias(
+        DB_PATH.parent / "label_aliases_user.csv", INDEX, tag_label, code, quelle="tagger", datum=date.today().isoformat())
+
     return {"new_path": out["new_path"], "name": Path(out["new_path"]).name,
-            "op_ids": op_ids, "label": label, "lc": pl.lc, "rr_pending": rr}
+            "op_ids": op_ids, "label": label, "lc": pl.lc, "rr_pending": rr, "alias_learned": learned}
 
 
 class AlbumResolveIn(BaseModel):
@@ -1345,7 +1647,7 @@ def album_resolve(body: AlbumResolveIn) -> dict:
     doppelt verifiziert. Übernommen wird der LC danach ganz normal über /intake/apply
     (mit Bestätigung, Labelname aus dem Master)."""
     if not DB_META["ready"]:
-        raise HTTPException(503, "labels.db nicht geladen")
+        raise HTTPException(503, LABELS_DB_MISSING)
     album = body.album.strip()
     if not album:
         raise HTTPException(400, "Kein Albumname übergeben")
@@ -1384,7 +1686,9 @@ def _edl_resolve_fn(artist: str, title: str) -> dict | None:
     res, _ = _resolve_one(artist, title)
     best = res.best
     out = {"komponist": res.composer, "texter": res.lyricist, "verlag": res.publisher,
-           "isrc": res.isrcs[0] if res.isrcs else ""}
+           "isrc": res.isrcs[0] if res.isrcs else "",
+           "iswc": res.iswcs[0] if len(res.iswcs) == 1 else "",      # mehrere ISWCs: nicht raten
+           "gema_werknummer": res.gema_werknummer}                    # MusicBrainz-Wert nur Vorschlag auf der Karte
     if getattr(res, "author_source_url", ""):
         out["author_source_url"] = res.author_source_url
     if not best:
@@ -1396,7 +1700,10 @@ def _edl_resolve_fn(artist: str, title: str) -> dict | None:
         out.update({"labelname": "", "labelcode": "", "ambiguous": True, "tied": _tied(res)})
         return out
     label, _rr = _label_lookup(best.labelcode)
-    out.update({"labelname": label or best.label, "labelcode": best.labelcode})
+    # Band und Confidence mit auf die Karte: die Ampel zeigt nur AUTO grün, alles andere als Vorschlag
+    out.update({"labelname": label or best.label, "labelcode": best.labelcode, "band": res.band,
+                "confidence": best.confidence, "dual_source": best.dual_source,
+                "version_mismatch": res.version_mismatch})
     if res.from_index:
         # Track-Index: Vorschlag auf die Karte, aber KEIN Eintrag in die songs.db — die wächst nur durch
         # bestätigte Cues. Bestätigen = Karte im Editor speichern.
@@ -1435,6 +1742,51 @@ class EdlImportIn(BaseModel):
     unify_stems: bool = False      # Stem-Varianten auf den Basistitel vereinheitlichen
 
 
+_PREFIX_HINTS: dict[str, list[dict]] | None = None
+
+
+def _prefix_hints() -> dict[str, list[dict]]:
+    """data/library_prefix_hints.csv: Kürzel ohne festen Code -> Kandidaten {labelcode, label, sources}."""
+    global _PREFIX_HINTS
+    if _PREFIX_HINTS is None:
+        import csv
+        _PREFIX_HINTS = {}
+        path = _data_file("library_prefix_hints.csv")
+        if Path(path).is_file():
+            with open(path, newline="", encoding="utf-8") as f:
+                for r in csv.DictReader(f):
+                    _PREFIX_HINTS.setdefault(r["prefix"], []).append(
+                        {"labelcode": r["labelcode"], "label": r["label_gvl"], "sources": r["sources"]})
+    return _PREFIX_HINTS
+
+
+def _attach_prefix_hints(cards: list[dict]) -> None:
+    """Cues ohne Labelcode, deren Clip-Name mit einem Katalog-Kürzel beginnt, das nur als Hinweis bekannt ist: die
+    Kandidaten an die Karte (Suchvorschlag im Editor, nie ein LC). Der Code muss im GVL-Master stehen."""
+    from core.catalog import normalize_prefix, parse_catalog_id
+    hints = _prefix_hints()
+    if not hints:
+        return
+    for c in cards:
+        if c.get("labelcode") or c.get("tied"):
+            continue
+        cat = parse_catalog_id(edl_import.clip_basename(c.get("clip_name") or ""))
+        cands = [h for h in hints.get(normalize_prefix(cat[0]), []) if h["labelcode"] in INDEX.code2name] if cat else []
+        if cands:
+            c["prefix_hints"] = {"prefix": cat[0], "candidates": cands}
+
+
+def _attach_confirmations(cards: list[dict]) -> None:
+    """D15: Cues aus der eigenen Datenbank tragen, wann und in welchem Projekt der Track zuletzt bestätigt wurde."""
+    for c in cards:
+        if c.get("status") not in ("found_in_db", "db_review"):
+            continue
+        sid = c.get("id") or songsdb.song_id(SONGS_CON, c.get("artist", ""), c.get("title", ""))
+        last = songsdb.last_confirmation(SONGS_CON, sid)
+        if last:
+            c["confirmed_at"], c["confirmed_project"] = last["at"], last["project"]
+
+
 @app.post("/api/edl/import")
 def edl_import_endpoint(body: EdlImportIn) -> dict:
     """CMX3600-EDL-Text parsen + gegen songs.db cross-checken.
@@ -1444,7 +1796,7 @@ def edl_import_endpoint(body: EdlImportIn) -> dict:
     als Eintrag (source_type='edl_import') zurückschreiben.
     merge_identical/unify_stems: Cue-Karten für die Abrechnung zusammenfassen (Dauer summiert)."""
     if not DB_META["ready"]:
-        raise HTTPException(503, "labels.db nicht geladen")
+        raise HTTPException(503, LABELS_DB_MISSING)
     events = edl.parse_edl(body.content)   # CMX3600, Avid „Assemble List", Final Cut Pro 7 XML, FCPXML, Pro Tools Session-Text (auto)
     if not events:
         raise HTTPException(422, "Keine Cues erkannt — CMX3600-EDL, Avid Assemble List, Final Cut Pro XML (xmeml), FCPXML oder Pro Tools „Session Info as Text“?")
@@ -1462,6 +1814,8 @@ def edl_import_endpoint(body: EdlImportIn) -> dict:
     cards = edl_import.merge_cards(cards, merge_identical=body.merge_identical,
                                    unify_stems=body.unify_stems)
     edl_import.attach_rights(cards, ll)       # Zusammenfassen kann den LC aus einer späteren Karte füllen
+    _attach_confirmations(cards)
+    _attach_prefix_hints(cards)
     from collections import Counter
     total = sum(c.get("duration_sec", 0) or 0 for c in cards)
     out = {"events": len(events), "cues": len(cards), "cards": cards,
@@ -1490,7 +1844,7 @@ def edl_import_list_endpoint(body: EdlListImportIn) -> dict:
     import base64
     import tempfile
     if not DB_META["ready"]:
-        raise HTTPException(503, "labels.db nicht geladen")
+        raise HTTPException(503, LABELS_DB_MISSING)
     suffix = Path(body.filename).suffix.lower()
     if suffix not in ingest.SUPPORTED_EXTENSIONS:
         raise HTTPException(422, f"Format nicht unterstützt: {suffix or '(keine Endung)'} "
@@ -1498,9 +1852,9 @@ def edl_import_list_endpoint(body: EdlListImportIn) -> dict:
     try:
         raw = base64.b64decode(body.content_b64, validate=True)
     except Exception:
-        raise HTTPException(422, "Datei-Inhalt nicht dekodierbar (Base64 erwartet)")
+        raise HTTPException(422, FILE_NOT_TRANSFERRED)
     if not raw:
-        raise HTTPException(422, "Leere Datei")
+        raise HTTPException(422, EMPTY_FILE)
     fd, tmp = tempfile.mkstemp(suffix=suffix, prefix="cuecore_cuelist_")
     os.close(fd)
     fetcher = netfetch.build_fetcher(DB_PATH) if body.online else None
@@ -1523,6 +1877,8 @@ def edl_import_list_endpoint(body: EdlListImportIn) -> dict:
     cards = edl_import.merge_cards(res["cards"], merge_identical=body.merge_identical,
                                    unify_stems=body.unify_stems)
     edl_import.attach_rights(cards, _label_lookup)    # nach Liste und Zusammenfassen
+    _attach_confirmations(cards)
+    _attach_prefix_hints(cards)
     from collections import Counter
     total = sum(c.get("duration_sec", 0) or 0 for c in cards)
     out = {"events": res["events"], "cues": len(cards), "cards": cards,
@@ -1548,7 +1904,7 @@ def edl_resolve_cues(body: EdlResolveCuesIn) -> dict:
     Erfolg wird wie beim Online-Import als Eintrag (source_type='edl_import') in die
     songs.db geschrieben; Cues ohne Interpret+Titel werden NICHT geraten."""
     if not DB_META["ready"]:
-        raise HTTPException(503, "labels.db nicht geladen")
+        raise HTTPException(503, LABELS_DB_MISSING)
     if not body.cues:
         raise HTTPException(422, "Keine Cues.")
     if len(body.cues) > EDL_RESOLVE_BATCH:
@@ -1605,7 +1961,7 @@ def _edl_resolve_cues(cues: list[dict]) -> list[dict]:
         # Autoren: die sind aus dem Netz nur Vorschlag am Eintrag, gespeichert per Editor.
         songsdb.upsert(SONGS_CON, interpret=artist, titel=title,
                        labelname=resolved.get("labelname", ""), labelcode=resolved.get("labelcode", ""),
-                       isrc=resolved.get("isrc", ""), source_type="edl_import")
+                       isrc=resolved.get("isrc", ""), iswc=resolved.get("iswc", ""), source_type="edl_import")
         entry.update({k: v for k, v in resolved.items() if v not in (None, "")})
         entry["status"], entry["resolved"] = "resolved_and_written", True
         out.append(entry)
@@ -1623,7 +1979,7 @@ def edl_fill_authors(body: EdlAuthorsIn) -> dict:
     Dateinamen-Treffer), aber keine Autoren. Netz (MusicBrainz-Werk-Relationen, Discogs-Credits), batchweise;
     ein Treffer wird in die songs.db-Zeile nachgetragen, wenn die Felder dort leer sind (PROTECT bleibt)."""
     if not DB_META["ready"]:
-        raise HTTPException(503, "labels.db nicht geladen")
+        raise HTTPException(503, LABELS_DB_MISSING)
     if len(body.cues) > EDL_RESOLVE_BATCH:
         raise HTTPException(422, f"Maximal {EDL_RESOLVE_BATCH} Cues je Anfrage.")
     fetcher = netfetch.build_fetcher(DB_PATH)
@@ -1689,6 +2045,28 @@ class EdlExportIn(BaseModel):
     cards: list[dict]
     filename: str = "cue_sheet"
     fmt: str = "xlsx"   # xlsx | csv | pdf
+    columns: list[str] | None = None   # Spalten der Export-Vorlage (D2); None = alle
+
+
+class ExportTemplatesIn(BaseModel):
+    templates: list[dict]
+    active: str = ""
+
+
+@app.get("/api/export-templates")
+def export_templates_get() -> dict:
+    rows, active = settings.export_templates(edl_import.EXPORT_COLUMNS)
+    return {"templates": rows, "active": active, "columns": list(edl_import.EXPORT_COLUMNS),
+            "always": edl_import.DURATION_COLUMN, "required": list(settings.TEMPLATE_REQUIRED)}
+
+
+@app.post("/api/export-templates")
+def export_templates_set(body: ExportTemplatesIn) -> dict:
+    if not body.templates:
+        raise HTTPException(400, "Mindestens eine Vorlage muss bleiben.")
+    rows, active = settings.set_export_templates(body.templates, body.active, edl_import.EXPORT_COLUMNS)
+    return {"templates": rows, "active": active, "columns": list(edl_import.EXPORT_COLUMNS),
+            "always": edl_import.DURATION_COLUMN, "required": list(settings.TEMPLATE_REQUIRED)}
 
 
 @app.post("/api/edl/export")
@@ -1707,7 +2085,52 @@ def edl_export_endpoint(body: EdlExportIn):
     fd, tmp = tempfile.mkstemp(suffix="." + fmt, prefix="cuecore_edl_")
     os.close(fd)
     stem = body.filename[:-len("." + fmt)] if body.filename.lower().endswith("." + fmt) else body.filename
-    return _temp_download(lambda p: writers[fmt](body.cards, p), tmp, f"{stem}.{fmt}", media[fmt])
+    return _temp_download(lambda p: writers[fmt](body.cards, p, body.columns), tmp, f"{stem}.{fmt}", media[fmt])
+
+
+# --- Projekte (D12/D14): bearbeitete Cue-Sheets im Datenordner speichern und fortsetzen ---
+class ProjectIn(BaseModel):
+    id: str = ""
+    name: str = ""
+    source_file: str = ""
+    options: dict = {}
+    summary: dict = {}
+    cards: list[dict] = []
+
+
+@app.get("/api/projects")
+def projects_list() -> dict:
+    return {"projects": projects.list_all(DB_PATH.parent)}
+
+
+@app.post("/api/projects")
+def projects_save(body: ProjectIn) -> dict:
+    try:
+        return projects.save(DB_PATH.parent, body.model_dump())
+    except ValueError:
+        raise HTTPException(400, "Projekt nicht gefunden. Bitte die Liste neu laden.")
+
+
+@app.get("/api/projects/{pid}")
+def projects_get(pid: str) -> dict:
+    try:
+        doc = projects.load(DB_PATH.parent, pid)
+    except ValueError:
+        doc = None
+    if doc is None:
+        raise HTTPException(404, "Projekt nicht gefunden. Bitte die Liste neu laden.")
+    return doc
+
+
+@app.delete("/api/projects/{pid}")
+def projects_delete(pid: str) -> dict:
+    try:
+        ok = projects.delete(DB_PATH.parent, pid)
+    except ValueError:
+        ok = False
+    if not ok:
+        raise HTTPException(404, "Projekt nicht gefunden. Bitte die Liste neu laden.")
+    return {"deleted": True, "id": pid}
 
 
 class EdlLibraryScanIn(BaseModel):
@@ -1737,7 +2160,7 @@ def edl_library_scan(body: EdlLibraryScanIn) -> dict:
     Metadaten je Dateiname, das Mergen in die Karten macht das Frontend. Jeder LC wird gegen
     den GVL-Master gegengeprüft (editingtools-`labelCode` ist teils nur eine interne ID)."""
     if not DB_META["ready"]:
-        raise HTTPException(503, "labels.db nicht geladen")
+        raise HTTPException(503, LABELS_DB_MISSING)
     key = settings.get("editingtools_api_key")
     if not key:
         raise HTTPException(400, "Kein editingtools-API-Key hinterlegt — in den Einstellungen eintragen.")
@@ -1774,7 +2197,7 @@ def _trackmeta_clients() -> list[tuple[dict, trackmeta.Client]]:
     konfiguriert."""
     out: list[tuple[dict, trackmeta.Client]] = []
     live: set[tuple] = set()
-    for p in settings.partners():
+    for p in settings.active_partners():          # eigene Partner, dann der eingebaute Zugang
         key = (p["host"], p["client_id"], p["client_secret"])
         if not all(key):
             continue
@@ -1804,7 +2227,7 @@ def edl_trackmeta_scan(body: EdlLibraryScanIn) -> dict:
     gegen den GVL-Master gegengeprüft (Anbieter-LC ist nicht GVL-verifiziert). `null` vom
     Anbieter = nicht auflösbar, kein Fehler (matched=False)."""
     if not DB_META["ready"]:
-        raise HTTPException(503, "labels.db nicht geladen")
+        raise HTTPException(503, LABELS_DB_MISSING)
     clients = _trackmeta_clients()
     if not clients:
         raise HTTPException(400, "Track-Metadata-API nicht konfiguriert — Partner (Host, Client-ID, Secret) in den Einstellungen eintragen.")
@@ -1861,7 +2284,7 @@ def db_songs(q: str = "", limit: int = 100, offset: int = 0, missing: str = "", 
     brauchen einen Interpreten im Text (Suche läuft über die Interpreten-Tabelle, nicht über alle Titel).
     `missing` = Lücken-Filter (labelcode|komponist|texter|verlag|isrc), wirkt auf verifizierte Zeilen."""
     if SONGS_CON is None:
-        raise HTTPException(503, "songs.db nicht geladen")
+        raise HTTPException(503, SONGS_DB_MISSING)
     if scope == "index":
         out = {"rows": [], "total": 0, "limit": limit, "offset": 0, "total_all": 0, "missing_counts": {}}
     else:
@@ -1878,12 +2301,15 @@ def db_songs(q: str = "", limit: int = 100, offset: int = 0, missing: str = "", 
         out["index_total"] = found["total"]
         out["index_capped"] = found["capped"]
         out["index_needs_artist"] = found["needs_artist"]
+    if q.strip() and not out["total"] and not out["index_rows"] and not missing and scope != "index":
+        out["suggestion"] = songsdb.suggest_query(SONGS_CON, q)      # „Meintest du …?“ bei Tippfehlern
     return out
 
 
 class VerifyIn(BaseModel):
     interpret: str
     titel: str
+    project: str | None = None     # Cue-Sheet, in dem bestätigt wurde (D15); None = nicht aus einem Cue-Sheet
     labelcode: str = ""
     labelname: str = ""
     komponist: str = ""
@@ -1901,7 +2327,7 @@ def db_verify(body: VerifyIn) -> dict:
     """Haken „Verifiziert" an einer Index-Zeile: der Track wandert in die songs.db (quelle=index,
     date_verified=jetzt). Existiert er schon, werden nur leere Felder gefüllt und das Datum gesetzt."""
     if SONGS_CON is None:
-        raise HTTPException(503, "songs.db nicht geladen")
+        raise HTTPException(503, SONGS_DB_MISSING)
     if not body.interpret.strip() or not body.titel.strip():
         raise HTTPException(400, "Interpret und Titel dürfen nicht leer sein")
     raw = body.labelcode.strip()
@@ -1916,6 +2342,8 @@ def db_verify(body: VerifyIn) -> dict:
                    date_verified=datetime.now(timezone.utc).isoformat())
     SONGS_CON.commit()
     row = songsdb.find_row(SONGS_CON, body.interpret, body.titel)
+    if body.project is not None:
+        songsdb.record_confirmation(SONGS_CON, row["id"], body.project, datetime.now(timezone.utc).isoformat())
     quelle = SONGS_CON.execute("SELECT quelle FROM songs WHERE id=?", (row["id"],)).fetchone()[0]
     DB_META["songs"] = songsdb.count(SONGS_CON)
     return {"ok": True, "row": {**row, "quelle": quelle, "verified": True}}
@@ -1937,7 +2365,7 @@ def ingest_upload(body: IngestIn) -> dict:
     import base64
     import tempfile
     if SONGS_CON is None:
-        raise HTTPException(503, "songs.db nicht geladen")
+        raise HTTPException(503, SONGS_DB_MISSING)
     suffix = Path(body.filename).suffix.lower() or ".csv"
     if suffix not in ingest.SUPPORTED_EXTENSIONS:
         raise HTTPException(422, f"Format nicht unterstützt: {suffix} "
@@ -1945,13 +2373,23 @@ def ingest_upload(body: IngestIn) -> dict:
     try:
         raw = base64.b64decode(body.content_b64, validate=True)
     except Exception:
-        raise HTTPException(422, "Datei-Inhalt nicht dekodierbar (Base64 erwartet)")
+        raise HTTPException(422, FILE_NOT_TRANSFERRED)
     fd, tmp = tempfile.mkstemp(suffix=suffix, prefix="cuecore_ingest_")
     os.close(fd)
     try:
         Path(tmp).write_bytes(raw)
         # Track-Lieferung einer Library (Metadaten-Export): eigener Weg — verifiziert, mit Dateinamen-/Edit-ID-Tabelle
         # für die Cue-Zuordnung, statt Spalten-Mapping (Metadaten, die eine Library selbst liefert, gelten als verifiziert).
+        # Team-Datei (D16): eigene Werte gewinnen, leere Felder werden gefüllt, Abweichungen als Liste
+        if suffix == ".csv" and teamdb.is_team_file(tmp):
+            rows = teamdb.read_team(tmp)
+            plan = teamdb.plan(SONGS_CON, rows, set(INDEX.code2name))
+            if body.commit:
+                teamdb.apply(SONGS_CON, plan, body.filename)
+                DB_META["songs"] = songsdb.count(SONGS_CON)
+            return {"team": True, "rows": len(rows), "new": len(plan["new"]), "filled": len(plan["filled"]),
+                    "same": plan["same"], "review": plan["review"], "conflicts": plan["conflicts"][:300],
+                    "conflicts_total": len(plan["conflicts"]), "committed": body.commit}
         if ingest.library_delivery_kind(tmp):
             res = (ingest.import_library_delivery(SONGS_CON, tmp, GVL_MASTER, date_verified=date.today().isoformat())
                    if body.commit else ingest.preview_library_delivery(tmp, GVL_MASTER))
@@ -1972,6 +2410,9 @@ def ingest_upload(body: IngestIn) -> dict:
             raise HTTPException(422, res["error"])
         if body.commit:
             DB_META["songs"] = songsdb.count(SONGS_CON)
+            if DB_META["ready"]:   # importierte Zeilen ohne Code: eindeutiger GVL-Name -> Code mit Notiz
+                res["lc_by_name"] = sum(c["songs"] for c in
+                                        librarytracks.fill_song_codes_by_name(SONGS_CON, GVL_MASTER)["filled"])
         return res
     finally:
         try:
@@ -1990,10 +2431,10 @@ def ingest_scan_folder(body: DeliveryScanIn) -> dict:
     """Ordner nach Library-Lieferungen durchsuchen (manche Libraries legen bei jedem Download eine music_metadata.csv dazu)
     und sie als verifizierte Tracks einpflegen. commit=False: nur Vorschau."""
     if SONGS_CON is None:
-        raise HTTPException(503, "songs.db nicht geladen")
+        raise HTTPException(503, SONGS_DB_MISSING)
     folder = body.folder.strip()
     if not folder or not Path(folder).is_dir():
-        raise HTTPException(400, f"Kein Ordner: {folder or '—'}")
+        raise HTTPException(400, f"Ordner nicht gefunden: {folder or '—'}. Bitte den Ordner erneut wählen oder hineinziehen.")
     if body.commit:
         res = ingest.import_delivery_folder(SONGS_CON, folder, GVL_MASTER, date_verified=date.today().isoformat())
         DB_META["songs"] = songsdb.count(SONGS_CON)
@@ -2024,15 +2465,15 @@ def gvl_preview(body: GvlPreviewIn) -> dict:
     try:
         raw = base64.b64decode(body.content_b64, validate=True)
     except Exception:
-        raise HTTPException(422, "Datei-Inhalt nicht dekodierbar (Base64 erwartet)")
+        raise HTTPException(422, FILE_NOT_TRANSFERRED)
     fd, tmp = tempfile.mkstemp(suffix=".pdf", prefix="cuecore_gvl_")
     os.close(fd)
     try:
         Path(tmp).write_bytes(raw)
         try:
-            return gvlsync.preview(tmp, _gvl_paths()[0])
+            return gvlsync.preview(tmp, _gvl_paths()[0], name_fixes_path=_data_file("gvl_name_fixes.csv"))
         except Exception as e:
-            raise HTTPException(422, f"PDF nicht lesbar: {e}")
+            raise HTTPException(422, f"PDF nicht lesbar ({e}). Bitte die Labelcode-Liste als PDF von labelrecherche.gvl.de neu laden und erneut wählen.")
     finally:
         try:
             os.unlink(tmp)
@@ -2065,11 +2506,18 @@ def gvl_merge(body: GvlMergeIn) -> dict:
 
 @app.get("/api/db/export")
 def db_export(fmt: str = "csv", q: str = "", missing: str = ""):
-    """Die (optional gefilterte) Song-DB als Excel/CSV/PDF herunterladen."""
+    """Die (optional gefilterte) Song-DB als Excel/CSV/PDF herunterladen; fmt=team: CSV fürs Team mit Prüfstatus,
+    Quelle und Prüfdatum (D16, bei Kolleg:innen über „Datei importieren“ einlesbar)."""
     import tempfile
     if SONGS_CON is None:
-        raise HTTPException(503, "songs.db nicht geladen")
+        raise HTTPException(503, SONGS_DB_MISSING)
     fmt = fmt.lower().strip()
+    if fmt == "team":
+        rows = songsdb.all_songs(SONGS_CON, query=q, missing=missing)
+        fd, tmp = tempfile.mkstemp(suffix=".csv", prefix="cuecore_team_")
+        os.close(fd)
+        return _temp_download(lambda p: teamdb.export_team_csv(rows, p), tmp,
+                              f"cuecore_team_{date.today().isoformat()}.csv", "text/csv")
     writers = {"csv": dbexport.export_csv, "xlsx": dbexport.export_xlsx, "pdf": dbexport.export_pdf}
     media = {"csv": "text/csv",
              "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -2084,6 +2532,7 @@ def db_export(fmt: str = "csv", q: str = "", missing: str = ""):
 
 class DbSongIn(BaseModel):
     fields: dict
+    project: str | None = None     # aus dem Cue-Editor: Projekt der Bestätigung (D15)
 
 
 def _db_label_fields(fields: dict, current: dict | None = None) -> dict:
@@ -2107,7 +2556,7 @@ def _db_label_fields(fields: dict, current: dict | None = None) -> dict:
         out.pop("labelcode")                         # unveränderter Alt-Code: so lassen, wie er steht
         return out
     if not DB_META["ready"]:
-        raise HTTPException(503, "labels.db nicht geladen — Labelcode kann nicht geprüft werden")
+        raise HTTPException(503, LABELS_DB_MISSING)
     if not code:
         raise HTTPException(400, f"Labelcode „{raw}“ nicht lesbar — erwartet z.B. LC00121")
     if code not in INDEX.code2name:
@@ -2124,23 +2573,37 @@ def _db_label_fields(fields: dict, current: dict | None = None) -> dict:
     return out
 
 
+def _fill_code_by_name(fields: dict, song_id) -> dict:
+    """Nach dem Speichern: Zeile ohne Labelcode mit eindeutigem GVL-Labelnamen bekommt den Code gleich mit;
+    die Antwort trägt dann Code und GVL-Namen, damit Editor und Cue-Sheet ihn sofort zeigen."""
+    if song_id is None or not DB_META["ready"] or (fields.get("labelcode") or "").strip():
+        return fields
+    if librarytracks.fill_song_codes_by_name(SONGS_CON, GVL_MASTER, song_id=song_id)["filled"]:
+        row = songsdb.get_song(SONGS_CON, song_id) or {}
+        return {**fields, "labelcode": row.get("labelcode", ""), "labelname": row.get("labelname", "")}
+    return fields
+
+
 @app.post("/api/db/song")
 def db_song_create(body: DbSongIn) -> dict:
     """Neuen Song komplett selbst anlegen (DB-Editor „Neuer Eintrag"). Interpret +
     Titel Pflicht, Rest optional. quelle='manuell'. Antwort trägt die gespeicherten
     `fields` (Labelcode normalisiert, Labelname aus dem Master)."""
     if SONGS_CON is None:
-        raise HTTPException(503, "songs.db nicht geladen")
+        raise HTTPException(503, SONGS_DB_MISSING)
     fields = _db_label_fields(body.fields)
     res = songsdb.create_song(SONGS_CON, fields)
     if "error" in res:
         raise HTTPException(409, res["error"])
+    if body.project is not None:
+        songsdb.record_confirmation(SONGS_CON, res.get("id"), body.project, datetime.now(timezone.utc).isoformat())
     DB_META["songs"] = songsdb.count(SONGS_CON)
-    return {**res, "fields": fields}
+    return {**res, "fields": _fill_code_by_name(fields, res.get("id"))}
 
 
 class DbSongUpdateIn(BaseModel):
     fields: dict
+    project: str | None = None
 
 
 @app.post("/api/db/song/{song_id}")
@@ -2148,13 +2611,15 @@ def db_song_update(song_id: int, body: DbSongUpdateIn) -> dict:
     """Eine Song-Zeile bearbeiten (z.B. manuell recherchierten Komponisten nachtragen).
     Überschreibt bewusst auch sonst geschützte Felder — der Nutzer korrigiert absichtlich."""
     if SONGS_CON is None:
-        raise HTTPException(503, "songs.db nicht geladen")
+        raise HTTPException(503, SONGS_DB_MISSING)
     fields = _db_label_fields(body.fields, songsdb.get_song(SONGS_CON, song_id) or {})
     res = songsdb.update_song(SONGS_CON, song_id, fields)
     if "error" in res:
         raise HTTPException(409, res["error"])
+    if body.project is not None:
+        songsdb.record_confirmation(SONGS_CON, song_id, body.project, datetime.now(timezone.utc).isoformat())
     DB_META["songs"] = songsdb.count(SONGS_CON)
-    return {**res, "fields": fields}
+    return {**res, "fields": _fill_code_by_name(fields, song_id)}
 
 
 @app.delete("/api/songs/{song_id}")
@@ -2163,7 +2628,7 @@ def db_song_delete(song_id: int) -> dict:
     Falsch angelegte Einträge ließen sich sonst nur überschreiben und blieben „verifiziert“.
     Die library_files-Zeilen des Songs gehen mit."""
     if SONGS_CON is None:
-        raise HTTPException(503, "songs.db nicht geladen")
+        raise HTTPException(503, SONGS_DB_MISSING)
     if not songsdb.delete_song(SONGS_CON, song_id):
         raise HTTPException(404, f"Song {song_id} nicht gefunden")
     DB_META["songs"] = songsdb.count(SONGS_CON)

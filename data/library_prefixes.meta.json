@@ -1,26 +1,111 @@
 {
- "built": "2026-09-20",
- "rows": 486,
+ "built": "2026-10-23",
+ "rows": 833,
  "libraries": [
+  "",
+  "101 Music Pty Ltd; Audiobrat; Freshtracks Music",
+  "101 Music Pty Ltd; Freshtracks Music",
+  "101 Music Pty Ltd; Instant Music Licensing",
+  "411 Music Group; Adrenalin Sounds Pty Ltd",
+  "411 Music Group; Beatbox Music Pty Ltd; Beats Bakery",
+  "560 Music; Beatbox Music Pty Ltd; Slipstream",
+  "; Extreme Music",
+  "; Extreme Music; KPM",
+  "; KPM",
   "APL",
+  "APL Publishing; Freshtracks Music",
+  "APM",
+  "APM; Beatbox Music Pty Ltd; Freshtracks Music",
+  "APM; Beatbox Music Pty Ltd; Soho Production Music",
+  "APM; Cezame",
+  "APM; Cezame; Mushroom Production Music",
+  "APM; Extreme Music Library",
+  "APM; Extreme Music Library; KPM Music",
+  "APM; FOLD; FOLD Production Music",
+  "APM; Freshtracks Music",
+  "APM; Freshtracks Music; Universal Production Music",
+  "APM; JW Media Music",
+  "APM; Lazar Focused",
+  "APM; Liquid Cinema; Universal Production Music",
+  "APM; Soho Production Music",
+  "APM; Soho; Soho Production Music; Universal Production Music",
+  "Adrenalin Sounds Pty Ltd; Freshtracks Music",
+  "Adrenalin Sounds Pty Ltd; Warner Chappell Production Music",
+  "Amphibious Zoo Music",
+  "Amphibious Zoo; Amphibious Zoo Music",
+  "Atomica Music; BMG Production Music; Motus Music",
+  "BMG Production Music",
+  "BMG Production Music; BMG Production Music BNX",
+  "BMG Production Music; BMG Production Music DE",
+  "BMG Production Music; BMG Production Music FR",
+  "BMG Production Music; BMG Production Music UK",
+  "BMG Production Music; BMG Production Music UK; allmusic",
+  "BMG Production Music; BMG Production Music USA",
+  "BMG Production Music; Bam Music",
+  "BMG Production Music; Boom Music; Warner Chappell Production Music",
+  "BMG Production Music; Boost Music",
+  "BMG Production Music; Boost Music; Slipstream",
+  "BMG Production Music; Cavendish Music; FuzeArtz",
+  "BMG Production Music; Freshtracks Music",
+  "BMG Production Music; Megatrax Production Music",
+  "BMG Production Music; Music Beyond",
+  "BMG Production Music; Score Addiction",
+  "BMG Production Music; Twisted Jukebox",
+  "BMG Production Music; Warner Chappell Production Music",
+  "Bam Music; Beatbox Music Pty Ltd; Dos Brains",
+  "Beatbox Music Pty Ltd; Cavendish Music; MusicBox",
+  "Beatbox Music Pty Ltd; Freshtracks Music",
+  "Beatbox Music Pty Ltd; Gargantuan Music",
+  "Beatbox Music Pty Ltd; Gothic Storm Music",
+  "Beatbox Music Pty Ltd; JW Media Music",
+  "Beatbox Music Pty Ltd; Megatrax Production Music; Reliable Source Music",
+  "Beatbox Music Pty Ltd; Reliable Source Music; Warner Chappell Production Music",
+  "Beatbox Music Pty Ltd; Short Story Collective",
+  "Beatbox Music Pty Ltd; Warner Chappell Production Music",
+  "Blonde Beats; Strike Audio",
+  "Boost Music; DNA MUSIK GmbH",
+  "Bulletproof Bear",
   "Cezame",
+  "Current Music; Fable Music Pty Ltd; Freshtracks Music",
+  "Dodged A Bullet",
   "Extreme Music",
-  "Extreme Music; KPM",
+  "Freshtracks Music; GUM Tapes; Universal Production Music",
+  "Freshtracks Music; Motion Focus Music",
+  "Freshtracks Music; RIghtbox s.r.o.",
+  "Freshtracks Music; Reality From Dreams",
+  "Freshtracks Music; Thorvald Music",
+  "Gargantuan Music; SyncStories",
+  "Grey Man Production Music; Motion Focus Music",
   "KPM",
+  "KPM; Sonoton Music / Intersound",
   "KPM; Universal Production Music",
   "KPM; Warner Chappell PM",
+  "LAB HITS, LLC; Motus Music",
+  "Megatrax Production Music; Reliable Source Music",
+  "Sonoton Music / Intersound",
   "Universal Production Music",
   "Warner Chappell PM",
+  "Warner Chappell Production Music",
   "West One Music"
  ],
  "sources": [
   "APL-Labelliste 2026-09",
   "APL-Website 2026-09",
+  "APRA-AMCOS-Katalogcodes 2026-10; MCPS-Katalogliste 2026-10",
+  "APRA-AMCOS-Katalogcodes 2026-10; MCPS-Katalogliste 2026-10; PMA-Präfixdatenbank 2026-10",
+  "APRA-AMCOS-Katalogcodes 2026-10; PMA-Präfixdatenbank 2026-10",
+  "Anbieter-Katalogzuordnungen 2026-10-23",
   "Cezame-Labelliste 2026-09",
   "Extreme-Music-Labelliste",
   "Extreme-Music-Website 2026-09",
   "KPM-Labelliste 2022-05",
   "KPM-Website 2026-09",
+  "Katalogliste Library-Plattform 2026-10; APRA-AMCOS-Katalogcodes 2026-10; MCPS-Katalogliste 2026-10; PMA-Präfixdatenbank 2026-10",
+  "Katalogliste Library-Plattform 2026-10; APRA-AMCOS-Katalogcodes 2026-10; PMA-Präfixdatenbank 2026-10",
+  "Katalogliste Library-Plattform 2026-10; MCPS-Katalogliste 2026-10; PMA-Präfixdatenbank 2026-10",
+  "Katalogliste Library-Plattform 2026-10; PMA-Präfixdatenbank 2026-10",
+  "MCPS-Katalogliste 2026-10; PMA-Präfixdatenbank 2026-10",
+  "MusicBrainz-Präfixliste 2026-10; PMA-Präfixdatenbank 2026-10",
   "UPM-Labelliste 2026-09",
   "Warner-Chappell-Labelliste 2026-09",
   "West-One-Labelliste 2026-09"
@@ -241,6 +326,12 @@
    "why": "Kürzel mehrdeutig: 19921, 23109"
   },
   {
+   "prefix": "CM",
+   "labelcode": "23109",
+   "library": "Universal Production Music",
+   "why": "Kürzel mehrdeutig: 19921, 23109"
+  },
+  {
    "prefix": "CHALK",
    "labelcode": "84804",
    "library": "KPM",
@@ -257,6 +348,24 @@
    "labelcode": "84804",
    "library": "KPM",
    "why": "Kürzel mehrdeutig: 82157, 84804"
+  },
+  {
+   "prefix": "CHALK",
+   "labelcode": "82157",
+   "library": "Universal Production Music",
+   "why": "Kürzel mehrdeutig: 82157, 84804"
+  },
+  {
+   "prefix": "EPM",
+   "labelcode": "29331",
+   "library": "KPM",
+   "why": "Kürzel mehrdeutig: 104059, 29331"
+  },
+  {
+   "prefix": "EPM",
+   "labelcode": "104059",
+   "library": "Sonoton Music / Intersound",
+   "why": "Kürzel mehrdeutig: 104059, 29331"
   },
   {
    "prefix": "JUSTE",
@@ -289,6 +398,36 @@
    "why": "Kürzel mehrdeutig: 02061, 30517"
   },
   {
+   "prefix": "MML",
+   "labelcode": "08917",
+   "library": "KPM",
+   "why": "Kürzel mehrdeutig: 08917, 16106"
+  },
+  {
+   "prefix": "MML",
+   "labelcode": "16106",
+   "library": "Sonoton Music / Intersound",
+   "why": "Kürzel mehrdeutig: 08917, 16106"
+  },
+  {
+   "prefix": "MHI",
+   "labelcode": "30523",
+   "library": "KPM",
+   "why": "Kürzel mehrdeutig: 30523, 30525"
+  },
+  {
+   "prefix": "MHI",
+   "labelcode": "30523",
+   "library": "KPM",
+   "why": "Kürzel mehrdeutig: 30523, 30525"
+  },
+  {
+   "prefix": "MHI",
+   "labelcode": "30525",
+   "library": "",
+   "why": "Kürzel mehrdeutig: 30523, 30525"
+  },
+  {
    "prefix": "NIGHTSE",
    "labelcode": "96705",
    "library": "KPM",
@@ -305,6 +444,24 @@
    "labelcode": "96704",
    "library": "KPM",
    "why": "Kürzel mehrdeutig: 96704, 96705"
+  },
+  {
+   "prefix": "NVS",
+   "labelcode": "96706",
+   "library": "KPM",
+   "why": "Kürzel mehrdeutig: 96705, 96706"
+  },
+  {
+   "prefix": "NVS",
+   "labelcode": "96706",
+   "library": "KPM",
+   "why": "Kürzel mehrdeutig: 96705, 96706"
+  },
+  {
+   "prefix": "NVS",
+   "labelcode": "96705",
+   "library": "",
+   "why": "Kürzel mehrdeutig: 96705, 96706"
   },
   {
    "prefix": "SPL",
@@ -325,6 +482,30 @@
    "why": "Kürzel mehrdeutig: 30241, 70919"
   },
   {
+   "prefix": "SPL",
+   "labelcode": "30241",
+   "library": "",
+   "why": "Kürzel mehrdeutig: 30241, 70919"
+  },
+  {
+   "prefix": "DBX",
+   "labelcode": "101560",
+   "library": "APL",
+   "why": "Kürzel mehrdeutig: 101560, 91387"
+  },
+  {
+   "prefix": "DBX",
+   "labelcode": "101560",
+   "library": "APL",
+   "why": "Kürzel mehrdeutig: 101560, 91387"
+  },
+  {
+   "prefix": "DBX",
+   "labelcode": "91387",
+   "library": "Sonoton Music / Intersound",
+   "why": "Kürzel mehrdeutig: 101560, 91387"
+  },
+  {
    "prefix": "BPM",
    "labelcode": "24303",
    "library": "Universal Production Music",
@@ -333,6 +514,24 @@
   {
    "prefix": "BPM",
    "labelcode": "99236",
+   "library": "Universal Production Music",
+   "why": "Kürzel mehrdeutig: 23100, 24303, 99236"
+  },
+  {
+   "prefix": "BPM",
+   "labelcode": "23100",
+   "library": "Universal Production Music",
+   "why": "Kürzel mehrdeutig: 23100, 24303, 99236"
+  },
+  {
+   "prefix": "BPM",
+   "labelcode": "99236",
+   "library": "Universal Production Music",
+   "why": "Kürzel mehrdeutig: 23100, 24303, 99236"
+  },
+  {
+   "prefix": "BPM",
+   "labelcode": "24303",
    "library": "Universal Production Music",
    "why": "Kürzel mehrdeutig: 23100, 24303, 99236"
   },
@@ -353,6 +552,18 @@
    "labelcode": "12540",
    "library": "Warner Chappell PM",
    "why": "Kürzel mehrdeutig: 12540, 30201"
+  },
+  {
+   "prefix": "KCL",
+   "labelcode": "30516",
+   "library": "",
+   "why": "Kürzel mehrdeutig: 30516, 30657"
+  },
+  {
+   "prefix": "KCL",
+   "labelcode": "30657",
+   "library": "Universal Production Music",
+   "why": "Kürzel mehrdeutig: 30516, 30657"
   }
  ]
 }

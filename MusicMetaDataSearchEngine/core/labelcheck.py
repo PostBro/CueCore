@@ -37,25 +37,30 @@ AUTO_NOTE_PREFIX = "Aus Library-Lieferung"
 # genau EINEM Code steht und die deshalb diesen Code bekommen hat. Fester
 # Text, die Oberfläche übersetzt ihn; s. librarytracks.to_song_rows und fill_codes_by_name.
 LC_BY_NAME_NOTE = "LC aus dem GVL-Master über den Labelnamen"
+# Dasselbe über den Verlag: Zeile ohne Label, Verlag steht im Master unter genau EINEM Production-Music-Code.
+LC_BY_PUBLISHER_NOTE = "LC aus dem GVL-Master über den Verlag (Production Music)"
 
 
 class GvlMaster:
     """Code -> GVL-Namen und Name -> Codes, nur GVL-Master + Zusatzliste. Aufrufbar wie code2name
     (erster GVL-Name oder None), damit die bestehenden Lieferungs-Funktionen es direkt nehmen."""
 
-    def __init__(self, rows):
+    def __init__(self, rows, plm_codes=()):
         self.code2names: dict[str, list[str]] = {}
+        self.plm: set[str] = {normalize_labelcode(str(c)) for c in plm_codes}   # Production-Library-Music-Codes
         for code, label in rows:
             code, label = normalize_labelcode(str(code)), (label or "").strip()
             if code and label:
                 self.code2names.setdefault(code, []).append(label)
         self._name2codes: dict[str, set[str]] | None = None     # erst bei Bedarf (norm über 85.000 Namen: 0,25 s)
+        self.aliases: dict[str, str] = {}                        # Name laut Anbieter (norm) -> Code, s. add_aliases
 
     @classmethod
     def from_db(cls, con) -> "GvlMaster":
         from .labeldb import ensure_source_column
         ensure_source_column(con)
-        return cls(con.execute("SELECT labelcode, label FROM labels WHERE source='gvl'").fetchall())
+        return cls(con.execute("SELECT labelcode, label FROM labels WHERE source='gvl'").fetchall(),
+                   [r[0] for r in con.execute("SELECT labelcode FROM labels WHERE source='gvl' AND plm=1")])
 
     def __call__(self, code: str) -> str | None:
         names = self.names(code)
@@ -71,7 +76,22 @@ class GvlMaster:
             for code, names in self.code2names.items():
                 for n in names:
                     self._name2codes.setdefault(norm(n), set()).add(code)
-        return sorted(self._name2codes.get(norm(name or ""), ()))
+        codes = sorted(self._name2codes.get(norm(name or ""), ()))
+        if not codes and norm(name or "") in self.aliases:      # nur wenn kein GVL-Name passt: die GVL geht vor
+            codes = [self.aliases[norm(name or "")]]
+        return codes
+
+    def add_aliases(self, rows) -> int:
+        """Labelnamen laut Anbieter (data/label_aliases_anbieter.csv: alias, labelcode). Die Codes gelten als vom
+        Anbieter belegte Production Music (zählen in der Namensregel wie PLM). Rückgabe: Anzahl."""
+        n = 0
+        for r in rows:
+            code = normalize_labelcode(str(r.get("labelcode") or ""))
+            if code and self.names(code) and (r.get("alias") or "").strip():
+                self.aliases[norm(r["alias"])] = code
+                self.plm.add(code)
+                n += 1
+        return n
 
 
 def names_match(name: str, gvl_names: list[str], code: str = "") -> bool:

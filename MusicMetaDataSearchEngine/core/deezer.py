@@ -12,6 +12,8 @@ import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 
+from .labelmatch import norm
+
 DEEZER = "https://api.deezer.com"
 USER_AGENT = "CueCore/0.9 (+https://github.com/PostBro/CueCore)"
 
@@ -50,6 +52,18 @@ def parse_first_track(data: dict) -> dict | None:
             "isrc": t.get("isrc", "") or "", "link": t.get("link", "") or ""}
 
 
+def pick_matching_track(data: dict, artist: str, title: str) -> dict | None:
+    """Aus einer Freitext-Suche den ersten Track, dessen Titel (normalisiert) gleich ist und dessen Interpret zum
+    gesuchten passt (einer im anderen enthalten). Ohne diese Prüfung käme eine Cover-Version als Beleg durch."""
+    na, nt = norm(artist), norm(title)
+    for t in data.get("data") or []:
+        an = norm((t.get("artist") or {}).get("name", ""))
+        if norm(t.get("title", "")) == nt and an and (an in na or na in an):
+            return {"album_id": (t.get("album") or {}).get("id"),
+                    "isrc": t.get("isrc", "") or "", "link": t.get("link", "") or ""}
+    return None
+
+
 def parse_album(data: dict) -> dict:
     """Album -> {label, album, date}."""
     return {"label": data.get("label", "") or "",
@@ -61,9 +75,14 @@ def lookup(artist: str, title: str, *, fetch=http_get_json, sleep=time.sleep) ->
     q = urllib.parse.quote(f'artist:"{artist}" track:"{title}"')
     data = fetch(f"{DEEZER}/search?q={q}&limit=1")
     sleep(0.3)
-    if not data:
-        return None
-    tr = parse_first_track(data)
+    tr = parse_first_track(data) if data else None
+    if not tr:
+        # Die Feldsuche (artist:"…" track:"…") liefert seit Oktober 2026 auch für bekannte Titel nichts mehr
+        # (geprüft 22.10.2026: artist:"adele" track:"hello" leer, „adele hello“ findet). Freitext, dann prüfen wir selbst.
+        q = urllib.parse.quote(f"{artist} {title}")
+        data = fetch(f"{DEEZER}/search?q={q}&limit=5")
+        sleep(0.3)
+        tr = pick_matching_track(data, artist, title) if data else None
     if not tr:
         return None
     res = DeezerResult(isrc=tr["isrc"], track_url=tr["link"])

@@ -334,3 +334,128 @@ def test_title_suggestions_wortanfang_und_ohne_interpret_nichts():
     assert [s["titel"] for s in title_suggestions("rolling stones", "sympath dev", fetch=fetch, sleep=lambda s: None)] \
         == ["Sympathy for the Devil"]
     assert title_suggestions("", "sympathy", fetch=fetch, sleep=lambda s: None) == []
+
+
+# --- ISWC aus dem Work-Abruf (kein Zusatz-Request) ---
+from core.musicbrainz import extract_iswcs                                   # noqa: E402
+
+
+def test_extract_iswcs_all_deduped():
+    assert extract_iswcs({"iswcs": ["T-000.000.001-0", " T-000.000.001-0", "T-000.000.002-1", ""]}) == \
+        ["T-000.000.001-0", "T-000.000.002-1"]
+    assert extract_iswcs({}) == [] and extract_iswcs({"iswcs": None}) == []
+
+
+def test_lookup_takes_iswcs_from_the_writer_work_without_extra_calls():
+    calls = []
+
+    def fetch(url):
+        calls.append(url)
+        if "recording?" in url:
+            return {"recordings": [_recording(rec_id="rec1", title="Nordwand", artist="Zzq Band")]}
+        if "/recording/rec1" in url:
+            return {"isrcs": [], "relations": [{"type": "performance", "work": {"id": "w1"}},
+                                               {"type": "performance", "work": {"id": "w2"}}]}
+        if "/work/w1" in url:                                          # ohne Writer, mit ISWC
+            return {"iswcs": ["T-000.000.009-9"], "relations": []}
+        if "/work/w2" in url:
+            return {"iswcs": ["T-000.000.001-0", "T-000.000.002-1"],
+                    "relations": [{"type": "composer", "artist": {"name": "Erika Testerin"}}]}
+        return None
+
+    out = lookup("Zzq Band", "Nordwand", fetch=fetch, sleep=_noop)
+    assert out.iswcs == ["T-000.000.001-0", "T-000.000.002-1"]          # das Werk mit den Autoren, beide ISWCs
+    assert len([c for c in calls if "/work/" in c]) == 2
+
+
+def test_lookup_keeps_iswc_of_work_without_writers():
+    def fetch(url):
+        if "recording?" in url:
+            return {"recordings": [_recording(rec_id="rec1", title="Nordwand", artist="Zzq Band")]}
+        if "/recording/rec1" in url:
+            return {"isrcs": [], "relations": [{"type": "performance", "work": {"id": "w1"}}]}
+        if "/work/w1" in url:
+            return {"iswcs": ["T-000.000.009-9"], "relations": []}
+        return None
+
+    assert lookup("Zzq Band", "Nordwand", fetch=fetch, sleep=_noop).iswcs == ["T-000.000.009-9"]
+
+
+# --- Gast-Credits (C4) ---
+import urllib.parse                                                           # noqa: E402
+
+from core.musicbrainz import primary_artist                                  # noqa: E402
+
+
+def test_strip_feat_variants():
+    for t in ("Nordwand (feat. X)", "Nordwand [ft. X]", "Nordwand (featuring X & Y)", "Nordwand feat. X", "Nordwand ft. X"):
+        assert strip_feat(t) == "Nordwand", t
+    assert strip_feat("Defeated") == "Defeated" and strip_feat("Left Behind") == "Left Behind"
+
+
+def test_primary_artist_keeps_band_names():
+    assert primary_artist("Zzq feat. Erika") == "Zzq" and primary_artist("Zzq ft. Erika") == "Zzq"
+    assert primary_artist("Zzq featuring Erika") == "Zzq"
+    for a in ("Simon & Garfunkel", "Earth, Wind & Fire", "Malcolm X", "Ft. Lauderdale"):
+        assert primary_artist(a) == a, a
+
+
+def test_lookup_retries_with_the_lead_artist():
+    def fetch(url):
+        if "recording?" in url and "Erika" in urllib.parse.unquote_plus(url):
+            return {"recordings": []}
+        if "recording?" in url:
+            return {"recordings": [_recording(rec_id="rec1", title="Nordwand", artist="Zzq")]}
+        if "/recording/rec1" in url:
+            return {"isrcs": [], "relations": []}
+        return None
+    assert lookup("Zzq feat. Erika", "Nordwand", fetch=fetch, sleep=_noop).matched
+
+
+# --- GEMA ID am Werk (Vorschlag, Entscheidung 22.10.2026) ---
+from core.musicbrainz import extract_gema_ids                                # noqa: E402
+
+
+def test_extract_gema_ids_with_version_suffix():
+    w = {"attributes": [{"type": "GEMA ID", "value": "10000001-002"}, {"type": "SACEM ID", "value": "x"},
+                        {"type": "GEMA ID", "value": " 10000001-002 "}, {"type": "GEMA ID", "value": ""}]}
+    assert extract_gema_ids(w) == ["10000001-002"] and extract_gema_ids({}) == []
+
+
+def test_lookup_takes_gema_id_from_the_writer_work():
+    def fetch(url):
+        if "recording?" in url:
+            return {"recordings": [_recording(rec_id="rec1", title="Nordwand", artist="Zzq Band")]}
+        if "/recording/rec1" in url:
+            return {"isrcs": [], "relations": [{"type": "performance", "work": {"id": "w1"}}]}
+        if "/work/w1" in url:
+            return {"attributes": [{"type": "GEMA ID", "value": "10000001-001"}],
+                    "relations": [{"type": "composer", "artist": {"name": "Erika Testerin"}}]}
+        return None
+    assert lookup("Zzq Band", "Nordwand", fetch=fetch, sleep=_noop).gema_ids == ["10000001-001"]
+
+
+def test_feat_variants_remove_guests_from_the_back():
+    from core.musicbrainz import feat_variants
+    assert feat_variants("Zzq feat. Erika feat. Max") == ["Zzq feat. Erika", "Zzq"]
+    assert feat_variants("Zzq ft. Erika") == ["Zzq"] and feat_variants("Simon & Garfunkel") == []
+
+
+def test_lookup_records_the_best_release_area_per_label():
+    """Je Label das beste Veröffentlichungsgebiet (DE 3, EU 2, weltweit 1, sonst 0) für den Hinweis
+    „keine deutsche oder europäische Veröffentlichung“."""
+    from core.musicbrainz import lookup_by_isrc
+    rels = [{"id": "us", "status": "Official", "release-group": {"primary-type": "Album"}},
+            {"id": "de", "status": "Official", "release-group": {"primary-type": "Album"}}]
+
+    def fetch(url):
+        if "/isrc/" in url:
+            return {"recordings": [{"id": "r1", "title": "Nordwand", "artist-credit": [{"name": "Zzq"}], "releases": rels}]}
+        if "/release/us" in url:
+            return {"country": "US", "status": "Official", "label-info": [{"label": {"name": "Zzq US"}}]}
+        if "/release/de" in url:
+            return {"country": "DE", "status": "Official", "label-info": [{"label": {"name": "Zzq Deutschland"}}]}
+        return {"isrcs": [], "relations": []}
+
+    out = lookup_by_isrc("DEZZQ2600001", fetch=fetch, sleep=_noop)
+    assert out.label_country == {"Zzq US": 0, "Zzq Deutschland": 3}

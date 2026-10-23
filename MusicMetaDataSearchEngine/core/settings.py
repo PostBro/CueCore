@@ -82,6 +82,7 @@ KNOWN_TEXTS: dict[str, dict] = {}
 # alten Einzelfelder trackmeta_host/_client_id/_client_secret werden beim ersten Lesen in einen
 # Partner überführt und entfernt (Migration in partners()).
 PARTNERS_KEY = "trackmeta_partners"
+BUILTIN_PARTNER_ID = "builtin"
 _LEGACY_PARTNER_KEYS = ("trackmeta_host", "trackmeta_client_id", "trackmeta_client_secret")
 PARTNER_FIELDS = {
     "name": {"label": "Name", "hint": "Anzeigename, z.B. Partner A — steht später als Quelle am Cue."},
@@ -143,6 +144,8 @@ def set_partners(rows: list, path: str | Path | None = None) -> list[dict]:
     cleaned: list[dict] = []
     seen: set[str] = set()
     for r in rows or []:
+        if isinstance(r, dict) and r.get("id") == BUILTIN_PARTNER_ID:   # eingebauter Zugang wird nie gespeichert
+            continue
         c = _clean_partner(r, existing)
         if c and c["id"] not in seen:
             seen.add(c["id"])
@@ -155,11 +158,39 @@ def set_partners(rows: list, path: str | Path | None = None) -> list[dict]:
     return partners_status(path)
 
 
+def builtin_partner() -> dict | None:
+    """Eingebauter Partner-Zugang aus dem Profil (Schlüssel `partner`: name, host, client_id, client_secret), damit
+    die Track-API ohne eigene Zugangsdaten läuft. Wie das Profil: Umgebung beim Start aus dem Quellcode, sonst Bundle.
+    Ohne vollständigen Zugang: None."""
+    raw = os.environ.get(BUILTIN_ENV["trackmeta_profile"], "").strip() or builtin("trackmeta_profile")
+    try:
+        b = (json.loads(raw) if raw else {}).get("partner")
+    except (ValueError, AttributeError):
+        return None
+    if not isinstance(b, dict):
+        return None
+    vals = {k: str(b.get(k) or "").strip() for k in ("name", "host", "client_id", "client_secret")}
+    if not (vals["host"] and vals["client_id"] and vals["client_secret"]):
+        return None
+    return {"id": BUILTIN_PARTNER_ID, **vals, "name": vals["name"] or vals["host"], "builtin": True}
+
+
+def active_partners(path: str | Path | None = None) -> list[dict]:
+    """Abfrage-Reihenfolge: eigene Partner zuerst, dann der eingebaute — außer ein eigener nutzt denselben Zugang."""
+    own = partners(path)
+    b = builtin_partner()
+    if b and not any(p["host"] == b["host"] and p["client_id"] == b["client_id"] for p in own):
+        own.append(b)
+    return own
+
+
 def partners_status(path: str | Path | None = None) -> list[dict]:
-    """Partner für die UI — OHNE Secret, nur ob eins gesetzt ist; `complete` = abfragbar."""
-    return [{"id": p["id"], "name": p["name"], "host": p["host"], "client_id": p["client_id"],
-             "secret_set": bool(p["client_secret"]), "complete": bool(p["client_secret"])}
-            for p in partners(path)]
+    """Partner für die UI — OHNE Secret, nur ob eins gesetzt ist; `complete` = abfragbar. Der eingebaute trägt
+    `builtin` und zeigt weder Host noch Client-ID (nicht bearbeitbar, nicht entfernbar)."""
+    return [{"id": p["id"], "name": p["name"], "host": "" if p.get("builtin") else p["host"],
+             "client_id": "" if p.get("builtin") else p["client_id"], "secret_set": bool(p["client_secret"]),
+             "complete": bool(p["client_secret"]), "builtin": bool(p.get("builtin"))}
+            for p in active_partners(path)]
 
 
 def load(path: str | Path | None = None) -> dict:
@@ -173,7 +204,7 @@ def load(path: str | Path | None = None) -> dict:
 
 
 # Eingebaute Anwendungs-Schlüssel (AcoustID, für die nicht-kommerzielle Nutzung) und das Profil der
-# Track-Metadata-API (core/trackmeta.py: Pfade, Scope, Feldnamen; Zugangsdaten trägt jeder selbst ein).
+# Track-Metadata-API (core/trackmeta.py: Pfade, Scope, Feldnamen; dazu optional ein eingebauter Zugang, s. builtin_partner).
 # Sie stehen NICHT im Repo: build_bundle_data.py schreibt sie aus der Umgebung (BUILTIN_ENV) verschleiert nach
 # build_data/builtin_keys.bin, die Spec legt die Datei ins Bundle, app.py setzt BUILTIN_PATH. Ein eigener Key in den
 # Einstellungen gewinnt. Verschleiert heißt: nicht im Klartext lesbar und nie in der Oberfläche — geheim ist es nicht.
@@ -220,6 +251,59 @@ def save(data: dict, path: str | Path | None = None) -> None:
 
 def get(key: str, path: str | Path | None = None) -> str:
     return (load(path).get(key) or "").strip()
+
+
+# Export-Vorlagen (D2): [{id, name, required: [Feld], columns: [Spalte]}] plus die aktive. Frei benennbar, ohne
+# Voreinstellungen mit Sendernamen; die Vorgabe „Standard“ entspricht dem Export vor den Vorlagen.
+TEMPLATES_KEY, TEMPLATE_ACTIVE_KEY = "export_templates", "export_template_active"
+TEMPLATE_REQUIRED = ("labelcode", "komponist", "gema_werknummer", "texter", "verlag", "isrc", "iswc")
+TEMPLATE_REQUIRED_DEFAULT = ("labelcode", "komponist", "gema_werknummer")
+
+
+def _clean_template(r, columns: tuple) -> dict | None:
+    if not isinstance(r, dict):
+        return None
+    name = " ".join(str(r.get("name") or "").split())
+    if not name:
+        return None
+    req = [k for k in TEMPLATE_REQUIRED if k in (r.get("required") or [])]
+    cols = [c for c in columns if c in (r.get("columns") or columns)]
+    return {"id": str(r.get("id") or "") or "t" + base64.b32encode(os.urandom(5)).decode().lower(),
+            "name": name, "required": req, "columns": cols}
+
+
+def export_templates(columns: tuple, path: str | Path | None = None) -> tuple[list[dict], str]:
+    """(Vorlagen, id der aktiven). Ohne gespeicherte Vorlagen: „Standard“ mit allen Spalten."""
+    d = load(path)
+    rows = [t for t in (_clean_template(r, columns) for r in (d.get(TEMPLATES_KEY) or [])) if t]
+    if not rows:
+        rows = [{"id": "standard", "name": "Standard", "required": list(TEMPLATE_REQUIRED_DEFAULT), "columns": list(columns)}]
+    active = d.get(TEMPLATE_ACTIVE_KEY) or ""
+    return rows, active if any(t["id"] == active for t in rows) else rows[0]["id"]
+
+
+def set_export_templates(rows: list, active: str, columns: tuple, path: str | Path | None = None) -> tuple[list[dict], str]:
+    cleaned, seen = [], set()
+    for r in rows or []:
+        t = _clean_template(r, columns)
+        if t and t["id"] not in seen:
+            seen.add(t["id"])
+            cleaned.append(t)
+    d = load(path)
+    d[TEMPLATES_KEY] = cleaned
+    d[TEMPLATE_ACTIVE_KEY] = active if any(t["id"] == active for t in cleaned) else (cleaned[0]["id"] if cleaned else "")
+    save(d, path)
+    return export_templates(columns, path)
+
+
+def set_flag(key: str, value: str, path: str | Path | None = None) -> None:
+    """Interner Merker der App (kein Feld in der Oberfläche), z.B. index_autoload. Leer -> entfernen."""
+    d = load(path)
+    if value:
+        d[key] = value
+    else:
+        d.pop(key, None)
+    save(d, path)
 
 
 def _set(updates: dict, allowed: dict, path: str | Path | None) -> None:

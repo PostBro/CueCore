@@ -224,8 +224,7 @@ VIEWS = {
     "trackdb_scan": ("click('.nav button[data-tool=db]'); await settle(); renderScanPreview('/dl', __scan);", {}),
     "labeldb": ("click('.nav button[data-tool=gvl]'); $('#gq').value='24584'; runGvl('24584'); await settle();"
                 "renderLibraryListPreview({name: 'zonk.csv'}, __llist, ''); renderGvlPreview('gvl.pdf', __gvlprev); click('#gadd');",
-                {"/api/search": {"mode": "code", "results": [{"labelcode": "24584", "label": "ACME", "hersteller": "Zonk",
-                                                               "rechterueckrufe": "R6", "plm": "Ja", "source": "manuell"}]}}),
+                {"/api/labels/list": {"total": 1, "rows": [{"labelcode": "24584", "label": "ACME", "hersteller": "Zonk", "rechterueckrufe": "R6", "plm": 1, "source": "manuell", "herkunft": "manuell", "kurzname": "", "kuerzel": [{"prefix": "ACM", "key": "ACM", "library": "Zonk", "note": "", "origin": "liste"}], "korrektur": {"labelcode": "24585", "label": "Zonk Two", "note": "Pressung", "valid": True}}]}}),
 }
 GLOBALS = (f"const __import={json.dumps(IMPORT)}, __delivery={json.dumps(dict(IMPORT, **DELIVERY))}, __scan={json.dumps(SCANF)},"
            f" __llist={json.dumps(LLIST)}, __gvlprev={json.dumps(GVLPREV)};\n")
@@ -358,10 +357,10 @@ def test_backend_meldungen_erscheinen_in_en_englisch():
       $('#rform').requestSubmit(); await settle(); const r = {chip: txt('#rresult .chip.src'), note: txt('#rresult .notes')};
       startTaggerScan('/gibt/es/nicht'); await settle(); r.scan = txt('#tcards .empty'); return r;""",
                    lang="en", api={"/api/resolve": local,
-                                   "/api/intake/scan": {"__status": 400, "__body": {"detail": "Kein Ordner: /gibt/es/nicht"}}})
+                                   "/api/intake/scan": {"__status": 400, "__body": {"detail": "Ordner nicht gefunden: /gibt/es/nicht. Bitte den Ordner erneut wählen oder hineinziehen."}}})
     assert out["errors"] == []
     assert out["result"] == {"chip": "local DB (verified)", "note": "Hit in the verified local DB (songs.db) — no network needed",
-                             "scan": "Not a folder: /gibt/es/nicht"}
+                             "scan": "Folder not found: /gibt/es/nicht. Please choose or drop the folder again."}
 
 
 # --- Lücken-Gruppe der Track-Datenbank ---------------------------------------------------------------------
@@ -396,7 +395,7 @@ def test_englische_einzahl_bei_anzahl_eins():
       const k = ['{album} · {n} Titel im Index', 'Würde übernommen: {n} Kürzel',
         'Übernommen: {n} Kürzel aus dieser Liste, {m} aus allen deinen Listen aktiv.',
         'Netz nicht erreichbar ({n} Fehler) — kein Treffer heißt hier nicht „kein Code“. Verbindung prüfen und erneut suchen.',
-        'Komponisten-Vorschläge für {n} Titel (nicht gespeichert)', '<b>{n}</b> Treffer<span class="mode-tag">{mode}</span>',
+        'Komponisten-Vorschläge für {n} Titel (nicht gespeichert)', '<b>{n}</b> Labels',
         '{n} weitere Kandidaten mit niedrigerer Confidence/Qualität verworfen.', '{n} Dateien'];
       return {one: k.map(x => t(x, one)), two: k.map(x => t(x, Object.assign({}, one, {n: 2})))};""", lang="en")
     assert out["errors"] == []
@@ -404,7 +403,7 @@ def test_englische_einzahl_bei_anzahl_eins():
     assert one == ["Blue Era · 1 title in the index", "Would be taken over: 1 prefix",
                    "Taken over: 1 prefix from this list, 3 active from all your lists.",
                    "Network unreachable (1 error) — no hit does not mean “no code” here. Check the connection and search again.",
-                   "composer suggestion for 1 title (not saved)", '<b>1</b> match<span class="mode-tag">Label code</span>',
+                   "composer suggestion for 1 title (not saved)", '<b>1</b> label',
                    "1 more candidate with lower confidence/quality discarded.", "1 file"]
     assert two[0] == "Blue Era · 2 titles in the index" and two[-1] == "2 files"
 
@@ -415,8 +414,8 @@ def test_einzahl_auch_in_der_oberflaeche():
     out = run_page("""const r = {tile: txt('#hometiles .tile .last'), chip: txt('#trecent .rc')};
       click('.nav button[data-tool=gvl]'); $('#gq').value='24584'; runGvl('24584'); await settle(); r.gvl = txt('#gresult .meta-line'); return r;""",
                    lang="en", storage={"cuecore_recent_folders": folders},
-                   api={"/api/search": {"mode": "code", "results": [{"labelcode": "24584", "label": "ACME"}]}})
-    assert out["result"] == {"tile": "last · Musik/Eingang · 1 file", "chip": "Eingang1 file", "gvl": "1 matchLabel code"}
+                   api={"/api/labels/list": {"total": 1, "rows": [{"labelcode": "24584", "label": "ACME"}]}})
+    assert out["result"] == {"tile": "last · Musik/Eingang · 1 file", "chip": "Eingang1 file", "gvl": "1 labelfiltered"}
 
 
 @needs_node

@@ -38,7 +38,7 @@ def test_einzelne_fehler_mit_treffer_oder_ohne_fehler_bleiben_wie_bisher():
     assert "Netz nicht erreichbar" not in out["result"]
     none = dict(NETDOWN, incomplete=False, stats={"calls": 5, "cache_hits": 0, "failures": 0})
     out = run_page(SEARCH + "return txt('#rresult');", api={"/api/resolve": none})
-    assert "Netz nicht erreichbar" not in out["result"] and "Kein Recording-Match in MusicBrainz." in out["result"]
+    assert "Netz nicht erreichbar" not in out["result"] and "Keine Quelle kennt den Track" in out["result"]
 
 
 @needs_node

@@ -161,7 +161,7 @@ def test_export_pdf_wiederholt_den_tabellenkopf_auf_jeder_seite(tmp_path):
         for head in (*heads, "LC"):
             assert sum(1 for w in words if w[4] == head) == 1, (i, head)
         head_y = max(w[3] for w in words if w[4] in heads)
-        assert head_y < min(w[1] for w in words if w[4].startswith("FR26F03")), i     # Kopf über den Zeilen
+        assert head_y < min(w[1] for w in words if w[4].startswith("FR-26F-03")), i   # Kopf über den Zeilen (ISRC im PDF mit Bindestrichen)
         pos.add(tuple(round(w[0], 1) for w in words if w[4] in ("Interpret", "LC", "GEMA-Werknr.")))
         assert ("450 Einträge" in text) == (i == 0)
     assert len(pos) == 1, pos

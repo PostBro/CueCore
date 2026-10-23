@@ -71,3 +71,14 @@ def test_manual_labels_add_is_idempotent_and_obsolete_auto_labels_go(tmp_path):
     left = json.loads(mp.read_text(encoding="utf-8"))
     assert sorted(e["label"] for e in left) == ["BBC Production Music Eigene", "Zzq Fantasy Label"]
     con.close()
+
+
+def test_anbieter_aliasse_gelten_nur_wo_kein_gvl_name_passt():
+    from core.labelcheck import GvlMaster
+    m = GvlMaster([("99001", "Zzq Supra"), ("99002", "Zzq Classical")])
+    assert m.add_aliases([{"alias": "Zzq Sonoton Classical", "labelcode": "99001"},
+                          {"alias": "Zzq Classical", "labelcode": "99001"},          # GVL-Name zeigt woanders hin
+                          {"alias": "Fremd", "labelcode": "88888"}]) == 2          # Code nicht im Master
+    assert m.codes_for_name("zzq sonoton classical") == ["99001"] and "99001" in m.plm
+    assert m.codes_for_name("Zzq Classical") == ["99002"]                           # die GVL geht vor
+    assert m.codes_for_name("Fremd") == []

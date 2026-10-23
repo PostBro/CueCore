@@ -291,3 +291,73 @@ def test_mit_den_master_daten():
     for s, r in zip(songs, without):
         if not s["labelcode"]:
             assert len(master.codes_for_name(r["sublibrary"])) != 1, r["sublibrary"]
+
+
+def test_eigene_zeilen_bekommen_den_code_ueber_den_eindeutigen_labelnamen(tmp_path):
+    """Regel 23.10.2026: eindeutig heißt automatisch, bestätigen nur bei Zweifel. Jede songs-Zeile ohne Code,
+    deren Labelname der Master unter genau EINEM Code führt, bekommt Code, GVL-Namen und Notiz; mehrdeutige und
+    unbekannte Namen bleiben offen, eine Zeile mit Code bleibt unberührt. song_id grenzt auf eine Zeile ein."""
+    from core.labelcheck import LC_BY_NAME_NOTE
+    con = songsdb.open(tmp_path / "songs.db")
+    for t, lab, lc in (("Eins", "Zonk Sounds", ""), ("Zwei", "Doppel Records", ""), ("Drei", "Unbekannt", ""),
+                       ("Vier", "Nordwand Music", "LC24584"), ("Fünf", "nordwand music", "")):
+        songsdb.create_song(con, {"interpret": "Erika Testerin", "titel": t, "labelname": lab, "labelcode": lc})
+    one = librarytracks.fill_song_codes_by_name(con, _master_namen(), song_id=con.execute("SELECT id FROM songs WHERE titel='Fünf'").fetchone()[0])
+    assert one["filled"] == [{"label": "nordwand music", "code": "99231", "songs": 1}]
+    assert not songsdb.find(con, "Erika Testerin", "Eins")["labelcode"]
+    rep = librarytracks.fill_song_codes_by_name(con, _master_namen())
+    assert rep["filled"] == [{"label": "Zonk Sounds", "code": "99011", "songs": 1}]
+    assert rep["ambiguous"] == {"Doppel Records": {"gvl_codes": ["99012", "99013"], "n": 1}}
+    row = songsdb.find(con, "Erika Testerin", "Eins")
+    assert (row["labelcode"], row["labelname"], row["label_geliefert"]) == ("LC99011", "ZONK SOUNDS", LC_BY_NAME_NOTE)
+    assert songsdb.find(con, "Erika Testerin", "Fünf")["labelname"] == "Nordwand Music"
+    assert not songsdb.find(con, "Erika Testerin", "Drei")["labelcode"]
+    assert songsdb.find(con, "Erika Testerin", "Vier")["labelcode"] == "LC24584"
+    assert librarytracks.fill_song_codes_by_name(con, _master_namen())["filled"] == []
+    con.close()
+
+
+def test_abbey_road_masters_gegen_den_gvl_master():
+    """Gegen die Master-CSV geprüft, nicht aus dem Gedächtnis: „Abbey Road Masters“ steht dort unter genau einem Code."""
+    import csv
+    from pathlib import Path
+    from core.labelcheck import GvlMaster
+    rows = csv.DictReader((Path(__file__).resolve().parents[2] / "data" / "GVL_Labelcodes_synced.csv").open(encoding="utf-8"))
+    assert GvlMaster([(r["labelcode"], r["label"]) for r in rows]).codes_for_name("Abbey Road Masters") == ["91598"]
+
+
+def test_ohne_label_zaehlt_der_verlag_nur_bei_eindeutigem_production_music_label(tmp_path):
+    """Seed-Zeilen von Production Music tragen oft nur den Verlag (APL Lifestyle, TRILOGY). Der Verlag zählt, wenn er
+    (alle Teile zusammen) auf genau EINEN Code führt, der im Master als PLM steht. Pop-Verlage (kein PLM), mehrdeutige
+    Verlage und Zeilen mit Label bleiben unberührt."""
+    from core.labelcheck import GvlMaster, LC_BY_PUBLISHER_NOTE
+    master = GvlMaster([("99555", "Zzq Lifestyle"), ("99556", "Zzq Pop Verlag"), ("99557", "Doppel A"), ("99558", "Doppel B")],
+                       plm_codes=["99555", "99557", "99558"])
+    con = songsdb.open(tmp_path / "songs.db")
+    for t, verlag, lab in (("Eins", "Zzq Lifestyle", ""), ("Zwei", "Zzq Pop Verlag", ""), ("Drei", "Doppel A; Doppel B", ""),
+                           ("Vier", "Zzq Lifestyle", "Nordwand Music"), ("Fünf", "Zzq Lifestyle; zzq lifestyle", "")):
+        songsdb.create_song(con, {"interpret": "Erika Testerin", "titel": t, "verlag": verlag, "labelname": lab})
+    rep = librarytracks.fill_song_codes_by_name(con, master)
+    assert [(f["label"], f["code"], f["songs"]) for f in rep["filled"]] == [
+        ("Zzq Lifestyle", "99555", 1), ("Zzq Lifestyle; zzq lifestyle", "99555", 1)]
+    row = songsdb.find(con, "Erika Testerin", "Eins")
+    assert (row["labelcode"], row["labelname"], row["label_geliefert"]) == ("LC99555", "Zzq Lifestyle", LC_BY_PUBLISHER_NOTE)
+    for t in ("Zwei", "Drei", "Vier"):
+        assert not songsdb.find(con, "Erika Testerin", t)["labelcode"], t
+    con.close()
+
+
+def test_nicht_plm_code_ueber_den_namen_nur_mit_beleg_in_der_datenbank(tmp_path):
+    """„Indigo“ steht im Master als fremdes, nicht-PLM-Label — ein Production-Music-Sublabel gleichen Namens bekäme sonst
+    den falschen Code. Ohne Beleg bleibt die Zeile offen; tragen andere Zeilen desselben Labels den Code, gilt er."""
+    from core.labelcheck import GvlMaster
+    master = GvlMaster([("99701", "Zzq Indigo"), ("99702", "Zzq Pop")], plm_codes=["99703"])
+    con = songsdb.open(tmp_path / "songs.db")
+    songsdb.create_song(con, {"interpret": "Erika Testerin", "titel": "Eins", "labelname": "Zzq Indigo"})
+    songsdb.create_song(con, {"interpret": "Erika Testerin", "titel": "Zwei", "labelname": "Zzq Pop"})
+    songsdb.create_song(con, {"interpret": "Erika Testerin", "titel": "Drei", "labelname": "Zzq Pop", "labelcode": "LC99702"})
+    rep = librarytracks.fill_song_codes_by_name(con, master)
+    assert [f["label"] for f in rep["filled"]] == ["Zzq Pop"]
+    assert not songsdb.find(con, "Erika Testerin", "Eins")["labelcode"]
+    assert songsdb.find(con, "Erika Testerin", "Zwei")["labelcode"] == "LC99702"
+    con.close()

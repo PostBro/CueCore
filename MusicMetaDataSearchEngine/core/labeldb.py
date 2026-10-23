@@ -160,6 +160,21 @@ def add_supplemental_labels(con: sqlite3.Connection, records: list[LabelRecord],
     return len(rows)
 
 
+def apply_name_fixes(con: sqlite3.Connection, fixes: dict[str, tuple[str, str]], *, before_write=None) -> int:
+    """Namenskorrekturen (reconcile.csv_io.read_name_fixes) in einer BESTEHENDEN labels.db nachziehen: nur GVL-Zeilen,
+    deren Name noch genau dem Fehler der Quelle entspricht. Idempotent. before_write() nur, wenn etwas zu ändern ist."""
+    hits = [(new, code, old) for code, (old, new) in fixes.items()
+            if con.execute("SELECT 1 FROM labels WHERE labelcode=? AND label=? AND source='gvl'", (code, old)).fetchone()]
+    if not hits:
+        return 0
+    if before_write:
+        before_write()
+    con.executemany("UPDATE labels SET label=? WHERE labelcode=? AND label=? AND source='gvl'", hits)
+    con.execute("INSERT INTO labels_fts(labels_fts) VALUES('rebuild')")
+    con.commit()
+    return len(hits)
+
+
 def remove_manual_label(con: sqlite3.Connection, labelcode: str, label: str, *, before_write=None) -> int:
     """Eine manuell angelegte Zeile entfernen. GVL-Zeilen bleiben unantastbar (0). before_write() vor dem Löschen."""
     from .labelmatch import norm

@@ -34,7 +34,11 @@ datas = [
     ("data/GVL_Labelcodes_synced.csv", "data"),
     ("data/GVL_Labelcodes_synced.meta.json", "data"),
     ("data/labelcodes_supplemental.csv", "data"),   # Zusatz-Labelcodes (GVL gewinnt) — Selbstheilung + CSV-Fallback
+    ("data/gvl_name_fixes.csv", "data"),            # Korrekturen offensichtlicher Fehler der GVL-Quelle (Selbstheilung)
     ("data/library_prefixes.csv", "data"),           # Sub-Label-Kürzel der Libraries (Extreme, KPM) -> LC
+    ("data/library_prefixes_lieferungen.csv", "data"),   # aus den Library-Lieferungen gelernte Kürzel -> LC
+    ("data/library_prefix_hints.csv", "data"),       # Kürzel ohne festen Code: Kandidaten als Suchhinweis
+    ("data/label_aliases_anbieter.csv", "data"),     # Labelnamen laut Anbieter -> GVL-Code (Namensregel)
     ("data/label_aliases_mb.csv", "data"),           # MusicBrainz-Label-Namen/-Aliasse (nur GVL-geprüfte Codes)
     ("data/library_tracks", "data/library_tracks"),  # Lieferungen als CSV: Selbstheilung älterer Installationen
     ("build_data/labels_prebuilt.db", "data"),
@@ -102,7 +106,7 @@ if MAC:
         info_plist={
             "CFBundleName": "CueCore",
             "CFBundleDisplayName": "CueCore",
-            "CFBundleShortVersionString": "0.9.7",   # = app.APP_VERSION ohne -beta
+            "CFBundleShortVersionString": "1.0.0",   # = app.APP_VERSION ohne -beta
             "NSHighResolutionCapable": True,
             "LSMinimumSystemVersion": "11.0",   # = minos aller Mach-O (Standalone-Python), PACKAGING.md
             "NSHumanReadableCopyright": "POSTBRO",

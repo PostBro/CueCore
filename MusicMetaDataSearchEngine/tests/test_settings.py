@@ -100,3 +100,52 @@ def test_ohne_datei_kein_eingebauter_key(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "BUILTIN_PATH", tmp_path / "fehlt.bin")
     assert settings.builtin("acoustid_api_key") == ""
     assert settings.effective("acoustid_api_key", tmp_path / "s.json") == ""
+
+
+# --- Eingebauter Partner-Zugang (Profil-Schlüssel `partner`), Testwerte erfunden ---
+import json as _json
+
+_PROFILE = {"base": "/zzq", "token": "/t", "meta": "/m", "scope": "s", "batch": 50, "ttl": 60, "list": "tracks",
+            "fields": {}, "partner": {"name": "Zzq Library", "host": "zzq.example", "client_id": "7", "client_secret": "geheim-zzq"}}
+
+
+def test_eingebauter_partner_ergaenzt_die_eigenen_und_wird_nie_gespeichert(tmp_path, monkeypatch):
+    path = tmp_path / "settings.json"
+    monkeypatch.setenv(settings.BUILTIN_ENV["trackmeta_profile"], _json.dumps(_PROFILE))
+    st = settings.partners_status(path)
+    assert st == [{"id": "builtin", "name": "Zzq Library", "host": "", "client_id": "", "secret_set": True,
+                   "complete": True, "builtin": True}]
+    assert settings.active_partners(path)[0]["client_secret"] == "geheim-zzq"
+    settings.set_partners([{"id": "builtin", "name": "x", "host": "h", "client_id": "1", "client_secret": "y"},
+                           {"name": "Eigen", "host": "eigen.example", "client_id": "3", "client_secret": "z"}], path)
+    assert [p["name"] for p in settings.active_partners(path)] == ["Eigen", "Zzq Library"]   # eigene zuerst
+    assert "builtin" not in path.read_text() and "geheim-zzq" not in path.read_text()
+    # eigener Zugang mit demselben Host und derselben Client-ID ersetzt den eingebauten
+    settings.set_partners([{"name": "Meins", "host": "zzq.example", "client_id": "7", "client_secret": "anders"}], path)
+    assert [p["name"] for p in settings.active_partners(path)] == ["Meins"]
+
+
+def test_ohne_vollstaendigen_zugang_kein_eingebauter_partner(tmp_path, monkeypatch):
+    for broken in ({**_PROFILE, "partner": {"host": "zzq.example", "client_id": "7"}}, {k: v for k, v in _PROFILE.items() if k != "partner"}):
+        monkeypatch.setenv(settings.BUILTIN_ENV["trackmeta_profile"], _json.dumps(broken))
+        assert settings.builtin_partner() is None and settings.partners_status(tmp_path / "s.json") == []
+    monkeypatch.setenv(settings.BUILTIN_ENV["trackmeta_profile"], "kein json")
+    assert settings.builtin_partner() is None
+
+
+COLS = ("Interpret", "Titel", "Komponist", "LC", "Länge Sek.")
+
+
+def test_export_vorlagen_vorgabe_speichern_und_saeubern(tmp_path):
+    path = tmp_path / "settings.json"
+    rows, active = settings.export_templates(COLS, path)
+    assert rows == [{"id": "standard", "name": "Standard", "required": ["labelcode", "komponist", "gema_werknummer"],
+                     "columns": list(COLS)}] and active == "standard"
+    rows, active = settings.set_export_templates([
+        {"id": "a", "name": "  Kurz  ", "required": ["labelcode", "erfunden"], "columns": ["LC", "Titel", "Quatsch"]},
+        {"id": "b", "name": "", "columns": []},                                       # ohne Namen: fällt weg
+        {"name": "Voll"}], "a", COLS, path)
+    assert [r["name"] for r in rows] == ["Kurz", "Voll"] and active == "a"
+    assert rows[0]["required"] == ["labelcode"] and rows[0]["columns"] == ["Titel", "LC"]   # Reihenfolge wie Export
+    assert rows[1]["columns"] == list(COLS) and rows[1]["id"]
+    assert settings.set_export_templates(rows, "weg", COLS, path)[1] == "a"

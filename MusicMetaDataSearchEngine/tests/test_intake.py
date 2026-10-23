@@ -276,3 +276,19 @@ def test_resolve_card_tie_blocks_apply_and_lists_candidates(tmp_path):
     assert card["best"]["labelcode"] == "00121"                                  # zur Anzeige bleibt der Top
     assert card["plan"]["can_apply"] is False
     assert card["plan"]["warnings"][0].startswith("Gleichstand") and "LC07552" in card["plan"]["warnings"][0]
+
+
+def test_fingerprint_isrc_reaches_the_isrc_stage(tmp_path):
+    """Datei ohne Tags: der ISRC aus dem Fingerabdruck geht an die exakte ISRC-Stufe; trägt die Datei selbst einen
+    ISRC, gilt ihrer. Testwerte frei erfunden."""
+    p = _mk(tmp_path, "x.mp3")
+    seen = []
+    res = ResolveResult(artist="Zzq", title="Nordwand", matched=False)
+    fp = lambda path, a, t: {"artist": "Zzq", "title": "Nordwand", "isrc": "DEZZQ2600009"}   # noqa: E731
+    intake.resolve_card(p, "", "", resolve_fn=lambda a, t, i="": seen.append(i) or res,
+                        label_lookup=lambda c: ("", ""), recognize=fp)
+    assert seen == ["DEZZQ2600009"]
+    tags.write_tags(p, {"isrc": "DEZZQ2600001"})
+    intake.resolve_card(p, "", "", resolve_fn=lambda a, t, i="": seen.append(i) or res,
+                        label_lookup=lambda c: ("", ""), recognize=fp)
+    assert seen[-1] == "DEZZQ2600001"

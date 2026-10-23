@@ -22,15 +22,19 @@ RATE = 1.2
 @dataclass
 class MBLookup:
     recording_id: str = ""
+    title: str = ""            # Titel der gewählten Aufnahme (Versionsabgleich: Original statt Remix gefunden?)
     score: int = 0
     label_names: list[str] = field(default_factory=list)
     label_quality: dict[str, int] = field(default_factory=dict)  # Labelname -> beste Release-Qualität
     label_release: dict[str, dict] = field(default_factory=dict) # Labelname -> {url, album, date} der besten Release
+    label_country: dict[str, int] = field(default_factory=dict)  # Labelname -> bestes Gebiet (country_bonus: DE 3, EU 2)
     isrcs: list[str] = field(default_factory=list)
     discogs_release_ids: list[str] = field(default_factory=list)
     composer: str = ""
     lyricist: str = ""
     publisher: str = ""        # Musikverlag(e) aus den Work-label-rels (type 'publishing'), '; '-getrennt
+    iswcs: list[str] = field(default_factory=list)   # ISWC(s) des Werks, aus demselben Work-Abruf
+    gema_ids: list[str] = field(default_factory=list)   # Work-Attribut „GEMA ID“ (Community-Daten, nur Vorschlag)
     matched: bool = False
     incomplete: bool = False   # mind. eine Release-Abfrage scheiterte (Rate-Limit) -> Ergebnis lückenhaft
     via_isrc: bool = False     # exakt über /isrc/{code} gefunden, nicht über die Textsuche
@@ -72,13 +76,33 @@ def best_recording(artist: str, title: str, recs: list[dict]) -> dict | None:
     return None
 
 
-_FEAT = re.compile(r"\s*\(feat\.[^)]*\)\s*$", re.IGNORECASE)
+# Gastauftritt im Titel: „(feat. X)“, „[ft. X]“, „(featuring X)“ oder ohne Klammer am Ende („Song feat. X“)
+_FEAT = re.compile(r"\s*(?:[\(\[]\s*(?:feat\.?|ft\.?|featuring)\s[^\)\]]*[\)\]]|\s(?:feat\.|ft\.|featuring)\s.+)\s*$",
+                   re.IGNORECASE)
+# Gastauftritt im Interpret: „A feat. B“, „A ft. B“, „A featuring B“. „&“, „x“, „und“ bleiben: sie gehören oft zum
+# Namen („Simon & Garfunkel“, „Earth, Wind & Fire“, „Malcolm X“).
+_FEAT_ARTIST = re.compile(r"\s+(?:feat\.?|ft\.?|featuring)\s+.+$", re.IGNORECASE)
 
 
 def strip_feat(title: str) -> str:
     """'Song (feat. X)' -> 'Song'. MB führt Feat.-Credits als artist-credit, nicht im
     Recording-Titel — eine Suche mit dem vollen Klammer-Titel findet oft nichts."""
     return _FEAT.sub("", title).strip()
+
+
+_FEAT_SEP = re.compile(r"\s+(?:feat\.?|ft\.?|featuring)\s+", re.IGNORECASE)
+
+
+def primary_artist(artist: str) -> str:
+    """'A feat. B' -> 'A' (Hauptinterpret für die Suche). Ohne Gast-Credit unverändert."""
+    return _FEAT_ARTIST.sub("", artist).strip() or artist.strip()
+
+
+def feat_variants(artist: str) -> list[str]:
+    """Gast-Credits von hinten abbauen: 'A feat. B feat. C' -> ['A feat. B', 'A']. Ein zusätzlich angehängter Gast
+    fällt zuerst weg, ein Duett-Credit, unter dem MusicBrainz die Aufnahme führt, bleibt so lange wie möglich."""
+    cuts = [m.start() for m in _FEAT_SEP.finditer(artist or "")]
+    return [v for v in dict.fromkeys(artist[:c].strip() for c in reversed(cuts)) if v]
 
 
 def matched_recordings(artist: str, title: str, recs: list[dict], min_score: int = 85) -> list[dict]:
@@ -152,6 +176,19 @@ def extract_writers(work: dict) -> tuple[str, str]:
         elif rtype == "arranger":
             composers.append(name)
     return "; ".join(dict.fromkeys(composers)), "; ".join(dict.fromkeys(lyricists))
+
+
+def extract_iswcs(work: dict) -> list[str]:
+    """ISWC(s) eines MB-Works (Feld 'iswcs' der Work-Antwort, ohne Zusatz-inc). Mehrere sind möglich
+    (z.B. Bearbeitungen unter einem Werk) -> alle, dedupliziert, in MB-Reihenfolge; der Aufrufer rät nicht."""
+    return list(dict.fromkeys(i.strip() for i in (work.get("iswcs") or []) if i and i.strip()))
+
+
+def extract_gema_ids(work: dict) -> list[str]:
+    """GEMA-Werknummer(n) aus den Work-Attributen (Typ „GEMA ID“, z.B. '1274594-002' mit Fassung), so wie
+    MusicBrainz sie führt, dedupliziert. Steht in der normalen Work-Antwort, kein Zusatz-inc."""
+    return list(dict.fromkeys((a.get("value") or "").strip() for a in (work.get("attributes") or [])
+                              if a.get("type") == "GEMA ID" and (a.get("value") or "").strip()))
 
 
 def extract_publishers(work: dict) -> str:
@@ -435,6 +472,11 @@ def lookup(artist: str, title: str, *, fetch=http_get_json, sleep=time.sleep, ma
         if stripped != title:                                    # nur bei echtem Feat.-Titel erneut fragen
             recs = _search(artist, stripped, fetch, sleep)
             matches = _find_matches(artist, stripped, recs)
+    for lead in ([] if matches else feat_variants(artist)):      # Gast im Interpret: von hinten abbauen
+        recs = _search(lead, strip_feat(title), fetch, sleep)
+        matches = _find_matches(lead, strip_feat(title), recs)
+        if matches:
+            break
     if not matches:                                              # letzter Versuch: tolerant + fuzzy
         matches = fuzzy_recordings(artist, title, _search_loose(artist, title, fetch, sleep))
     if not matches:
@@ -450,6 +492,7 @@ def _from_matches(matches: list[dict], *, fetch, sleep, max_releases: int,
     out = MBLookup()
     top = max(matches, key=lambda r: int(r.get("score", 0)))
     out.recording_id = top.get("id", "")
+    out.title = top.get("title", "") or ""
     out.score = int(top.get("score", 0)) if score is None else score
     out.matched = True
 
@@ -484,6 +527,7 @@ def _from_matches(matches: list[dict], *, fetch, sleep, max_releases: int,
                 out.label_names.append(n)
                 out.label_release[n] = rel_info          # Album/Jahr/URL aus der Release DIESES Labels
             out.label_quality[n] = max(out.label_quality.get(n, qual), qual)
+            out.label_country[n] = max(out.label_country.get(n, 0), country_bonus(rdata))
         for d in dids:
             if d not in out.discogs_release_ids:
                 out.discogs_release_ids.append(d)
@@ -500,6 +544,8 @@ def _from_matches(matches: list[dict], *, fetch, sleep, max_releases: int,
         # haben oft mehrere Works, und nur eines trägt die Writer-Relationen. Erstes mit
         # Treffer gewinnt, dann Schluss (spart Calls).
         first_pub = ""
+        first_iswcs: list[str] = []
+        first_gema: list[str] = []
         for wid in work_ids[:3]:
             w = fetch(f"{MB}/work/{wid}?inc=artist-rels+label-rels&fmt=json")   # + Verlag (label-rels)
             sleep(RATE)
@@ -507,11 +553,21 @@ def _from_matches(matches: list[dict], *, fetch, sleep, max_releases: int,
                 continue
             comp, lyr = extract_writers(w)
             pub = extract_publishers(w)
+            iswcs = extract_iswcs(w)
+            gema = extract_gema_ids(w)
             first_pub = first_pub or pub
+            first_iswcs = first_iswcs or iswcs
+            first_gema = first_gema or gema
             if comp or lyr:
                 out.composer, out.lyricist = comp, lyr
                 out.publisher = pub or first_pub
+                out.iswcs = iswcs or first_iswcs
+                out.gema_ids = gema or first_gema
                 break
         if not out.publisher:
             out.publisher = first_pub          # Work ohne Writer, aber mit Verlag: trotzdem mitnehmen
+        if not out.iswcs:
+            out.iswcs = first_iswcs
+        if not out.gema_ids:
+            out.gema_ids = first_gema
     return out

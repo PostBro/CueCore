@@ -30,3 +30,27 @@ def test_lookup_mocked():
 def test_lookup_no_results():
     r = deezer.lookup("A", "B", fetch=lambda url: {"data": []}, sleep=lambda *_: None)
     assert r is None
+
+
+def test_lookup_falls_back_to_free_text_and_checks_artist_and_title():
+    """Feldsuche leer (Deezer-Verhalten seit Oktober 2026): Freitext, aber nur ein Track mit gleichem Titel und
+    passendem Interpreten zählt; ein Cover eines anderen Interpreten nicht. Testdaten frei erfunden."""
+    seen = []
+
+    def fake(url):
+        seen.append(url)
+        if "artist%3A" in url:
+            return {"data": [], "total": 0}
+        if "search" in url:
+            return {"data": [{"title": "Nordwand", "artist": {"name": "Andere Band"}, "isrc": "X", "album": {"id": 1}},
+                             {"title": "Nordwand (Remix)", "artist": {"name": "Zzq"}, "isrc": "Y", "album": {"id": 2}},
+                             {"title": "Nordwand", "artist": {"name": "Zzq"}, "isrc": "DEZZQ2600001", "link": "L",
+                              "album": {"id": 3}}]}
+        if "album/3" in url:
+            return {"title": "Alb", "label": "Zzq Label", "release_date": "2026"}
+        return None
+    r = deezer.lookup("Zzq", "Nordwand", fetch=fake, sleep=lambda *_: None)
+    assert r.isrc == "DEZZQ2600001" and r.label == "Zzq Label"
+    assert "limit=5" in seen[1] and "Zzq%20Nordwand" in seen[1]
+    cover = deezer.pick_matching_track({"data": [{"title": "Nordwand", "artist": {"name": "Andere Band"}}]}, "Zzq", "Nordwand")
+    assert cover is None

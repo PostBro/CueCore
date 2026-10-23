@@ -54,8 +54,10 @@ def test_textstellen_zeigen_sonderzeichen_ohne_entitaeten():
 
 
 # --- HTTP-Fehlerantworten (503/500) erschienen als „kein Treffer“ — sieben fetch-Stellen ohne r.ok --------
-DOWN = {"__status": 503, "__body": {"detail": "labels.db nicht geladen — zuerst build_label_db.py laufen lassen"}}
-WHY = "labels.db nicht geladen"
+LABELS_MISSING = "Die GVL-Labelcode-Liste ist nicht geladen. CueCore beenden und neu starten; bleibt die Meldung, steht der Grund in cuecore.log im Datenordner (Einstellungen > Datenordner > Ordner öffnen)."
+SONGS_MISSING = "Die Track-Datenbank ist nicht geladen. CueCore beenden und neu starten; bleibt die Meldung, steht der Grund in cuecore.log im Datenordner (Einstellungen > Datenordner > Ordner öffnen)."
+DOWN = {"__status": 503, "__body": {"detail": LABELS_MISSING}}
+WHY = "Labelcode-Liste ist nicht geladen. CueCore beenden und neu starten"
 SEARCH = ("click('.nav button[data-tool=resolve]'); $('#art').value = 'Zonk Band'; $('#tit').value = 'Moonlight Groove';"
           "$('#rform').requestSubmit(); await settle();\n")
 BEST = {"labelcode": "24584", "label": "ACME", "sources": ["musicbrainz"], "source_urls": [], "dual_source": False,
@@ -77,11 +79,11 @@ def test_track_suche_zeigt_den_serverfehler_statt_kein_match():
 
 @needs_node
 def test_db_eintrag_bearbeiten_zeigt_den_serverfehler_statt_leerem_formular():
-    out = run_page(SEARCH + """__api['/api/db/lookup'] = {__status: 503, __body: {detail: 'songs.db nicht geladen'}};
+    out = run_page(SEARCH + f"""__api['/api/db/lookup'] = {{__status: 503, __body: {{detail: {json.dumps(SONGS_MISSING)}}}}};
       click(qa('#rresult .mergeaff button')[0]); await settle();
-      return {text: txt('#mergehost'), inputs: qa('#mergehost input').length};""", api={"/api/resolve": RESOLVED})
+      return {{text: txt('#mergehost'), inputs: qa('#mergehost input').length}};""", api={"/api/resolve": RESOLVED})
     assert out["errors"] == []
-    assert "songs.db nicht geladen" in out["result"]["text"] and out["result"]["inputs"] == 0
+    assert "Track-Datenbank ist nicht geladen" in out["result"]["text"] and out["result"]["inputs"] == 0
 
 
 @needs_node
@@ -134,7 +136,7 @@ def test_cue_editor_recherche_zeigt_den_serverfehler_statt_kein_netz_treffer():
 def test_serverfehler_erscheint_in_en_englisch():
     out = run_page(SEARCH + "return txt('#rresult');", lang="en", api={"/api/resolve": DOWN})
     assert out["errors"] == []
-    assert "labels.db not loaded" in out["result"], out["result"]
+    assert "The GVL label code list is not loaded. Quit and restart CueCore" in out["result"], out["result"]
 
 
 # --- Verbindungstest und Library-Scan zeigten r.detail nie, Fehlercodes roh ('network', 'http_500') ---------
@@ -184,10 +186,10 @@ def test_library_scan_fehler_zeigt_den_grund_des_servers():
       await completeMetadata(); await settle(); return txt(edlState.progEl);""",
                    api={"/api/edl/import": {"cards": [card], "cues": 1, "summary": {}, "total_duration_sec": 5}, "/api/settings": settings,
                         "/api/edl/library-scan": {"ok": False, "error": "create_failed", "status": 500},
-                        "/api/edl/trackmeta-scan": {"__status": 503, "__body": {"detail": "labels.db nicht geladen"}}})
+                        "/api/edl/trackmeta-scan": {"__status": 503, "__body": {"detail": LABELS_MISSING}}})
     assert out["errors"] == []
     r = out["result"]
-    assert "Track-API-Fehler: labels.db nicht geladen" in r and "unbekannt" not in r, r
+    assert "Track-API-Fehler: Die GVL-Labelcode-Liste ist nicht geladen" in r and "unbekannt" not in r, r
     assert "create_failed" not in r and "editingtools-Fehler: " in r, r
 
 
@@ -210,10 +212,10 @@ def test_unbehandelte_fehler_landen_in_der_konsole():
 @needs_node
 def test_startseite_zeigt_skriptfehler_nicht_als_backend_nicht_erreichbar():
     out = run_page(BROKEN + "await renderHome(); await settle(); const r = txt('#homehealth');" + FIXED + "return r;")
-    assert "Backend nicht erreichbar" not in out["result"] and "kaputt" in out["result"], out["result"]
+    assert "antwortet nicht" not in out["result"] and "kaputt" in out["result"], out["result"]
     assert _logged(out, "kaputt"), out["errors"]
     down = run_page("await renderHome(); await settle(); return txt('#homehealth');", api={"/api/health": {"__throw": True}})
-    assert down["result"] == "Backend nicht erreichbar."
+    assert down["result"] == "CueCore-Dienst antwortet nicht. CueCore beenden und neu starten."
 
 
 @needs_node
@@ -303,3 +305,71 @@ def test_teil_titel_zeigt_musicbrainz_vorschlag_und_sucht_damit_neu():
     r = out["result"]
     assert "Meintest du diesen Song? (MusicBrainz)" in r["text"] and "Sympathy for the Devil" in r["text"], r
     assert r["art"] == "The Rolling Stones" and r["tit"] == "Sympathy for the Devil", r
+
+
+# --- Meldungen in Alltagssprache mit nächstem Schritt (keine Dateinamen interner DBs, keine Kodierungen, kein „HTTP 500“) ---
+def test_meldungen_ohne_technikjargon_mit_naechstem_schritt():
+    from tests.test_webui_sprache import _backend_messages
+    from tests.webui_harness import INDEX
+    import app
+    msgs = _backend_messages()
+    jargon = ("labels.db nicht", "songs.db nicht", "build_label_db", "Base64", "Settings konfiguriert", "Backend nicht")
+    assert [m for m in msgs if any(j in m for j in jargon)] == []
+    for m in (app.LABELS_DB_MISSING, app.SONGS_DB_MISSING):
+        assert "neu starten" in m and "cuecore.log" in m
+    html = INDEX.read_text(encoding="utf-8")
+    assert "'Backend nicht erreichbar" not in html and "||('HTTP '+r.status)" not in html
+
+
+@needs_node
+def test_serverfehler_ohne_detail_nennt_den_naechsten_schritt():
+    out = run_page(SEARCH + "return txt('#rresult');", api={"/api/resolve": {"__status": 500, "__body": {}}})
+    assert out["errors"] == []
+    assert "HTTP 500" not in out["result"] and "cuecore.log" in out["result"], out["result"]
+
+
+@needs_node
+def test_eingebauter_partner_in_den_einstellungen_nur_pruefbar():
+    """Der eingebaute Zugang erscheint mit Namen und „eingebaut“, ohne Eingabefelder und ohne „Entfernen“; Speichern
+    schickt ihn nicht mit (nie in settings.json)."""
+    s = dict(SETTINGS, partners=[{"id": "builtin", "name": "Zzq Library", "host": "", "client_id": "", "secret_set": True,
+                                  "complete": True, "builtin": True}])
+    out = run_page("""click('.nav button[data-tool=settings]'); await settle();
+      const row = $('#settings-list .prow.builtin');
+      const r = {text: txt(row), inputs: row.querySelectorAll('input').length, buttons: [...row.querySelectorAll('button')].map(b => b.textContent)};
+      click('#save-settings'); await settle(); return r;""", api={"/api/settings": s, "POST /api/settings": s})
+    assert out["errors"] == []
+    r = out["result"]
+    post = [f for f in out["fetches"] if f["path"] == "/api/settings" and f["method"] == "POST"][-1]
+    r["sent"] = json.loads(post["body"])["partners"]
+    assert "Zzq Library" in r["text"] and "eingebaut" in r["text"].lower() and r["inputs"] == 0, r
+    assert r["buttons"] == ["Verbindung prüfen"], r
+    assert r["sent"] == [], r
+
+
+# --- Track-Index lädt beim ersten Start von selbst: Balken auf jeder Seite, Stand in der Seitenleiste ---
+@needs_node
+def test_index_balken_zeigt_den_automatischen_download_auf_jeder_seite():
+    running = {"state": "running", "phase": "download", "done": 430, "total": 1000, "error": "", "auto": True}
+    out = run_page("""await settle(); const r = {home: txt('#ixbanner'), hidden: $('#ixbanner').hidden, side: txt('#st-index')};
+      click('.nav button[data-tool=resolve]'); await settle(); r.other = !$('#ixbanner').hidden; return r;""",
+                   api={"/api/index/download": running})
+    assert out["errors"] == []
+    r = out["result"]
+    assert r["hidden"] is False and r["other"] is True, r
+    assert "Track-Index wird geladen (einmalig)" in r["home"] and "43 %" in r["home"] and "Abbrechen" in r["home"], r
+    assert r["side"] == "lädt 43 %", r
+
+
+@needs_node
+def test_index_balken_bei_fehler_mit_erneut_versuchen_und_sonst_unsichtbar():
+    failed = {"state": "error", "phase": "download", "done": 0, "total": 0, "error": "Zu wenig freier Platz", "auto": True}
+    out = run_page("await settle(); return {text: txt('#ixbanner'), hidden: $('#ixbanner').hidden};",
+                   api={"/api/index/download": failed})
+    assert out["errors"] == [] and out["result"]["hidden"] is False
+    assert "Zu wenig freier Platz" in out["result"]["text"] and "Erneut versuchen" in out["result"]["text"]
+    idle = run_page("await settle(); return $('#ixbanner').hidden;",
+                    api={"/api/index/download": {"state": "idle", "phase": "", "done": 0, "total": 0, "error": ""}})
+    assert idle["errors"] == [] and idle["result"] is True
+    manual = run_page("await settle(); return $('#ixbanner').hidden;", api={"/api/index/download": dict(failed, auto=False)})
+    assert manual["result"] is True    # von Hand gestartet: der Fehler steht in den Einstellungen, kein Balken

@@ -20,7 +20,7 @@ from pathlib import Path
 
 from core.labeldb import build_label_db
 from core.models import LabelRecord
-from reconcile.csv_io import read_csv, read_supplemental, write_csv
+from reconcile.csv_io import apply_name_fixes, read_csv, read_name_fixes, read_supplemental, write_csv
 from reconcile.diff import diff
 from reconcile.merge import (archive_previous_master, build_synced, write_diff_csv,
                              write_meta, write_report)
@@ -51,10 +51,13 @@ def is_older(pdf_version: str, master: str) -> bool:
     return bool(_ISO_DATE.fullmatch(pdf_version or "") and _ISO_DATE.fullmatch(master or "")) and pdf_version < master
 
 
-def preview(pdf_path: str | Path, csv_path: str | Path, *, limit: int = 25) -> dict:
+def preview(pdf_path: str | Path, csv_path: str | Path, *, limit: int = 25,
+            name_fixes_path: str | Path | None = None) -> dict:
     """PDF parsen + gegen den aktuellen Master diffen. Schreibt nichts. Meldet, ob das PDF älter ist als
     der Master (sonst ersetzte ein älteres PDF ohne Hinweis einen neueren Master, und Codes gingen verloren)."""
     records, version = parse_pdf(pdf_path)
+    # Bekannte Fehler der Quelle vor dem Diff korrigieren, sonst stünde jede Korrektur bei jedem Update als „geändert“ da
+    apply_name_fixes(records, read_name_fixes(name_fixes_path or Path(csv_path).with_name("gvl_name_fixes.csv")))
     csv_records = read_csv(csv_path) if Path(csv_path).exists() else []
     rep = diff(records, csv_records, version)
     token = uuid.uuid4().hex

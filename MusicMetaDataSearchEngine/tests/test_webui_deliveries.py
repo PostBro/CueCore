@@ -134,8 +134,9 @@ def test_zeilen_ohne_code_zeigen_den_labelnamen_statt_lc_strich():
 
 
 def test_notiztext_gleich_im_backend_und_in_der_oberflaeche():
-    """Die Oberfläche erkennt die Notiz am Wortlaut — er muss mit labelcheck.LC_BY_NAME_NOTE übereinstimmen."""
-    from core.labelcheck import LC_BY_NAME_NOTE
+    """Die Oberfläche erkennt die Notizen am Wortlaut — er muss mit labelcheck.LC_BY_*_NOTE übereinstimmen."""
+    from core.labelcheck import LC_BY_NAME_NOTE, LC_BY_PUBLISHER_NOTE
     assert LC_BY_NAME_NOTE == NOTE_BY_NAME
-    assert f"v==='{LC_BY_NAME_NOTE}'" in _function("lcNoteText")
-    assert f'"{LC_BY_NAME_NOTE}":' in _src()
+    for note in (LC_BY_NAME_NOTE, LC_BY_PUBLISHER_NOTE):
+        assert f"'{note}'" in _src().split("const _LC_NOTES=")[1].split("\n")[0]
+        assert f'"{note}":' in _src()

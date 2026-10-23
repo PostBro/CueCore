@@ -172,7 +172,7 @@ def test_normalize_result_maps_example_response():
     assert n["titel"] == "Nordwand Eins" and n["interpret"] == "Erika Testerin / Max Beispiel"
     assert n["komponist"] == "Johannes Beispiel" and n["texter"] == "Anna Muster"
     assert n["labelname"] == "Testlabel Records" and n["labelcode_raw"] == "54321"      # 'LC-54321' -> Ziffern
-    assert n["album"] == "Testalbum" and n["tracknummer"] == 7 and n["isrc"] == "ZZ-ZQ1-26-00001"
+    assert n["album"] == "Testalbum" and n["tracknummer"] == 7 and n["isrc"] == "ZZZQ12600001"   # Daten 12-stellig (BVMI)
 
 
 def test_normalize_result_joins_multiple_writers_with_semicolon():

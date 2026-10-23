@@ -421,6 +421,57 @@ def fill_codes_by_name(songs_con, master) -> dict:
     return {"filled": filled, "ambiguous": ambiguous}
 
 
+def fill_song_codes_by_name(songs_con, master, song_id: int | None = None) -> dict:
+    """Wie fill_codes_by_name, aber für jede songs-Zeile (eigene Einträge, Seed, Importe): ohne Labelcode, mit
+    Labelname, der im Master unter genau EINEM Code steht -> Code, GVL-Name und Notiz LC_BY_NAME_NOTE. Eindeutig heißt
+    automatisch (Regel 23.10.2026: bestätigen nur bei Zweifel); mehrdeutige und unbekannte Namen bleiben offen,
+    ein Nicht-PLM-Code nur, wenn andere Zeilen desselben Labels ihn schon tragen (sonst Zweifel).
+    Ohne Label zählt der Verlag, wenn er eindeutig auf ein Production-Music-Label (PLM) im Master führt.
+    song_id: nur diese Zeile (nach dem Speichern). Idempotent. Rückgabe {filled: [{label, code, songs}], ambiguous}."""
+    from .labelcheck import LC_BY_NAME_NOTE
+    filled, ambiguous = [], {}
+    where = "COALESCE(labelcode,'')='' AND COALESCE(labelname,'')<>''" + (" AND id=?" if song_id is not None else "")
+    args = (song_id,) if song_id is not None else ()
+    for name, n in songs_con.execute(f"SELECT labelname, COUNT(*) FROM songs WHERE {where} GROUP BY labelname "
+                                     "ORDER BY labelname", args).fetchall():
+        codes = master.codes_for_name(name)
+        if len(codes) != 1:
+            if codes:
+                ambiguous[name] = {"gvl_codes": codes, "n": n}
+            continue
+        lc, label = "LC" + codes[0], master(codes[0]) or name
+        # Ein kurzer Name trifft im Master leicht ein gleichnamiges fremdes Label („Indigo“, „Storyteller“ sind Production-
+        # Music-Sublabels, der gleichnamige GVL-Eintrag ist es nicht). Automatisch nur bei PLM-Code oder wenn andere
+        # Zeilen desselben Labels den Code schon tragen; sonst bleibt die Zeile offen.
+        if master.plm and codes[0] not in master.plm and not songs_con.execute(
+                "SELECT 1 FROM songs WHERE labelname=? AND labelcode=? LIMIT 1", (name, lc)).fetchone():
+            continue
+        songs = songs_con.execute(
+            "UPDATE songs SET labelcode=?, labelname=?, label_geliefert=CASE WHEN COALESCE(label_geliefert,'')='' "
+            f"THEN ? ELSE label_geliefert END WHERE {where} AND labelname=?",
+            (lc, label, LC_BY_NAME_NOTE, *args, name)).rowcount
+        filled.append({"label": name, "code": codes[0], "songs": songs})
+    # Ohne Label: bei Production Music heißt der Verlag oft wie das Label (APL Lifestyle, TRILOGY). Zählt nur, wenn
+    # alle Teile des Verlags zusammen auf genau EINEN Code führen und der im Master als PLM steht.
+    from .labelcheck import LC_BY_PUBLISHER_NOTE
+    where = "COALESCE(labelcode,'')='' AND COALESCE(labelname,'')='' AND COALESCE(verlag,'')<>''" + \
+        (" AND id=?" if song_id is not None else "")
+    for verlag, n in songs_con.execute(f"SELECT verlag, COUNT(*) FROM songs WHERE {where} GROUP BY verlag "
+                                       "ORDER BY verlag", args).fetchall():
+        codes = sorted({c for part in verlag.split(";") for c in master.codes_for_name(part.strip())})
+        if len(codes) != 1 or codes[0] not in master.plm:
+            continue
+        lc, label = "LC" + codes[0], master(codes[0])
+        songs = songs_con.execute(
+            "UPDATE songs SET labelcode=?, labelname=?, label_geliefert=CASE WHEN COALESCE(label_geliefert,'')='' "
+            f"THEN ? ELSE label_geliefert END WHERE {where} AND verlag=?",
+            (lc, label, LC_BY_PUBLISHER_NOTE, *args, verlag)).rowcount
+        filled.append({"label": verlag, "code": codes[0], "songs": songs, "via": "verlag"})
+    if filled:
+        songs_con.commit()
+    return {"filled": filled, "ambiguous": ambiguous}
+
+
 def ensure_imported(songs_con, csv_dir: str | Path, code2name, *, date_verified: str) -> list[dict]:
     """Beim App-Start: jede Lieferungs-CSV unter csv_dir, die noch nicht in library_deliveries steht, einmal
     einpflegen (Selbstheilung wie bei den Zusatz-Labels — andere Installationen bekommen die Daten so
@@ -446,3 +497,40 @@ def ensure_imported(songs_con, csv_dir: str | Path, code2name, *, date_verified:
         songsdb.mark_delivery(songs_con, p.name, name, rows=rep["rows"], date=date_verified)
         done.append({"file": p.name, "library": name, **rep, **res})
     return done
+
+
+# --- Katalog-Kürzel aus den Lieferungen lernen ---------------------------------------------------------------
+# Eine Library-Lieferung belegt, welches Katalog-Kürzel zu welchem Labelcode gehört („CCB1070_24“ -> LC10347). Das
+# gilt auch für neue Veröffentlichungen derselben Untermarke, die noch in keiner Lieferung stehen. Erzeugt wird
+# data/library_prefixes_lieferungen.csv (`import_library_tracks.py prefixes`); die gepflegten Kürzel-Listen
+# (data/library_prefixes.csv) haben Vorrang.
+PREFIX_COLUMNS = ("prefix", "labelcode", "library", "files")
+_FILE_PREFIX = re.compile(r"^([A-Za-z]{2,10})(?=[_ ]?\d)")
+
+
+def delivery_prefixes(csv_dir: str | Path, *, exclude: frozenset[str] = frozenset(), min_files: int = 3) -> list[dict]:
+    """Kürzel am Anfang der gelieferten Dateinamen -> Labelcode, nur wenn das Kürzel in ALLEN Lieferungen auf genau
+    einen Code zeigt und mindestens `min_files` Dateien trägt (sonst raten wir). `exclude`: Dateinamen, die nicht
+    zählen (Eval mit zurückgehaltener Stichprobe)."""
+    codes: dict[str, dict[str, int]] = {}
+    libs: dict[str, str] = {}
+    for p in sorted(Path(csv_dir).glob("*.csv")):
+        with open(p, newline="", encoding="utf-8") as f:
+            for r in csv.DictReader(f):
+                name, code = (r.get("file") or "").strip(), normalize_labelcode(r.get("labelcode") or "")
+                m = _FILE_PREFIX.match(name)
+                if not (m and code) or name in exclude:
+                    continue
+                key = m.group(1).upper()
+                codes.setdefault(key, {})
+                codes[key][code] = codes[key].get(code, 0) + 1
+                libs.setdefault(key, r.get("library") or p.stem.split("_")[0])
+    return [{"prefix": k, "labelcode": next(iter(v)), "library": libs[k], "files": str(sum(v.values()))}
+            for k, v in sorted(codes.items()) if len(v) == 1 and sum(v.values()) >= min_files]
+
+
+def write_prefixes(rows: list[dict], path: str | Path) -> None:
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=PREFIX_COLUMNS, lineterminator="\n")
+        w.writeheader()
+        w.writerows(rows)

@@ -25,7 +25,7 @@ import urllib.request
 from dataclasses import dataclass, field
 
 from core import settings
-from core.normalize import normalize_labelcode
+from core.normalize import isrc_plain, normalize_labelcode
 
 PROFILE_ENV = "CUECORE_TRACKMETA_PROFILE"
 PROFILE_KEYS = ("base", "token", "meta", "scope", "batch", "ttl", "list", "fields")
@@ -241,7 +241,7 @@ def normalize_result(filename: str, obj, fields: dict) -> dict:
         "album": str(f["album"] or "").strip(),
         "labelname": str(f["labelname"] or "").strip(),
         "labelcode_raw": normalize_labelcode(str(lc)) if lc not in (None, "") else "",
-        "isrc": str(f["isrc"] or "").strip(),
+        "isrc": isrc_plain(str(f["isrc"] or "")),          # Daten 12-stellig (BVMI), Anbieter liefert mit Bindestrichen
         "komponist": _names(f["komponist"]),
         "texter": _names(f["texter"]),
         "tracknummer": _tracknumber(f["tracknummer"]),

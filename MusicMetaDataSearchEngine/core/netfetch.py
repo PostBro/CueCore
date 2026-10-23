@@ -58,6 +58,10 @@ FAIL_BUDGET = 40.0
 # Cache-Lebensdauer. Ohne sie ist jede einmal geholte Antwort dauerhaft eingefroren:
 # ein falsch aufgelöster Track bliebe auch nach einer MB-Korrektur falsch.
 DEFAULT_MAX_AGE = 24 * 3600.0
+# Discogs-API-Bedingungen: angezeigte Inhalte höchstens 6 Stunden älter als auf Discogs, Cachen nur so lange wie
+# nötig. Deshalb für api.discogs.com kürzer und ohne Stale-Fallback über diese Grenze hinaus.
+DISCOGS_MAX_AGE = 6 * 3600.0
+_SHORT_TTL = {"api.discogs.com": DISCOGS_MAX_AGE}
 
 
 class RateLimiter:
@@ -211,6 +215,9 @@ class Fetcher:
         if entry is None:
             return None, None
         payload, fetched_at = entry
+        short = _SHORT_TTL.get(urlsplit(url).hostname or "")
+        if self.max_age is not None and short is not None and cachelib.age_seconds(fetched_at) > min(self.max_age, short):
+            return None, None                   # zu alt für die Bedingungen der Quelle: auch nicht als Notreserve
         if self.max_age is not None and cachelib.age_seconds(fetched_at) > self.max_age:
             return None, payload
         try:

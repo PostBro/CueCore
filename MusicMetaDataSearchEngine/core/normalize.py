@@ -106,6 +106,26 @@ def export_lc(labelcode: str | None) -> str:
     return "LC" + code if code else s
 
 
+_ISRC = re.compile(r"[A-Z]{2}[A-Z0-9]{3}[0-9]{7}")
+_ISRC_PREFIX = re.compile(r"^ISRC[\s:]*", re.I)
+
+
+def isrc_plain(value: str | None) -> str:
+    """ISRC für Daten (songs.db, Datei-Tag, CSV/XLSX): die einfache 12-stellige Form ohne Bindestriche und ohne
+    Präfix, wie die deutsche ISRC-Agentur (BVMI) es für Datenbanken vorschreibt. Kein gültiger ISRC -> Wert bleibt,
+    wie er ist (nichts still verfälschen)."""
+    s = clean_text(value)
+    code = re.sub(r"[^A-Za-z0-9]", "", _ISRC_PREFIX.sub("", s)).upper()
+    return code if _ISRC.fullmatch(code) else s
+
+
+def isrc_display(value: str | None) -> str:
+    """ISRC in schriftlicher Form (PDF): Bestandteile durch Bindestriche getrennt, CC-XXX-YY-NNNNN (IFPI/BVMI).
+    Das Präfix „ISRC“ steht als Spaltenkopf. Kein gültiger ISRC -> Wert bleibt, wie er ist."""
+    code = isrc_plain(value)
+    return f"{code[:2]}-{code[2:5]}-{code[5:7]}-{code[7:]}" if _ISRC.fullmatch(code) else code
+
+
 def normalize_record(rec: LabelRecord) -> LabelRecord:
     """Vollständige Datensatz-Normalisierung, idempotent."""
     return LabelRecord(

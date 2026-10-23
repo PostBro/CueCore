@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import csv
+from dataclasses import replace
 from pathlib import Path
 
 from core.models import COLUMNS, LabelRecord
@@ -32,6 +33,29 @@ def read_supplemental(path: str | Path, existing_codes: set[str]) -> list[LabelR
                                    hersteller=f"Zusatzquelle: {src}" if src else "Zusatzquelle",
                                    rechterueckrufe=""))
     return out
+
+
+def read_name_fixes(path: str | Path) -> dict[str, tuple[str, str]]:
+    """Korrekturen offensichtlicher Fehler der GVL-Quelle (CSV: labelcode,label_gvl,label,grund), z.B. ein mitten
+    im Wort abgeschnittener Name. labelcode -> (Name wie im PDF, korrigierter Name). Fehlt die Datei -> {}."""
+    path = Path(path)
+    if not path.exists():
+        return {}
+    with open(path, newline="", encoding="utf-8") as f:
+        return {normalize_labelcode(r["labelcode"]): (r["label_gvl"].strip(), r["label"].strip())
+                for r in csv.DictReader(f) if normalize_labelcode(r.get("labelcode", "")) and r.get("label")}
+
+
+def apply_name_fixes(records: list[LabelRecord], fixes: dict[str, tuple[str, str]]) -> int:
+    """Ersetzt die betroffenen Einträge der Liste in place, nur wo der Name noch genau dem PDF-Fehler entspricht:
+    schreibt die GVL den Namen später selbst richtig (oder anders), gilt ihre Fassung. Rückgabe: Anzahl Korrekturen."""
+    n = 0
+    for i, r in enumerate(records):
+        fix = fixes.get(normalize_labelcode(r.labelcode))
+        if fix and r.label == fix[0]:
+            records[i] = replace(r, label=fix[1])
+            n += 1
+    return n
 
 
 def read_master_with_supplemental(master_csv: str | Path) -> list[LabelRecord]:

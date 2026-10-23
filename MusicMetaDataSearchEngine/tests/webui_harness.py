@@ -26,11 +26,25 @@ DOM_JS = HERE / "webui_dom.js"
 needs_node = pytest.mark.skipif(shutil.which("node") is None, reason="node nicht installiert")
 
 
+# Antworten, die die Seite beim Start immer abfragt (Export-Vorlagen, Projektliste); ein Szenario überschreibt sie.
+DEFAULT_API = {
+    "/api/export-templates": {"templates": [{"id": "standard", "name": "Standard", "required": ["labelcode", "komponist", "gema_werknummer"],
+                                             "columns": ["Interpret", "Titel", "Komponist", "Texter", "Verlag", "Label", "LC", "Rechterückruf",
+                                                         "ISRC", "ISWC", "GEMA-Werknr.", "Länge Sek."]}],
+                              "active": "standard", "always": "Länge Sek.",
+                              "columns": ["Interpret", "Titel", "Komponist", "Texter", "Verlag", "Label", "LC", "Rechterückruf",
+                                          "ISRC", "ISWC", "GEMA-Werknr.", "Länge Sek."],
+                              "required": ["labelcode", "komponist", "gema_werknummer", "texter", "verlag", "isrc", "iswc"]},
+    "/api/projects": {"projects": []},
+    "POST /api/projects": {"id": "abcdef123456", "name": "Testprojekt", "updated": "2026-10-23T10:00:00+00:00", "summary": {}},
+}
+
+
 def run_page(scenario: str = "return null;", *, lang: str | None = None, storage: dict | None = None,
              search: str = "", api: dict | None = None, confirm: bool = True, width: int = 1400,
              timeout: int = 30) -> dict:
     cfg = {"index": str(INDEX), "scenario": scenario, "lang": lang, "storage": storage or {},
-           "search": search, "api": api or {}, "confirm": confirm, "width": width}
+           "search": search, "api": {**DEFAULT_API, **(api or {})}, "confirm": confirm, "width": width}
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as f:
         json.dump(cfg, f)
     try:

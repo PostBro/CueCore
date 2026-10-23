@@ -60,6 +60,13 @@ Lizenztexte: `MusicMetaDataSearchEngine/web/ICONS-LICENSE.txt`, in den Apps unte
 Saira Condensed (Omnibus-Type) und Inter (Rasmus Andersson), beide unter der SIL Open Font License 1.1, lokal
 gebündelt in `MusicMetaDataSearchEngine/web/fonts/` (siehe `LICENSE.txt` dort).
 
+## Partnerlogos
+
+Die Logos und Namen von APL Music, Cezame, Extreme Music, Fresh Tracks und RipCue Music in der README (`bilder/partner.png`)
+und in den Apps (`MusicMetaDataSearchEngine/web/partner-*.png`) sind Marken bzw. geschützte Kennzeichen der jeweiligen Inhaber.
+Sie stehen **nicht** unter der AGPL-3.0 oder einer anderen freien Lizenz dieses Repos und dürfen nur mit Erlaubnis
+des jeweiligen Inhabers verwendet werden. CueCore zeigt sie mit deren Erlaubnis.
+
 ## Daten
 
 - **Labelcodes:** `data/GVL_Labelcodes_synced.csv` beruht auf der Labelcode-Liste der GVL (Gesellschaft zur

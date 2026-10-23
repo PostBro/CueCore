@@ -211,7 +211,7 @@ def test_editor_speichert_eine_vorhandene_zeile_per_update_mit_verlag():
     assert r["seedVerlag"] == "Pubco" and r["label"] == "Änderungen speichern"
     assert _sent(out, "/api/db/lookup") == [{"artist": "Zonk Band", "title": "Moonlight Groove"}]
     # nur das Geänderte geht an die vorhandene Zeile — was die Karte nicht trägt, bleibt in der songs.db
-    assert _sent(out, "/api/db/song/7") == [{"fields": {"verlag": "New Pub"}}] and _sent(out, "/api/db/song") == []
+    assert _sent(out, "/api/db/song/7") == [{"fields": {"verlag": "New Pub"}, "project": ""}] and _sent(out, "/api/db/song") == []
     assert r["card"] == ["New Pub", "found_in_db", 7] and r["cell"] is True
 
 
@@ -226,7 +226,7 @@ def test_library_datei_mit_id_wird_ohne_nachschlagen_bearbeitet_neuer_lc_bringt_
     assert out["errors"] == []
     assert out["result"] == ["LC00171", "Decca", "R6"]
     assert _sent(out, "/api/db/lookup") == []
-    assert _sent(out, "/api/db/song/42") == [{"fields": {"labelcode": "00171"}}]
+    assert _sent(out, "/api/db/song/42") == [{"fields": {"labelcode": "00171"}, "project": ""}]
 
 
 @needs_node

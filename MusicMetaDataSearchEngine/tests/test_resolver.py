@@ -591,3 +591,79 @@ def test_margin_gate_below_floor_tie_stays_review_low():
     res = resolve("A", "B", IDX, mb_lookup=mb, discogs_label_codes=lambda rid: [])
     assert [c.confidence for c in res.candidates[:2]] == [0.2, 0.2]
     assert res.ambiguous is True and res.band == "review_low"
+
+
+# --- ISWC und GEMA-Werknr. ---
+
+def test_resolve_passes_iswcs_and_notes_several():
+    one = resolve("A", "B", IDX, mb_lookup=_mb(matched=True, score=90, iswcs=["T-000.000.001-0"]),
+                  discogs_label_codes=lambda rid: [])
+    assert one.iswcs == ["T-000.000.001-0"] and not any("ISWCs" in n for n in one.notes)
+    two = resolve("A", "B", IDX, mb_lookup=_mb(matched=True, score=90, iswcs=["T-000.000.001-0", "T-000.000.002-1"]),
+                  discogs_label_codes=lambda rid: [])
+    assert two.iswcs == ["T-000.000.001-0", "T-000.000.002-1"]
+    assert any("2 ISWCs" in n for n in two.notes)                         # nicht raten, alle zeigen
+
+
+def test_local_result_carries_iswc_and_gema_from_songsdb():
+    row = {"interpret": "Zzq", "titel": "Nordwand", "labelcode": "LC00121", "isrc": "DEZZQ2600001",
+           "iswc": "T-000.000.001-0", "gema_werknummer": "10000001-001"}
+    res = local_result("zzq", "nordwand", row)
+    assert res.isrcs == ["DEZZQ2600001"] and res.iswcs == ["T-000.000.001-0"]
+    assert res.gema_werknummer == "10000001-001"
+    assert local_result("zzq", "nordwand", {"interpret": "Zzq", "titel": "Nordwand"}).iswcs == []
+
+
+# --- C1: Quellen gewichten statt zählen ---
+
+def test_isrc_identification_weighs_more_but_never_auto_alone():
+    assert confidence(mb_score=100, corroborations=1, via_isrc=True) == 0.6
+    assert confidence(mb_score=100, corroborations=0, via_isrc=True) == 0.3       # unter der Review-Schwelle
+    assert confidence(mb_score=0, corroborations=1, via_isrc=True) == 0.3          # kein MB-Beleg: kein Bonus
+
+
+def test_label_only_deezer_knows_gets_no_musicbrainz_share():
+    """Deezer nennt ein Label, das MusicBrainz nicht belegt: das bestätigt nicht die Aufnahme -> 0.3, unter dem
+    von MusicBrainz + Deezer belegten Kandidaten."""
+    mb = _mb(matched=True, score=100, label_names=["Atlantic"], label_quality={"Atlantic": 5})
+    dz = lambda a, t: DeezerResult(label="Republic Records", isrc="", track_url="u")   # noqa: E731
+    res = resolve("A", "B", IDX, mb_lookup=mb, discogs_label_codes=lambda rid: [], deezer_lookup=dz)
+    by = {c.labelcode: c.confidence for c in res.candidates}
+    assert by["00121"] == 0.2 and by["57251"] == 0.3
+    assert res.best.labelcode == "57251" and res.best.confidence < 0.5           # nur „prüfen“, kein Treffer
+
+
+# --- C4: Gast-Credits ---
+
+def test_secondary_sources_get_the_query_without_guest_credits():
+    seen = []
+    def dz(a, t):
+        seen.append((a, t))
+        return None
+    resolve("Zzq feat. Erika Testerin", "Nordwand (feat. Erika Testerin)", IDX, mb_lookup=_mb(),
+            discogs_label_codes=lambda rid: [], deezer_lookup=dz, swap_retry=False)
+    assert seen == [("Zzq", "Nordwand")]
+
+
+def test_musicbrainz_gema_id_is_a_suggestion_never_verified():
+    one = resolve("A", "B", IDX, mb_lookup=_mb(matched=True, score=90, gema_ids=["10000001-002"]),
+                  discogs_label_codes=lambda rid: [])
+    assert one.gema_werknummer == "10000001-002" and one.gema_source == "musicbrainz"
+    assert any("laut MusicBrainz" in n for n in one.notes)
+    two = resolve("A", "B", IDX, mb_lookup=_mb(matched=True, score=90, gema_ids=["10000001-001", "10000001-002"]),
+                  discogs_label_codes=lambda rid: [])
+    assert two.gema_werknummer == "" and any("2 GEMA-Werknummern" in n for n in two.notes)
+    local = local_result("a", "b", {"interpret": "A", "titel": "B", "gema_werknummer": "10000003"})
+    assert local.gema_source == "songs.db"
+
+
+def test_note_when_the_label_comes_only_from_a_release_outside_de_eu():
+    """DE/EU gewinnt, internationale Labels gelten (Regel): ohne DE/EU-Veröffentlichung steht ein Hinweis da."""
+    us = resolve("A", "B", IDX, mb_lookup=_mb(matched=True, score=90, label_names=["Atlantic"],
+                                             label_quality={"Atlantic": 5}, label_country={"Atlantic": 1}),
+                 discogs_label_codes=lambda rid: [])
+    assert us.best.labelcode == "00121" and any(n.startswith("Keine deutsche oder europäische") for n in us.notes)
+    de = resolve("A", "B", IDX, mb_lookup=_mb(matched=True, score=90, label_names=["Atlantic"],
+                                             label_quality={"Atlantic": 5}, label_country={"Atlantic": 3}),
+                 discogs_label_codes=lambda rid: [])
+    assert not any(n.startswith("Keine deutsche") for n in de.notes)

@@ -105,53 +105,86 @@ def test_englisch_und_409_des_servers_uebersetzt():
     assert "The PDF (as of 2026-06-30) is older than the current master" in r["box"]
 
 
-# --- die Suche zeigte „30 Treffer“, obwohl es mehr gibt — ohne Hinweis und ohne Weiterblättern ------------
-def _labels(n: int) -> list[dict]:
-    return [{"labelcode": f"{10000 + i}", "label": f"Domino {i}", "hersteller": "", "plm": "", "rechterueckrufe": "", "source": "gvl"}
-            for i in range(n)]
+# --- Label-Datenbank als Liste: alle Labels seitenweise, Kürzel und LC direkt in der Tabelle bearbeiten -----------
+def _lrow(i: int, **kw) -> dict:
+    return {"labelcode": f"{91000 + i}", "label": f"Zzq Label {i}", "kurzname": "", "plm": 0, "hersteller": "Zzq Verlag",
+            "rechterueckrufe": "", "source": "gvl", "herkunft": "gvl", "kuerzel": [], **kw}
 
 
-SEARCH_API = """__api['/api/search'] = u => { const lim = +(u.searchParams.get('limit') || 30);
-  return {query: 'Domino', mode: 'fts', results: __all.slice(0, lim)}; };"""
+LIST_API = """__api['/api/labels/list'] = u => { const off = +u.searchParams.get('offset'), lim = +u.searchParams.get('limit');
+  return {total: __all.length, rows: __all.slice(off, off + lim)}; };"""
+CELL = """const dbl = (i, f) => qa('#gresult tr.etrow')[i].querySelector('td[data-field="' + f + '"]').dispatchEvent(new Event('dblclick', {bubbles: true}));
+const type = v => { const inp = $('#gresult input.cellinp'); inp.value = v;
+  inp.dispatchEvent(new Event('keydown', {bubbles: true, cancelable: true, init: {key: 'Enter'}})); };
+const __posts = [], __fetch = window.fetch;
+window.fetch = (u, o) => { if (o && o.method === 'POST') __posts.push([String(u), JSON.parse(o.body)]); return __fetch(u, o); };
+const posts = () => __posts.slice();"""
+
+
+def _run(rows, scen, api=None, **kw):
+    return run_page(f"const __all = {json.dumps(rows)};\n" + LIST_API + CELL + GVL + scen, api=api or {}, **kw)
 
 
 @needs_node
-def test_gekappte_suche_sagt_dass_es_mehr_gibt_und_laedt_weitere():
-    scen = f"const __all = {json.dumps(_labels(78))};\n" + SEARCH_API + GVL + """
-      $('#gq').value = 'Domino'; await runGvl('Domino'); await settle();
-      const more = () => qa('#gresult button').find(b => b.textContent.includes('weitere') || b.textContent.includes('more'));
-      const r = {head: txt('#gresult .meta-line'), rows: qa('#gresult .grow').length, hint: txt('#gresult > .hint'),
-                 btn: more() && txt(more())};
-      click(more()); await settle();
-      r.head2 = txt('#gresult .meta-line'); r.rows2 = qa('#gresult .grow').length; r.btn2 = !!more(); return r;"""
-    out = run_page(scen)
+def test_liste_laedt_beim_oeffnen_und_blaettert():
+    rows = [_lrow(i) for i in range(120)]
+    out = _run(rows, """const r = {head: txt('#gresult .meta-line'), n: qa('#gresult tr.etrow').length, page: txt('#gpage'), prev: $('#gprev').disabled};
+      click('#gnext'); await settle(); r.first = txt(qa('#gresult tr.etrow')[0].querySelector('td'));
+      click(qa('#gfbar .gfilt')[0]); await settle(); click(qa('#gfbar .seg button')[2]); await settle(); return r;""")
     assert out["errors"] == []
     r = out["result"]
-    assert r["head"].startswith("30+ Treffer") and r["rows"] == 30, r
-    assert "es gibt weitere" in r["hint"] and r["btn"] == "100 weitere laden", r
-    assert r["head2"].startswith("78 Treffer") and r["rows2"] == 78 and r["btn2"] is False, r
-    limits = [f["search"] for f in out["fetches"] if f["path"] == "/api/search"]
-    assert limits == ["?q=Domino&limit=31", "?q=Domino&limit=131"], limits
+    assert r == {"head": "120 Labels", "n": 50, "page": "1–50 von 120", "prev": True, "first": "91050"}, r
+    lists = [f["search"] for f in out["fetches"] if f["path"] == "/api/labels/list"]
+    assert lists[-1] == "?q=&offset=0&limit=50&plm=true&herkunft=eigen", lists
 
 
 @needs_node
-def test_volle_liste_ohne_hinweis_und_englisch():
-    scen = f"const __all = {json.dumps(_labels(5))};\n" + SEARCH_API + GVL + """
-      $('#gq').value = 'Domino'; await runGvl('Domino'); await settle();
-      return {head: txt('#gresult .meta-line'), buttons: qa('#gresult button').length};"""
-    out = run_page(scen)
-    assert out["errors"] == [] and out["result"] == {"head": "5 TrefferVolltext", "buttons": 0}
-    en = run_page(scen.replace(json.dumps(_labels(5)), json.dumps(_labels(40))), lang="en")
-    assert en["errors"] == []
-    assert en["result"]["head"].startswith("30+ matches")
-
-
-@needs_node
-def test_neuer_suchbegriff_faengt_wieder_bei_30_an():
-    scen = f"const __all = {json.dumps(_labels(78))};\n" + SEARCH_API + GVL + """
-      await runGvl('Domino'); await settle();
-      click(qa('#gresult button').find(b => b.textContent.includes('weitere'))); await settle();
-      await runGvl('Domino Rec'); await settle(); return qa('#gresult .grow').length;"""
-    out = run_page(scen)
+def test_kuerzel_inline_aendern_und_rueckgaengig():
+    rows = [_lrow(1, kuerzel=[{"prefix": "ZZA", "key": "ZZA", "library": "Zzq", "note": "", "origin": "liste"}],
+                  kurzname="Zq")]
+    out = _run(rows, """const r = {chips: texts('#gresult td[data-field=kuerzel] .chip')};
+      dbl(0, 'kuerzel'); r.val = $('#gresult input.cellinp').value; type('zzb, ZZC'); await settle();
+      r.posts = posts(); r.undo = txt('#gundo');
+      click('#gundo'); await settle(); r.after = posts().slice(r.posts.length); return r;""",
+               api={"POST /api/labels/edits/prefix": {"before": "", "before_note": "", "after": ""}})
     assert out["errors"] == []
-    assert out["result"] == 30
+    r = out["result"]
+    assert r["chips"] == ["ZZA", "Zq"] and r["val"] == "ZZA"   # GVL-Kurzname steht dabei, ist aber nicht im Feld
+    assert [b for _, b in r["posts"]] == [{"prefix": "ZZA", "labelcode": ""}, {"prefix": "ZZB", "labelcode": "91001"},
+                                          {"prefix": "ZZC", "labelcode": "91001"}]
+    assert r["undo"] == "Rückgängig: Kürzel bei LC91001"
+    assert [b["prefix"] for _, b in r["after"]] == ["ZZC", "ZZB", "ZZA"]
+
+
+@needs_node
+def test_umhaengen_fragt_nach_notiz():
+    calls = """let __n = 0; __api['POST /api/labels/edits/prefix'] = (u, o) => JSON.parse(o.body).note
+      ? {before: '91009', before_note: '', after: '91001'}
+      : {__status: 409, __body: {detail: 'ZZX gehört laut Kürzel-Tabelle zu LC91009 Zzq Andere. Umhängen ist eine Korrektur und braucht eine Notiz.'}};\n"""
+    out = _run([_lrow(1)], calls + """dbl(0, 'kuerzel'); type('ZZX'); await settle();
+      const r = {ask: txt('.askbox p'), ok: qa('.askbox button')[0].disabled};
+      const inp = $('.askbox input'); inp.value = 'Mail des Anbieters'; inp.dispatchEvent(new Event('input', {bubbles: true}));
+      click(qa('.askbox button')[0]); await settle(); r.posts = posts().map(p => p[1]); r.msg = txt('#gmsg'); return r;""")
+    assert out["errors"] == []
+    r = out["result"]
+    assert r["ask"].startswith("ZZX gehört laut Kürzel-Tabelle zu LC91009") and r["ok"] is True
+    assert r["posts"][-1] == {"prefix": "ZZX", "labelcode": "91001", "note": "Mail des Anbieters"}
+    assert r["msg"] == "Gespeichert — gilt sofort im Cue-Sheet."
+
+
+@needs_node
+def test_lc_korrektur_mit_notiz_und_markierung():
+    rows = [_lrow(3, herkunft="korrektur", korrektur={"labelcode": "91004", "label": "Zzq Label 4", "note": "alt", "valid": True})]
+    out = _run(rows, """const r = {lc: txt('#gresult td[data-field=lc]'), hk: txt(qa('#gresult tr.etrow td')[6])};
+      dbl(0, 'lc'); r.val = $('#gresult input.cellinp').value; type('LC 91005'); await settle();
+      r.ask = txt('.askbox h3'); const inp = $('.askbox input'); inp.value = 'Pressung';
+      inp.dispatchEvent(new Event('input', {bubbles: true})); click(qa('.askbox button')[0]); await settle();
+      r.posts = posts(); return r;""",
+               api={"POST /api/labels/edits/name": {"entry": {}, "before": {"labelcode": "91004", "note": "alt"}}})
+    assert out["errors"] == []
+    r = out["result"]
+    assert r["lc"] == "91003→ 91004" and r["hk"] == "Korrektur" and r["val"] == "91004" and r["ask"] == "LC korrigieren"
+    assert r["posts"] == [["/api/labels/edits/name", {"name": "Zzq Label 3", "from_code": "91003", "labelcode": "91005",
+                                                      "note": "Pressung"}]]
+
+

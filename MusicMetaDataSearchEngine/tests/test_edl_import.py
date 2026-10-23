@@ -134,9 +134,9 @@ def test_export_excel_writes_header_rows_and_total(tmp_path):
     ws = wb.active
     rows = list(ws.iter_rows(values_only=True))
     assert rows[0] == ("Interpret", "Titel", "Komponist", "Texter", "Verlag", "Label", "LC", "Rechterückruf", "ISRC",
-                       "Länge Sek.")
+                       "ISWC", "GEMA-Werknr.", "Länge Sek.")
     assert rows[1][:2] == ("Alanis Morissette", "Thank You")
-    assert rows[1][9] == 6
+    assert rows[1][11] == 6
     assert rows[2][:2] == ("AURORA", "Runaway")
     assert rows[-1][-1] == 10  # Gesamtdauer = 6 + 4
 
@@ -230,7 +230,7 @@ def test_export_csv_has_header_rows_and_total(tmp_path):
     lines = out.read_text(encoding="utf-8-sig").splitlines()
     assert lines[0].startswith("Interpret,")
     assert lines[1].startswith("AURORA,Runaway")
-    assert lines[-1].startswith(",,,,,,,,Gesamtdauer:,4")     # 8 Leerzellen vor 'Gesamtdauer:' (10 Spalten)
+    assert lines[-1].startswith(",,,,,,,,,,Gesamtdauer:,4")   # 10 Leerzellen vor 'Gesamtdauer:' (12 Spalten)
 
 
 def test_export_lc_column_is_always_lc_plus_digits(tmp_path):
@@ -575,7 +575,8 @@ def test_pdf_export_haelt_spaltenbreiten_auch_ohne_trennzeichen(tmp_path):
     komma = ",".join(["Johnson", "Smith", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez",
                       "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson"])
     base = {"artist": "Matt Black", "title": "Scars (A)", "komponist": "Matt Black", "labelname": "KPM MUSIC",
-            "labelcode": "LC02061", "rechterueckrufe": "R6;R9;R12;R13", "isrc": "GBXXX0000001", "duration_sec": 6}
+            "labelcode": "LC02061", "rechterueckrufe": "R6;R9;R12;R13", "isrc": "GBXXX0000001",
+            "iswc": "T-000.000.001-0", "gema_werknummer": "12345678-001", "duration_sec": 6}
     for extra in ({"title": "x" * 113}, {"title": "x" * 200}, {"title": camel}, {"komponist": komma},
                   {"verlag": "Äöüßéèàçñ" * 6}):
         pdf = tmp_path / "cue.pdf"
@@ -586,7 +587,8 @@ def test_pdf_export_haelt_spaltenbreiten_auch_ohne_trennzeichen(tmp_path):
         assert max(w[2] for w in words) <= limit, extra
         assert max(d["rect"].x1 for d in page.get_drawings()) <= limit, extra      # Tabellenrahmen im Blatt
         heads = {w[4]: w[0] for w in words if w[1] < 90}
-        for h in ("Interpret", "Titel", "Komponist", "Label", "LC", "Rechterückruf", "ISRC", "Länge", "Sek."):
+        for h in ("Interpret", "Titel", "Komponist", "Label", "LC", "Rechterückruf", "ISRC", "ISWC", "GEMA-Werknr.",
+                  "Länge", "Sek."):
             assert h in heads, (h, extra)
         left = 36.0
         for col, pct in zip(EXPORT_COLUMNS, _PDF_WIDTHS):                              # Spalte an ihrem Platz
@@ -603,3 +605,39 @@ def test_soft_break_nur_in_langen_wortketten():
     assert _soft_break("Agnes Obel – Dorian") == "Agnes Obel – Dorian"
     out = _soft_break("ZZQ_TESTPROJEKT_EINS+ZZQ+NORDWAND+SERIE_1920X1080")
     assert "​" in out and out.replace("​", "") == "ZZQ_TESTPROJEKT_EINS+ZZQ+NORDWAND+SERIE_1920X1080"
+
+
+def test_export_carries_iswc_and_gema_and_merge_keeps_them(tmp_path):
+    """ISWC und GEMA-Werknr. stehen im Cue-Sheet (CSV, XLSX, PDF); Zusammenfassen und Geschwister verlieren sie nicht.
+    Testwerte frei erfunden."""
+    cards = [{"artist": "Zzq", "title": "Nordwand", "clip_name": "a.wav", "duration_sec": 2},
+             {"artist": "Zzq", "title": "Nordwand", "clip_name": "a.wav", "duration_sec": 3,
+              "iswc": "T-000.000.002-1", "gema_werknummer": "10000002-001"}]
+    merged = merge_cards(cards, merge_identical=True)
+    assert merged[0]["iswc"] == "T-000.000.002-1" and merged[0]["gema_werknummer"] == "10000002-001"
+    rows, _ = _export_rows(merged)
+    assert rows[0][EXPORT_COLUMNS.index("ISWC")] == "T-000.000.002-1"
+    assert rows[0][EXPORT_COLUMNS.index("GEMA-Werknr.")] == "10000002-001"
+    export_excel(merged, tmp_path / "c.xlsx")
+    data = list(load_workbook(tmp_path / "c.xlsx").active.iter_rows(values_only=True))
+    assert data[1][EXPORT_COLUMNS.index("GEMA-Werknr.")] == "10000002-001"
+    export_pdf(merged, tmp_path / "c.pdf")
+    import fitz
+    text = "".join(fitz.open(tmp_path / "c.pdf")[0].get_text().split())
+    assert "T-000.000.002-1" in text and "10000002-001" in text
+
+
+def test_export_mit_spalten_der_vorlage_behaelt_immer_die_dauer(tmp_path):
+    import csv
+    from core import edl_import as ei
+    cards = [{"artist": "Erika Testerin", "title": "Nordwand", "labelcode": "121", "duration_sec": 42}]
+    p = tmp_path / "x.csv"
+    ei.export_csv(cards, p, ["Titel", "LC"])
+    rows = list(csv.reader(p.open(encoding="utf-8-sig")))
+    assert rows[0] == ["Titel", "LC", "Länge Sek."] and rows[1] == ["Nordwand", "LC00121", "42"]
+    assert rows[2] == ["", "Gesamtdauer:", "42"]
+    ei.export_pdf(cards, tmp_path / "x.pdf", ["Titel", "LC"])
+    assert (tmp_path / "x.pdf").read_bytes()[:4] == b"%PDF"
+    ei.export_excel(cards, tmp_path / "x.xlsx", ["Titel"])
+    from openpyxl import load_workbook
+    assert [c.value for c in load_workbook(tmp_path / "x.xlsx").active[1]] == ["Titel", "Länge Sek."]

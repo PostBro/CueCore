@@ -178,3 +178,17 @@ def test_hidden_gilt_auch_fuer_klassen_mit_display_flex_und_grid():
     src = (Path(__file__).resolve().parent.parent / "web" / "index.html").read_text(encoding="utf-8")
     css = src[src.index("<style>"):src.index("</style>")]
     assert re.search(r"^\s*\[hidden\]\{display:none!important\}", css, re.M), "allgemeine [hidden]-Regel fehlt"
+
+
+@needs_node
+def test_team_datei_zeigt_neue_ergaenzte_und_abweichungen_vor_dem_uebernehmen():
+    """D16: Team-Datei beim Import — Zahlen, „zu prüfen“-Hinweis und die Abweichungen, eigene Werte bleiben."""
+    pre = {"team": True, "rows": 4, "new": 2, "filled": 1, "same": 1, "review": 1, "committed": False, "conflicts_total": 1,
+           "conflicts": [{"interpret": "Erika Testerin", "titel": "Südhang", "diffs": [{"field": "komponist", "own": "Anna Zonk", "team": "Hans Zimm"}]}]}
+    out = run_page("""click('.nav button[data-tool=db]'); await settle(); renderImportPreview('cuecore_team.csv', __api['/api/ingest/upload']);
+      return {text: txt('#dbimportbox'), btn: [...qa('#dbimportbox .actions button')][0].textContent};""",
+                   api={"/api/ingest/upload": pre})
+    assert out["errors"] == []
+    r = out["result"]
+    assert "2 neue Songs, 1 ergänzen leere Felder, 1 schon gleich" in r["text"] and "zu prüfen" in r["text"], r
+    assert "deins: Anna Zonk" in r["text"] and "Team: Hans Zimm" in r["text"] and r["btn"] == "2 neue übernehmen, 1 ergänzen", r

@@ -32,7 +32,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .labelmatch import norm
-from .normalize import normalize_labelcode, single_labelcode
+from .normalize import isrc_plain, normalize_labelcode, single_labelcode
 
 _US = "\x1f"
 
@@ -241,6 +241,11 @@ def ensure_schema(con: sqlite3.Connection) -> None:
     # hätte jede zweite Lieferung derselben Library stumm verschluckt.
     con.execute("""CREATE TABLE IF NOT EXISTS library_deliveries (
         file TEXT PRIMARY KEY, library TEXT NOT NULL, imported TEXT NOT NULL, rows INTEGER)""")
+    # Wann und in welchem Projekt ein Track zuletzt bestätigt wurde (D15). Eigene Tabelle, nicht in songs: Projekt-
+    # namen sind Kundendaten, und refresh_seed.py kopiert jede songs-Spalte in den öffentlichen Seed.
+    con.execute("""CREATE TABLE IF NOT EXISTS confirmations (
+        song_id INTEGER NOT NULL, project TEXT NOT NULL DEFAULT '', at TEXT NOT NULL)""")
+    con.execute("CREATE INDEX IF NOT EXISTS idx_confirmations_song ON confirmations(song_id, at)")
     ensure_fts(con)
     con.commit()
 
@@ -287,7 +292,7 @@ _ALL_FIELDS = ("interpret", "titel", "komponist", "texter", "labelname", "labelc
 
 
 def find(con: sqlite3.Connection, artist: str, title: str) -> dict | None:
-    return _strip_match(_match(con, artist, title, ",".join(_ALL_FIELDS)))
+    return _strip_match(_match(con, artist, title, ",".join((*_ALL_FIELDS, "quelle"))))   # quelle: Herkunft am Feld (D10)
 
 
 def count(con: sqlite3.Connection) -> int:
@@ -326,7 +331,7 @@ def find_by_file(con: sqlite3.Connection, name: str) -> dict | None:
     if not key:
         return None
     r = con.execute(
-        f"SELECT s.id,{','.join('s.' + f for f in _ALL_FIELDS)}, f.file_name AS file, f.library, f.catno AS file_catno, "
+        f"SELECT s.id,{','.join('s.' + f for f in _ALL_FIELDS)}, s.quelle, f.file_name AS file, f.library, f.catno AS file_catno, "
         "f.track_number AS file_track_number, f.version AS file_version, f.isrc AS file_isrc, "
         "f.duration_sec AS file_duration_sec, f.sublibrary, f.labelcode AS file_labelcode, f.labelname AS file_labelname, "
         "f.album AS file_album, f.label_geliefert AS file_label_geliefert "
@@ -336,7 +341,7 @@ def find_by_file(con: sqlite3.Connection, name: str) -> dict | None:
         eid = _edit_id(name)
         if eid:
             r = con.execute(
-                f"SELECT s.id,{','.join('s.' + f for f in _ALL_FIELDS)}, f.file_name AS file, f.library, f.catno AS file_catno, "
+                f"SELECT s.id,{','.join('s.' + f for f in _ALL_FIELDS)}, s.quelle, f.file_name AS file, f.library, f.catno AS file_catno, "
                 "f.track_number AS file_track_number, f.version AS file_version, f.isrc AS file_isrc, "
                 "f.duration_sec AS file_duration_sec, f.sublibrary, f.labelcode AS file_labelcode, "
                 "f.labelname AS file_labelname, f.album AS file_album, f.label_geliefert AS file_label_geliefert "
@@ -382,6 +387,34 @@ def _num(v) -> float | None:
         return None
 
 
+def normalize_stored_isrcs(con: sqlite3.Connection) -> int:
+    """Gespeicherte ISRCs mit Bindestrichen, Leerzeichen oder Kleinbuchstaben in die Datenform (12-stellig) bringen,
+    songs und library_files; ungültige bleiben, wie sie sind. Idempotent; Rückgabe: geänderte Zeilen."""
+    n = 0
+    for table, key in (("songs", "id"), ("library_files", "file")):
+        rows = con.execute(f"SELECT {key}, isrc FROM {table} WHERE isrc GLOB '*[^A-Z0-9]*'").fetchall()
+        fixed = [(isrc_plain(r[1]), r[0]) for r in rows if isrc_plain(r[1]) != r[1]]
+        con.executemany(f"UPDATE {table} SET isrc=? WHERE {key}=?", fixed)
+        n += len(fixed)
+    if n:
+        con.commit()
+    return n
+
+
+def apply_label_name_fixes(con: sqlite3.Connection, fixes: dict[str, tuple[str, str]]) -> int:
+    """Namenskorrekturen der GVL-Quelle (reconcile.csv_io.read_name_fixes) auf gespeicherte Labelnamen: songs und
+    library_files, nur wo Code UND alter Name passen. Idempotent; Rückgabe: geänderte Zeilen."""
+    n = 0
+    for code, (old, new) in fixes.items():
+        codes = (code, "LC" + code)
+        for table in ("songs", "library_files"):
+            n += con.execute(f"UPDATE {table} SET labelname=? WHERE labelname=? AND labelcode IN (?,?)",
+                             (new, old, *codes)).rowcount
+    if n:
+        con.commit()
+    return n
+
+
 def import_library_tracks(con: sqlite3.Connection, rows: list[dict], *, library: str, date_verified: str) -> dict:
     """Library-Lieferung einpflegen (Metadaten aus Libraries gelten als verifiziert).
     Je Zeile: upsert in songs (quelle library:<name>, review_status verified, source_type library,
@@ -413,7 +446,7 @@ def import_library_tracks(con: sqlite3.Connection, rows: list[dict], *, library:
                         "version, isrc, duration_sec, sublibrary, labelcode, labelname, album, edit_id, label_geliefert) "
                         "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                         (_file_key(fname), fname, song_id, library, r.get("catno", ""), r.get("track_number", ""),
-                         r.get("version", ""), r.get("isrc", ""), dur, r.get("sublibrary", ""), _lc_store(r.get("labelcode")),
+                         r.get("version", ""), isrc_plain(r.get("isrc", "")), dur, r.get("sublibrary", ""), _lc_store(r.get("labelcode")),
                          r.get("labelname", ""), r.get("album", ""),
                          (r.get("edit_id") or "").strip() or _edit_id(fname), r.get("label_geliefert", "")))
             rep["files"] += 1
@@ -524,6 +557,14 @@ def _where(query: str, missing: str) -> tuple[str, tuple]:
             clauses.append("(labelcode IN (?, ?) OR labelcode LIKE ? OR labelcode LIKE ?)")
             args += [code, "LC" + code, "LC" + digits + "%", digits + "%"]
             continue
+        if word.isdigit() and 3 <= len(word) <= 6:
+            # Nackte Zahl („7552“): im Labelcode nur der genaue Code (LC07552, nicht LC17552), in den übrigen
+            # Feldern weiter als Teilwort (Titel „1999“, GEMA-Werknummer)
+            code = normalize_labelcode(word)
+            other = " ".join(c for c in _FTS_COLS if c != "labelcode")
+            clauses.append("(labelcode IN (?, ?) OR id IN (SELECT rowid FROM songs_fts WHERE songs_fts MATCH ?))")
+            args += [code, "LC" + code, "{" + other + "} : \"" + word + "\""]
+            continue
         if len(word) >= 3:
             terms.append('"' + word.replace('"', '""') + '"')
             continue
@@ -539,6 +580,49 @@ def _where(query: str, missing: str) -> tuple[str, tuple]:
         # (eine Instrumental-Library ohne Texter zählte sonst Zehntausende Zeilen „ohne Texter“).
         clauses.append(f"COALESCE({missing},'')='' AND COALESCE(source_type,'')<>'library'")
     return ("WHERE " + " AND ".join(clauses)) if clauses else "", tuple(args)
+
+
+def _typo_distance(a: str, b: str) -> int:
+    """Editierabstand, bei dem ein Buchstabendreher als EIN Fehler zählt (optimal string alignment)."""
+    d = [[i + j if i * j == 0 else 0 for j in range(len(b) + 1)] for i in range(len(a) + 1)]
+    for i in range(1, len(a) + 1):
+        for j in range(1, len(b) + 1):
+            cost = a[i - 1] != b[j - 1]
+            d[i][j] = min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost)
+            if i > 1 and j > 1 and a[i - 1] == b[j - 2] and a[i - 2] == b[j - 1]:
+                d[i][j] = min(d[i][j], d[i - 2][j - 2] + 1)
+    return d[-1][-1]
+
+
+def suggest_query(con: sqlite3.Connection, query: str, *, min_ratio: float = 0.8) -> str:
+    """„Meintest du …?“ für eine Suche ohne Treffer: jedes Wort ab vier Zeichen, das allein nichts findet, wird
+    durch das ähnlichste Wort aus Interpret, Titel oder Label ersetzt (Kandidaten über gemeinsame Dreiergruppen
+    im Suchindex, dann der Editierabstand mit Buchstabendrehern). '' wenn nichts Passendes da ist oder auch die
+    korrigierte Suche nichts findet."""
+    words, out, changed = (query or "").split(), [], False
+    for w in words:
+        lw = w.lower()
+        if len(lw) < 4 or lw.isdigit() or _LC_WORD.match(lw) or list_songs(con, query=w, limit=1)["total"]:
+            out.append(w)
+            continue
+        tris = {lw[i:i + 3] for i in range(len(lw) - 2)}
+        match = "{interpret titel labelname} : (" + " OR ".join('"' + t.replace('"', '""') + '"' for t in tris) + ")"
+        rows = con.execute("SELECT interpret, titel, labelname FROM songs WHERE id IN "
+                           "(SELECT rowid FROM songs_fts WHERE songs_fts MATCH ? ORDER BY rank LIMIT 300)",
+                           (match,)).fetchall()
+        vocab: dict[str, str] = {}
+        for r in rows:
+            for field_value in r:
+                for tok in re.findall(r"[^\W_]+", field_value or ""):
+                    vocab.setdefault(tok.lower(), tok)
+        scored = sorted((1 - _typo_distance(lw, v) / max(len(lw), len(v)), v) for v in vocab if v != lw)
+        if scored and scored[-1][0] >= min_ratio:
+            out.append(vocab[scored[-1][1]])
+            changed = True
+        else:
+            out.append(w)
+    fixed = " ".join(out)
+    return fixed if changed and list_songs(con, query=fixed, limit=1)["total"] else ""
 
 
 def missing_counts(con: sqlite3.Connection, *, query: str = "") -> dict:
@@ -579,7 +663,7 @@ def list_songs(con: sqlite3.Connection, *, query: str = "", limit: int = 100, of
 def all_songs(con: sqlite3.Connection, *, query: str = "", missing: str = "") -> list[dict]:
     """Alle (optional gefilterten) Zeilen für den Export — keine Pagination.
     Gleiche Filterlogik wie list_songs (Suche + Lücken-Filter)."""
-    cols = ",".join(_ALL_FIELDS)
+    cols = ",".join((*_ALL_FIELDS, "quelle"))           # quelle: Herkunft im Team-Export
     where, args = _where(query, missing)
     rows = con.execute(f"SELECT {cols} FROM songs {where} ORDER BY {_ORDER}", args).fetchall()
     return [dict(r) for r in rows]
@@ -600,6 +684,8 @@ def update_song(con: sqlite3.Connection, song_id: int, fields: dict) -> dict:
     updates = {k: (v or "").strip() for k, v in fields.items() if k in EDITABLE_FIELDS}
     if "labelcode" in updates:
         updates["labelcode"] = _lc_store(updates["labelcode"])
+    if "isrc" in updates:
+        updates["isrc"] = isrc_plain(updates["isrc"])
     new_int = updates.get("interpret", cur["interpret"])
     new_tit = updates.get("titel", cur["titel"])
     if not new_int or not new_tit:
@@ -712,6 +798,7 @@ def upsert(con: sqlite3.Connection, *, interpret: str, titel: str, komponist: st
     """
     nk = _nkey(interpret, titel)
     labelcode = _lc_store(labelcode)                    # 'LC' + Ziffern, jeder Schreibweg
+    isrc = isrc_plain(isrc)                             # 12-stellig ohne Bindestriche (Datenform)
     protect_vals = {"komponist": komponist, "texter": texter, "labelname": labelname, "labelcode": labelcode,
                     "isrc": isrc, "iswc": iswc, "gema_werknummer": gema_werknummer,
                     "album": album, "track_number": track_number, "verlag": verlag}
@@ -743,3 +830,26 @@ def upsert(con: sqlite3.Connection, *, interpret: str, titel: str, komponist: st
     placeholders = ",".join("?" * len(fields))
     con.execute(f"INSERT INTO songs ({','.join(fields)}) VALUES ({placeholders})", values)
     return "inserted"
+
+
+def record_confirmation(con: sqlite3.Connection, song_id: int | None, project: str, at: str) -> None:
+    """Bestätigung eines Tracks merken (Cue übernommen, im Editor gespeichert). Ohne song_id: nichts."""
+    if song_id is None:
+        return
+    con.execute("INSERT INTO confirmations (song_id, project, at) VALUES (?,?,?)",
+                (song_id, " ".join(str(project or "").split()), at))
+    con.commit()
+
+
+def last_confirmation(con: sqlite3.Connection, song_id: int | None) -> dict | None:
+    """Letzte Bestätigung {project, at} oder None."""
+    if song_id is None:
+        return None
+    r = con.execute("SELECT project, at FROM confirmations WHERE song_id=? ORDER BY at DESC, rowid DESC LIMIT 1",
+                    (song_id,)).fetchone()
+    return {"project": r[0], "at": r[1]} if r else None
+
+
+def song_id(con: sqlite3.Connection, artist: str, title: str) -> int | None:
+    r = _match(con, artist or "", title or "")
+    return r["id"] if r else None

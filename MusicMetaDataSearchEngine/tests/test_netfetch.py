@@ -299,3 +299,25 @@ def test_fetcher_gave_up_still_serves_stale_cache(tmp_path):
     assert f("https://musicbrainz.org/old") == {"alt": 1}            # veraltet ist besser als leer
     assert f.calls == n and f.stale_hits == 1
     con.close()
+
+
+def test_discogs_answers_expire_after_six_hours_without_stale_fallback(tmp_path):
+    """Discogs-API-Bedingungen: höchstens 6 Stunden alt, Cachen nur so lange wie nötig. Andere Quellen behalten
+    die normale TTL und den Stale-Fallback; der netzfreie Eval-Lauf (max_age=None) bleibt unberührt."""
+    state = {"ok": True}
+
+    def fake_http(url, ua, headers=None):
+        return {"v": url} if state["ok"] else None
+
+    con = cache.open_cache(tmp_path / "c.db")
+    f = netfetch.Fetcher(cache_con=con, http=fake_http)
+    dc, mb = "https://api.discogs.com/releases/1", "https://musicbrainz.org/ws/2/x"
+    f(dc), f(mb)
+    _age_entry(con, dc, 7 * 3600)
+    _age_entry(con, mb, 7 * 3600)
+    state["ok"] = False
+    assert f(dc) is None and f.stale_hits == 0          # zu alt, auch nicht als Notreserve
+    assert f(mb) == {"v": mb} and f.cache_hits >= 1     # MusicBrainz: 24 h, noch frisch
+    offline = netfetch.Fetcher(cache_con=con, http=fake_http, max_age=None)
+    assert offline(dc) == {"v": dc}                     # eingefrorener Korpus: nie abgelaufen
+    con.close()

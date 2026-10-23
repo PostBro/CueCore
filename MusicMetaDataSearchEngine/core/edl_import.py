@@ -15,7 +15,7 @@ from openpyxl import Workbook
 
 from . import songsdb, watch
 from .edl import EDLEvent, dedupe_multitrack
-from .normalize import export_lc, normalize_labelcode
+from .normalize import export_lc, isrc_display, isrc_plain, normalize_labelcode
 
 
 def clip_basename(name: str) -> str:
@@ -26,8 +26,18 @@ def clip_basename(name: str) -> str:
 
 # Rechterückruf direkt nach dem LC: R-Codes müssen im Tool sichtbar sein, auch im Export.
 EXPORT_COLUMNS = ("Interpret", "Titel", "Komponist", "Texter", "Verlag", "Label", "LC", "Rechterückruf", "ISRC",
-                  "Länge Sek.")
+                  "ISWC", "GEMA-Werknr.", "Länge Sek.")
 _SUM_PAD = [""] * (len(EXPORT_COLUMNS) - 2)      # Gesamtdauer-Zeile: Leerzellen bis 'Gesamtdauer:' + Wert
+DURATION_COLUMN = "Länge Sek."                   # immer dabei: ohne Dauer ist es kein Cue-Sheet
+
+
+def export_columns(columns=None) -> list[int]:
+    """Spalten einer Export-Vorlage (D2) als Indizes in EXPORT_COLUMNS, Reihenfolge wie dort. Unbekannte Namen fallen
+    weg, die Dauer ist immer dabei. None/leer: alle Spalten."""
+    if not columns:
+        return list(range(len(EXPORT_COLUMNS)))
+    want = set(columns) | {DURATION_COLUMN}
+    return [i for i, c in enumerate(EXPORT_COLUMNS) if c in want]
 
 # Bekannte Stem-Bezeichner. Nur wenn das ABSCHLIESSENDE Segment eines Titels genau so
 # ein Wort ist, wird es als Stem-Marker entfernt (konservativ — echte Titel wie
@@ -104,22 +114,25 @@ def merge_cards(cards: list[dict], *, merge_identical: bool = False,
         else:
             g["duration_sec"] = (g.get("duration_sec", 0) or 0) + (c.get("duration_sec", 0) or 0)
             g["merged_count"] += 1
-            for k in ("labelname", "labelcode", "komponist", "texter", "verlag", "isrc"):
+            for k in ("labelname", "labelcode", "komponist", "texter", "verlag", "isrc", "iswc", "gema_werknummer"):
                 if not g.get(k) and c.get(k):
                     g[k] = c[k]
     return result
 
 
-def _export_rows(cards: list[dict]) -> tuple[list[list], int]:
+def _export_rows(cards: list[dict], *, pdf: bool = False) -> tuple[list[list], int]:
     """(Zeilen in EXPORT_COLUMNS-Reihenfolge, Gesamtdauer). Geteilt von xlsx/csv/pdf. Der LC steht immer als
-    'LC' + Ziffern, auch wenn die Karte ihn ohne Präfix trägt (Dateiname, Seed, Katalog)."""
+    'LC' + Ziffern, auch wenn die Karte ihn ohne Präfix trägt (Dateiname, Seed, Katalog). Der ISRC steht in
+    CSV/XLSX 12-stellig ohne Bindestriche (Datenform), im PDF mit Bindestrichen (schriftliche Form)."""
+    isrc = isrc_display if pdf else isrc_plain
     rows, total = [], 0
     for c in cards:
         d = c.get("duration_sec", 0) or 0
         total += d
         rows.append([c.get("artist", ""), c.get("title", ""), c.get("komponist", ""),
                      c.get("texter", ""), c.get("verlag", ""), c.get("labelname", ""),
-                     export_lc(c.get("labelcode")), c.get("rechterueckrufe") or "", c.get("isrc", ""), d])
+                     export_lc(c.get("labelcode")), c.get("rechterueckrufe") or "", isrc(c.get("isrc", "")),
+                     c.get("iswc", "") or "", c.get("gema_werknummer", "") or "", d])
     return rows, total
 
 
@@ -209,7 +222,7 @@ def inherit_from_siblings(cards: list[dict], con=None, local_fn=None) -> int:
             continue
         for c in needy:
             own_lc = c.get("labelcode") or ""
-            for k in ("labelname", "labelcode", "komponist", "texter", "verlag", "isrc"):
+            for k in ("labelname", "labelcode", "komponist", "texter", "verlag", "isrc", "iswc", "gema_werknummer"):
                 if donor.get(k) and (k in ("labelname", "labelcode") or not c.get(k)):
                     c[k] = donor[k]
             c["status"] = "sibling_hit"
@@ -378,7 +391,7 @@ def cross_check(events: list[EDLEvent], con, *, resolve_fn=None, label_lookup=No
         # ohne Cue-Dauer und ohne Autoren: Netz-Autoren sind nur Vorschlag auf der Karte
         songsdb.upsert(con, interpret=artist, titel=title,
                        labelname=resolved.get("labelname", ""), labelcode=resolved.get("labelcode", ""),
-                       isrc=resolved.get("isrc", ""), source_type="edl_import")
+                       isrc=resolved.get("isrc", ""), iswc=resolved.get("iswc", ""), source_type="edl_import")
         _take(card, resolved)
         if any(resolved.get(k) for k in ("komponist", "texter", "verlag")):
             card["author_new"] = True
@@ -389,31 +402,33 @@ def cross_check(events: list[EDLEvent], con, *, resolve_fn=None, label_lookup=No
     return results
 
 
-def export_excel(cards: list[dict], path: str | Path) -> None:
+def export_excel(cards: list[dict], path: str | Path, columns=None) -> None:
     """Excel mit Interpret/Titel/Komponist/Texter/Label/LC/ISRC +
-    Länge Sek. + Gesamtdauer-Zeile am Ende."""
+    Länge Sek. + Gesamtdauer-Zeile am Ende. columns: Spalten der Export-Vorlage (None = alle)."""
     rows, total = _export_rows(cards)
+    idx = export_columns(columns)
     wb = Workbook()
     ws = wb.active
-    ws.append(EXPORT_COLUMNS)
+    ws.append([EXPORT_COLUMNS[i] for i in idx])
     for r in rows:
-        ws.append(r)
-    ws.append([*_SUM_PAD, "Gesamtdauer:", total])
+        ws.append([r[i] for i in idx])
+    ws.append([""] * (len(idx) - 2) + ["Gesamtdauer:", total])
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     wb.save(str(path))
 
 
-def export_csv(cards: list[dict], path: str | Path) -> None:
+def export_csv(cards: list[dict], path: str | Path, columns=None) -> None:
     """Cue-Sheet als CSV (UTF-8-mit-BOM, Excel-freundlich) + Gesamtdauer-Zeile."""
     import csv
     rows, total = _export_rows(cards)
+    idx = export_columns(columns)
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", newline="", encoding="utf-8-sig") as f:
         w = csv.writer(f)
-        w.writerow(EXPORT_COLUMNS)
+        w.writerow([EXPORT_COLUMNS[i] for i in idx])
         for r in rows:
-            w.writerow(r)
-        w.writerow([*_SUM_PAD, "Gesamtdauer:", total])
+            w.writerow([r[i] for i in idx])
+        w.writerow([""] * (len(idx) - 2) + ["Gesamtdauer:", total])
 
 
 # Spaltenbreiten in Prozent, Summe 100. Ohne feste Breiten bekam ein langer Dateiname als Titel die
@@ -421,8 +436,8 @@ def export_csv(cards: list[dict], path: str | Path) -> None:
 # Leerzeichen fehlte sie ganz.
 # Die Story-Engine wertet Prozent nicht aus, nur Breiten in pt: export_pdf rechnet um.
 # Jede Kopfzeile passt fett in ihre Spalte, LC104994, R6;R9;R12;R13 und eine ISRC ohne Umbruch.
-#              Interpret Titel Komponist Texter Verlag Label  LC  RR  ISRC Länge
-_PDF_WIDTHS = (12, 18, 13, 8, 9, 9, 7, 9, 10, 5)
+#              Interpret Titel Komponist Texter Verlag Label  LC  RR  ISRC ISWC GEMA Länge
+_PDF_WIDTHS = (10, 12, 9, 6, 7, 7, 7, 9, 9, 10, 9, 5)
 assert len(_PDF_WIDTHS) == len(EXPORT_COLUMNS) and sum(_PDF_WIDTHS) == 100
 _PDF_FONT, _PDF_PAD = 8.0, 10.5             # Schriftgröße der Tabelle; Innenabstand links+rechts + Rahmen in pt
 
@@ -478,25 +493,29 @@ def _fit_break(text: str, width: float, size: float = _PDF_FONT) -> str:
     return " ".join(words)
 
 
-def export_pdf(cards: list[dict], path: str | Path) -> None:
+def export_pdf(cards: list[dict], path: str | Path, columns=None) -> None:
     """Cue-Sheet als PDF (A4 quer, PyMuPDF-Story, auto-paginiert) + Gesamtdauer."""
     import html
 
     import fitz
-    rows, total = _export_rows(cards)
+    rows, total = _export_rows(cards, pdf=True)
+    idx = export_columns(columns)
+    cols = [EXPORT_COLUMNS[i] for i in idx]
+    rows = [[r[i] for i in idx] for r in rows]
+    widths = [_PDF_WIDTHS[i] * 100 / sum(_PDF_WIDTHS[j] for j in idx) for i in idx]   # weggelassene Spalten verteilen
     media = fitz.paper_rect("a4-l")
     where = media + (36, 36, -36, -36)
     # Inhaltsbreite je Spalte in pt (Prozent der Satzbreite minus Innenabstand und Rahmen); body ohne Rand,
     # damit die Tabelle genau die Satzbreite hat.
-    inner = [pct * where.width / 100 - _PDF_PAD for pct in _PDF_WIDTHS]
-    ths = "".join(f'<th style="width:{w:.2f}pt">{html.escape(c)}</th>' for c, w in zip(EXPORT_COLUMNS, inner))
+    inner = [pct * where.width / 100 - _PDF_PAD for pct in widths]
+    ths = "".join(f'<th style="width:{w:.2f}pt">{html.escape(c)}</th>' for c, w in zip(cols, inner))
     trs = []
     for r in rows:
         # Erst umbrechen, dann escapen: andersherum koennte eine Umbruchhilfe in einer HTML-Entitaet
         # landen (&amp; und Co. tragen keine Trennzeichen, aber darauf soll sich nichts verlassen).
         tds = "".join(f"<td>{html.escape(_fit_break(str(v), w))}</td>" for v, w in zip(r, inner))
         trs.append(f"<tr>{tds}</tr>")
-    trs.append(f"<tr class='sum'><td colspan='{len(EXPORT_COLUMNS) - 1}'>Gesamtdauer</td><td>{total}</td></tr>")
+    trs.append(f"<tr class='sum'><td colspan='{len(cols) - 1}'>Gesamtdauer</td><td>{total}</td></tr>")
     style = ("<style>body{font-family:sans-serif;margin:0}h2{font-size:14pt;margin:0 0 10pt}"
              f"table{{border-collapse:collapse;width:100%;font-size:{_PDF_FONT:g}pt;table-layout:fixed}}"
              "th,td{border:0.5pt solid #999;padding:3pt 5pt;text-align:left}"

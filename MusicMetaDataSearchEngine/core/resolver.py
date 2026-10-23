@@ -12,12 +12,15 @@ import re
 from dataclasses import dataclass, field
 
 from .labelmatch import LabelIndex, match_label, norm as _lm_norm
+from .musicbrainz import primary_artist, strip_feat
+from .versions import OWN_RELEASE, detect_version, version_kind
 
 # Confidence nach Quellen-ÜBEREINSTIMMUNG:
 # MB-Score-Anteil + je unabhängiger Quelle, die denselben GVL-LC bestätigt.
 # Zwei unabhängige Bestätigungen (z.B. Discogs + Deezer) -> Auto-Confirm.
 W_MB = 0.2            # MusicBrainz-Recording-Score-Anteil (0..100)
 W_CORROB = 0.3       # je weiterer unabhängiger Quelle (Discogs, Deezer, …) auf denselben LC
+W_ISRC = 0.1         # Aufnahme exakt über den ISRC identifiziert: wiegt mehr als eine Textsuche, ersetzt keine Zweitquelle
 AUTO_CONFIRM = 0.8
 REVIEW_FLOOR = 0.5
 # Margin-Gate: liegen die zwei besten Kandidaten dichter beieinander als MARGIN, ist das ein
@@ -50,6 +53,9 @@ class ResolveResult:
     composer: str = ""
     lyricist: str = ""
     publisher: str = ""        # Musikverlag (GEMA-Seite) — getrennt vom Label (GVL-Seite)
+    iswcs: list[str] = field(default_factory=list)   # mehrere: alle zeigen, nicht raten
+    gema_werknummer: str = ""  # songs.db (verifiziert) oder, als Vorschlag, die GEMA ID am MusicBrainz-Werk
+    gema_source: str = ""      # 'songs.db' | 'musicbrainz' (Community-Daten: nur Vorschlag, bitte prüfen)
     album: str = ""
     date: str = ""
     candidates: list[Candidate] = field(default_factory=list)
@@ -62,6 +68,8 @@ class ResolveResult:
     ambiguous: bool = False    # Margin-Gate: Top-Kandidaten liegen innerhalb MARGIN -> nie auto
     tied: list[str] = field(default_factory=list)   # die gleichauf liegenden Codes, Top zuerst
     from_index: bool = False   # Treffer aus dem lokalen Track-Index (Dump-Daten, kein Netz, nie auto)
+    version: str = ""          # erkannte Version im Titel („Remix (Mark Ronson)“, „Live“), s. core/versions.py
+    version_mismatch: bool = False   # gesucht war eine Version, MusicBrainz fand nur die Originalfassung -> nie auto
 
     @property
     def best(self) -> Candidate | None:
@@ -73,22 +81,25 @@ class ResolveResult:
         if not self.candidates:
             return "no_match"
         top = self.candidates[0].confidence
-        if top >= AUTO_CONFIRM and not self.ambiguous:
+        if top >= AUTO_CONFIRM and not self.ambiguous and not self.version_mismatch:
             return "auto"
         if top >= REVIEW_FLOOR:
             return "review"
         return "review_low"
 
 
-def confidence(*, mb_score: int, corroborations: int, local_verified: bool = False) -> float:
+def confidence(*, mb_score: int, corroborations: int, local_verified: bool = False, via_isrc: bool = False) -> float:
     """Confidence aus Quellen-Übereinstimmung.
 
-    local_verified (songs.db-Treffer) = 1.0 (schon human-verifiziert). Sonst:
-    MB-Score-Anteil + W_CORROB je unabhängiger Quelle, die denselben GVL-LC bestätigt.
+    local_verified (songs.db-Treffer, auch Library-Lieferungen) = 1.0 (schon verifiziert). Sonst:
+    MB-Score-Anteil + W_CORROB je unabhängiger Quelle, die denselben GVL-LC bestätigt, + W_ISRC, wenn die
+    Aufnahme über den ISRC exakt identifiziert ist. mb_score ist 0 für Kandidaten, die MusicBrainz nicht stützt
+    (der Aufrufer entscheidet das je Kandidat): sonst bekäme ein reiner Deezer-Kandidat den MB-Anteil geschenkt.
     """
     if local_verified:
         return 1.0
-    return round(min(1.0, W_MB * (mb_score / 100.0) + W_CORROB * corroborations), 3)
+    isrc = W_ISRC if via_isrc and mb_score else 0.0
+    return round(min(1.0, W_MB * (mb_score / 100.0) + isrc + W_CORROB * corroborations), 3)
 
 
 def apply_margin_gate(res: ResolveResult, *, margin: float = MARGIN) -> ResolveResult:
@@ -233,6 +244,10 @@ def local_result(artist: str, title: str, row: dict) -> "ResolveResult":
     res.album = row.get("album", "") or ""          # verifizierte Zusatzfelder aus songs.db mitzeigen
     if row.get("isrc"):
         res.isrcs = [row["isrc"]]
+    if row.get("iswc"):
+        res.iswcs = [row["iswc"]]
+    res.gema_werknummer = row.get("gema_werknummer", "") or ""
+    res.gema_source = "songs.db" if res.gema_werknummer else ""
     code = normalize_labelcode(row.get("labelcode", "") or "")
     if code and row.get("review_status") == "review":
         # Aus einer importierten Liste, Code passt nicht zum GVL-Master: Vorschlag zur Prüfung, kein Auto
@@ -337,14 +352,35 @@ def _resolve_once(artist: str, title: str, idx: LabelIndex, *, mb_lookup, discog
     res.composer = mb.composer
     res.lyricist = mb.lyricist
     res.publisher = mb.publisher
+    res.iswcs = list(mb.iswcs)
+    if len(res.iswcs) > 1:
+        res.notes.append(f"Werk trägt {len(res.iswcs)} ISWCs ({', '.join(res.iswcs)}), bitte die richtige wählen")
+    # GEMA ID am MusicBrainz-Werk (Entscheidung 22.10.2026): Vorschlag mit Fassung, nie verifiziert
+    gema_ids = list(getattr(mb, "gema_ids", []) or [])
+    if len(gema_ids) == 1:
+        res.gema_werknummer, res.gema_source = gema_ids[0], "musicbrainz"
+        res.notes.append(f"GEMA-Werknr. {gema_ids[0]} laut MusicBrainz (Werk-Attribut), bitte prüfen")
+    elif gema_ids:
+        res.notes.append(f"Werk trägt {len(gema_ids)} GEMA-Werknummern ({', '.join(gema_ids)}), bitte die richtige wählen")
+    res.version = detect_version(title)
+    if res.version and version_kind(res.version) in OWN_RELEASE:
+        res.notes.append(f"Version erkannt: {res.version}. Label und Urheber können von der Originalfassung abweichen, bitte prüfen")
+    elif res.version:
+        res.notes.append(f"Version erkannt: {res.version}")
+    if res.version and mb.matched and mb.title and not detect_version(mb.title):
+        res.version_mismatch = True
+        res.notes.append(f"MusicBrainz fand nur die Originalfassung, nicht die Version „{res.version}“. Das Label kann abweichen, bitte prüfen")
     res.incomplete = mb.incomplete
     if mb.incomplete:
         res.notes.append("MusicBrainz-Abfrage unvollständig (Rate-Limit?) — Ergebnis evtl. lückenhaft, erneut versuchen")
     if not mb.matched:
         res.notes.append("kein MusicBrainz-Recording-Match — Zusatzquellen (Deezer/Wikidata) versucht")
 
-    dz = deezer_lookup(artist, title) if deezer_lookup else None
-    wd = wikidata_lookup(artist, title) if wikidata_lookup else None
+    # Zweitquellen ohne Gast-Credits fragen („A feat. B“, „Song (feat. B)“): sie führen den Gast wie MusicBrainz
+    # nicht im Titel bzw. nicht als Hauptinterpret, und die Suche mit dem vollen Text findet dort oft nichts.
+    qa, qt = primary_artist(artist), strip_feat(title)
+    dz = deezer_lookup(qa, qt) if deezer_lookup else None
+    wd = wikidata_lookup(qa, qt) if wikidata_lookup else None
 
     cand: dict[str, Candidate] = {}
     mb_url_for: dict[str, str] = {}
@@ -360,6 +396,7 @@ def _resolve_once(artist: str, title: str, idx: LabelIndex, *, mb_lookup, discog
             mapped_norm.add(_lm_norm(name))
 
     # MB-Labelnamen -> GVL-Code (+ Qualität / Release-Info)
+    code_country: dict[str, int] = {}
     for name in mb.label_names:
         code = match_label(name, idx)
         note_name(name, code)
@@ -368,6 +405,7 @@ def _resolve_once(artist: str, title: str, idx: LabelIndex, *, mb_lookup, discog
         c = cand.setdefault(code, Candidate(labelcode=code, label=idx.code2name.get(code, name)))
         if "gvl+musicbrainz" not in c.sources:
             c.sources.append("gvl+musicbrainz")
+        code_country[code] = max(code_country.get(code, 0), getattr(mb, "label_country", {}).get(name, 0))
         q = mb.label_quality.get(name, 0)
         if q >= c.quality:
             c.quality = q
@@ -425,7 +463,7 @@ def _resolve_once(artist: str, title: str, idx: LabelIndex, *, mb_lookup, discog
     # -> MB-Werk-Titelsuche. Titel-only ist mehrdeutig -> 'bitte prüfen'. VOR Genius: bei Covern
     # (z. B. „Hurt“) kennt das MB-Werk den Urheber (Trent Reznor), Genius nur den Interpreten der Seite.
     if work_lookup and not res.composer and not res.lyricist:
-        comp, lyr, _wurl = work_lookup(title)
+        comp, lyr, _wurl = work_lookup(qt)
         if comp or lyr:
             res.composer, res.lyricist = comp, lyr
             res.notes.append("Autoren aus MusicBrainz-Werk-Titelsuche (Cover/Neuaufnahme) — bitte prüfen")
@@ -435,7 +473,7 @@ def _resolve_once(artist: str, title: str, idx: LabelIndex, *, mb_lookup, discog
     # (genius.pick_hit), sonst nichts. Genius kennt nur „Written by", keine Trennung Komponist/Texter
     # -> beide Felder gleich, Note + Quellenlink.
     if genius_lookup and not res.composer and not res.lyricist:
-        g = genius_lookup(artist, title)
+        g = genius_lookup(qa, qt)
         if g and g.writers:
             names = "; ".join(g.writers)
             res.composer, res.lyricist = names, names
@@ -447,7 +485,12 @@ def _resolve_once(artist: str, title: str, idx: LabelIndex, *, mb_lookup, discog
     for code, c in cand.items():
         corrob = sum(1 for s in c.sources if s != "gvl+musicbrainz")
         c.dual_source = corrob >= 1
-        c.confidence = confidence(mb_score=mb.score, corroborations=corrob)
+        # Gewichten statt zählen: der MB-Anteil („das ist unsere Aufnahme“, dazu der ISRC-Bonus) gilt nur für
+        # Kandidaten, die an DIESER Aufnahme hängen: MB-Release oder Discogs-Release aus den Links der MB-Aufnahme.
+        # Ein Label, das nur Deezer (oder Wikidata) nennt, bestätigt mit, steht aber nicht allein auf dem MB-Anteil:
+        # im Eval-Korpus lag ein solcher Kandidat 14-mal falsch und einmal richtig (22.10.2026).
+        backed = "gvl+musicbrainz" in c.sources or "discogs" in c.sources
+        c.confidence = confidence(mb_score=mb.score if backed else 0, corroborations=corrob, via_isrc=res.via_isrc)
         urls = []
         if mb_url_for.get(code):
             urls.append({"name": "MusicBrainz", "url": mb_url_for[code]})
@@ -462,6 +505,12 @@ def _resolve_once(artist: str, title: str, idx: LabelIndex, *, mb_lookup, discog
     # Ranking: Confidence zuerst, dann Release-Qualität, dann Code — und Gleichstand melden
     res.candidates = sorted(cand.values(), key=lambda c: (-c.confidence, -c.quality, c.labelcode))
     apply_margin_gate(res)
+    # DE/EU gewinnt, internationale Labels gelten aber (Regel): kommt das gewählte Label nur aus Veröffentlichungen
+    # außerhalb Deutschlands und Europas, steht das sichtbar am Ergebnis.
+    top = res.candidates[0] if res.candidates else None
+    if top and top.labelcode in code_country and code_country[top.labelcode] < 2:
+        res.notes.append(f"Keine deutsche oder europäische Veröffentlichung gefunden: {top.label} stammt aus einer "
+                         "internationalen Veröffentlichung, bitte prüfen")
 
     # never-empty: Labelnamen, die gefunden, aber KEINEM GVL-Code zuordenbar waren,
     # als Hinweis mitgeben (dedupliziert, Reihenfolge stabil).

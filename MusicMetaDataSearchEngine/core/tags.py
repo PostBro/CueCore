@@ -6,7 +6,9 @@ Dispatch nach Dateiendung passiert intern — nichts außerhalb dieses Moduls
 muss wissen, welches Format gerade bearbeitet wird.
 
 Mapping-Realität (aus dem mutagen-Quellcode verifiziert, nicht geraten):
-- MP3: ID3v2.4 direkt (TPE1/TIT2/TALB/TPUB/TCOM/TEXT/TXXX:LC/TXXX:ISRC).
+- MP3: ID3v2.4 direkt (TPE1/TIT2/TALB/TPUB/TCOM/TEXT/TXXX:LC). ISRC steht im Standard-Frame TSRC
+  (ID3v2.3 und v2.4); ältere Dateien tragen ihn als TXXX:ISRC. Lesen: TSRC zuerst, TXXX:ISRC als
+  Rückfall. Schreiben: TSRC, ein vorhandenes TXXX:ISRC bekommt denselben Wert (kein Widerspruch).
 - WAV und AIFF: tragen eine echte ID3-Chunk (`mutagen.wave.WAVE(...).tags` ist eine
   `mutagen.id3.ID3`-Instanz) — exakt dieselben Frames wie MP3.
 - FLAC: Vorbis-Kommentare, laut mutagen komplett freiform (keine feste
@@ -26,12 +28,14 @@ tagging.apply() mit confirm=True aufgerufen, nie blind.
 from __future__ import annotations
 from pathlib import Path
 
-from mutagen.id3 import ID3, TIT2, TALB, TCOM, TEXT, TPE1, TPUB, TXXX
+from mutagen.id3 import ID3, TIT2, TALB, TCOM, TEXT, TPE1, TPUB, TSRC, TXXX
 from mutagen.id3 import ID3NoHeaderError
 from mutagen.wave import WAVE
 from mutagen.aiff import AIFF
 from mutagen.flac import FLAC
 from mutagen.mp4 import MP4, MP4FreeForm, AtomDataType
+
+from .normalize import isrc_plain
 
 # internes Feld -> ID3-Frame (einfache Textframes) — MP3 + WAV
 _SIMPLE = {"artist": TPE1, "title": TIT2, "album": TALB, "label": TPUB,
@@ -97,6 +101,8 @@ def _extract_id3(id3: ID3) -> dict:
         for field, desc in _TXXX.items():
             if f.desc == desc:
                 out[field] = str(f)
+    if str(id3.get("TSRC", "")).strip():
+        out["isrc"] = str(id3["TSRC"])                # Standard-Frame gewinnt vor TXXX:ISRC
     return out
 
 
@@ -104,10 +110,13 @@ def _apply_id3_fields(id3: ID3, tags: dict) -> None:
     for field, frame in _SIMPLE.items():
         if tags.get(field):
             id3.setall(frame.__name__, [frame(encoding=3, text=tags[field])])
-    for field, desc in _TXXX.items():
-        if tags.get(field):
-            id3.delall(f"TXXX:{desc}")
-            id3.add(TXXX(encoding=3, desc=desc, text=tags[field]))
+    if tags.get("lc"):
+        id3.delall("TXXX:LC")
+        id3.add(TXXX(encoding=3, desc="LC", text=tags["lc"]))
+    if tags.get("isrc"):
+        id3.setall("TSRC", [TSRC(encoding=3, text=tags["isrc"])])
+        if id3.getall("TXXX:ISRC"):
+            id3.setall("TXXX:ISRC", [TXXX(encoding=3, desc="ISRC", text=tags["isrc"])])
 
 
 # --- Vorbis (FLAC) ---
@@ -178,6 +187,8 @@ def read_tags(path: str | Path) -> dict:
 def write_tags(path: str | Path, tags: dict, *, v24: bool = True) -> None:
     """Schreibt die gegebenen Felder. Nur übergebene Felder werden gesetzt."""
     path = Path(path)
+    if tags.get("isrc"):
+        tags = {**tags, "isrc": isrc_plain(tags["isrc"])}   # im Tag die Datenform, 12-stellig ohne Bindestriche
     fmt = _format(path)
     if fmt == "vorbis":
         audio = FLAC(str(path))
@@ -224,5 +235,6 @@ def restore_tags(path: str | Path, old_tags: dict) -> None:
         id3.delall(frame.__name__)
     for desc in _TXXX.values():
         id3.delall(f"TXXX:{desc}")
+    id3.delall("TSRC")
     _apply_id3_fields(id3, old_tags)
     id3.save(str(path), v2_version=4)

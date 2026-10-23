@@ -110,6 +110,13 @@ class LabelIndex:
     # norm(name) bzw. strip_generic davon -> Code. Nur GVL-geprüfte Codes, nur eindeutige Schlüssel.
     # Dritte Quelle NACH GVL-Master und ALIASES — greift erst, wenn der Master nichts hergibt.
     mb_alias: dict[str, str] = field(default_factory=dict)
+    # Gelernte Korrekturen dieser Installation (label_aliases_user.csv im Datenordner, s. learn_user_alias): ein
+    # Labelname aus der Datei, den der Master nicht kennt, und der Code, den der Mensch dafür bestätigt hat.
+    # Vierte Quelle, nach dem Master und den MusicBrainz-Aliassen; löst nie einen 1:n-Namen auf.
+    user_alias: dict[str, str] = field(default_factory=dict)
+    # LC-Korrekturen aus der Label-Datenbank (label_edits.json, core/labeledits): norm(name) -> Code. Ausdrückliche
+    # Entscheidung des Menschen mit Notiz — gewinnt deshalb vor dem Master und den ALIASES.
+    name_fix: dict[str, str] = field(default_factory=dict)
 
 
 def build_index(rows: Iterable[tuple]) -> LabelIndex:
@@ -165,6 +172,20 @@ def attach_library_prefixes(idx: LabelIndex, path) -> int:
     return len(idx.prefix2code)
 
 
+def attach_delivery_prefixes(idx: LabelIndex, path) -> int:
+    """data/library_prefixes_lieferungen.csv (aus den Lieferungen gelernte Kürzel, librarytracks.delivery_prefixes)
+    dazuhängen: nur Kürzel, die die gepflegten Listen nicht schon führen, nur Codes im Index. Rückgabe: Anzahl."""
+    from .catalog import load_library_prefixes
+    names = {"apl": "APL Music", "ripcue": "RipCue Music", "cezame": "Cezame"}   # nennbare Partner, sonst neutral
+    n = 0
+    for k, v in load_library_prefixes(path).items():
+        if k not in idx.prefix2code and v["labelcode"] in idx.code2name:
+            partner = names.get(v["library"].lower(), "")
+            idx.prefix2code[k] = {**v, "library": f"Lieferung {partner}" if partner else "aus Lieferung"}
+            n += 1
+    return n
+
+
 def attach_mb_aliases(idx: LabelIndex, path) -> int:
     """data/label_aliases_mb.csv in den Index hängen — nur Codes, die der Index kennt. Schlüssel sind
     norm(name) und strip_generic davon; zeigt ein Schlüssel auf mehrere Codes, fliegt er (nicht raten).
@@ -186,6 +207,47 @@ def attach_mb_aliases(idx: LabelIndex, path) -> int:
                     keys.setdefault(k, set()).add(code)
     idx.mb_alias = {k: next(iter(v)) for k, v in keys.items() if len(v) == 1}
     return len(idx.mb_alias)
+
+
+USER_ALIAS_COLUMNS = ("name", "labelcode", "quelle", "datum")
+
+
+def attach_user_aliases(idx: LabelIndex, path) -> int:
+    """label_aliases_user.csv in den Index hängen: nur Codes, die der Index kennt; der jüngste Eintrag je Name
+    gilt (die Korrektur einer Korrektur). Fehlt die Datei -> leer. Rückgabe: Anzahl Schlüssel."""
+    import csv
+    idx.user_alias = {}
+    p = Path(path)
+    if not p.exists():
+        return 0
+    with open(p, newline="", encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            code = (row.get("labelcode") or "").strip()
+            n = norm(row.get("name") or "")
+            if n and code in idx.code2name:
+                idx.user_alias[n] = code
+    return len(idx.user_alias)
+
+
+def learn_user_alias(path, idx: LabelIndex, name: str, code: str, *, quelle: str, datum: str) -> bool:
+    """Eine manuelle Label-Korrektur merken: `name` (z.B. das Label aus dem Datei-Tag) -> bestätigter `code`. Nur wenn
+    der Master den Namen nicht selbst eindeutig auflöst und kein 1:n-Name ist (dort entscheidet die Pressung, nicht
+    ein früherer Fall), und nur für Codes im Index. Schreibt eine Zeile in die CSV und aktualisiert den Index."""
+    import csv
+    n = norm(name)
+    if not n or code not in idx.code2name or norm(idx.code2name[code]) == n or idx.user_alias.get(n) == code:
+        return False
+    if n in idx.full or strip_generic(n) in idx.full or n in idx.stripped:   # der Master kennt den Namen: er gilt
+        return False
+    p = Path(path)
+    new = not p.exists()
+    with open(p, "a", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        if new:
+            w.writerow(USER_ALIAS_COLUMNS)
+        w.writerow([name.strip(), code, quelle, datum])
+    idx.user_alias[n] = code
+    return True
 
 
 def catalog_lookup(prefix: str, idx: LabelIndex) -> tuple[str, str]:
@@ -279,6 +341,8 @@ def _major_imprint_override(sn: str, exact_code: str, idx: LabelIndex) -> str | 
 def match_label(label: str, idx: LabelIndex) -> str | None:
     """Offizieller Labelcode (String, ohne 'LC') oder None (uneindeutig / kein Treffer)."""
     n = norm(label)
+    if n in idx.name_fix:
+        return idx.name_fix[n]
     sn = strip_generic(n)
     if n in ALIASES:
         return ALIASES[n]
@@ -303,6 +367,9 @@ def match_label(label: str, idx: LabelIndex) -> str | None:
     # Dritte lokale Quelle: MusicBrainz-Namen/-Aliasse (nur GVL-geprüfte Codes, s. attach_mb_aliases) —
     # erst jetzt, wenn der GVL-Master selbst nichts hergibt; ein GVL-Treffer wird nie überstimmt.
     code = idx.mb_alias.get(n) or idx.mb_alias.get(sn)
+    if code:
+        return code
+    code = idx.user_alias.get(n)            # gelernte Korrektur dieser Installation
     if code:
         return code
     # Fallback 1: uneindeutiges Universal (auch UME) -> Universal Sammellabel

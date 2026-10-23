@@ -295,10 +295,11 @@ def test_resolve_local_hit_surfaces_album_and_isrc(tmp_path):
     _setup(tmp_path)
     songsdb.upsert(appmod.SONGS_CON, interpret="Zzz Local", titel="Verified Song",
                    labelname="Decca", labelcode="LC00171",
-                   album="Debut Album", isrc="GBUM71501189")
+                   album="Debut Album", isrc="GBUM71501189", iswc="T-000.000.001-0", gema_werknummer="10000001-001")
     appmod.SONGS_CON.commit()
     j = client.post("/api/resolve", json={"artist": "Zzz Local", "title": "Verified Song"}).json()
     assert j["local"] is True and j["album"] == "Debut Album" and j["isrcs"] == ["GBUM71501189"]
+    assert j["iswcs"] == ["T-000.000.001-0"] and j["gema_werknummer"] == "10000001-001"   # GEMA-Werknr. kommt wieder
 
 
 # --- Resolver-Merge (DB vs. Netz, Feld-Konflikte) ---
@@ -1362,7 +1363,8 @@ def test_edl_resolve_cues_batches_write_flywheel_and_skip_unidentified(tmp_path,
     from core import songsdb
     _setup(tmp_path)
     monkeypatch.setattr(appmod, "_edl_resolve_fn", lambda a, t: (
-        {"labelname": "Atlantic", "labelcode": "00121", "komponist": "C", "texter": "L", "verlag": "V", "isrc": "X1"}
+        {"labelname": "Atlantic", "labelcode": "00121", "komponist": "C", "texter": "L", "verlag": "V", "isrc": "X1",
+         "iswc": "T-000.000.001-0", "band": "review", "confidence": 0.5}
         if a == "Birdy" else None))
     j = client.post("/api/edl/resolve-cues", json={"cues": [
         {"clip_name": "birdy.wav", "artist": "Birdy", "title": "Skinny Love", "duration_sec": 20},
@@ -1374,6 +1376,7 @@ def test_edl_resolve_cues_batches_write_flywheel_and_skip_unidentified(tmp_path,
     assert e[1]["status"] == "unresolved" and e[2]["status"] == "missing_no_resolver"
     hit = songsdb.find(appmod.SONGS_CON, "Birdy", "Skinny Love")
     assert hit["labelcode"] == "LC00121" and not hit["verlag"] and hit["source_type"] == "edl_import"   # LC-Präfix; Netz-Verlag nur Vorschlag
+    assert hit["iswc"] == "T-000.000.001-0" and e[0]["band"] == "review"   # ISWC gespeichert, Band für die Ampel
 
 
 def test_edl_resolve_cues_does_not_store_cue_duration(tmp_path, monkeypatch):
@@ -2149,8 +2152,8 @@ def test_intake_apply_rolls_back_tags_when_move_fails(tmp_path, monkeypatch):
     monkeypatch.setattr(appmod.tagging.shutil, "move", boom)
     r = client.post("/api/intake/apply", json={"path": str(src), "artist": "Alanis", "title": "Thank You",
                                               "labelcode": "00121", "confirm": True})
-    assert r.status_code == 500 and "Verschieben fehlgeschlagen" in r.json()["detail"], r.text
-    assert "zurückgesetzt" in r.json()["detail"]
+    assert r.status_code == 500 and "Datei konnte nicht verschoben werden" in r.json()["detail"], r.text
+    assert "Die Tags sind wieder wie vorher" in r.json()["detail"]
     assert src.exists() and dict(tags.read_tags(src)) == before             # Tags wieder wie vorher, kein LC
 
 
@@ -2163,7 +2166,7 @@ def test_unhandled_error_is_json_with_detail(monkeypatch):
     from fastapi.testclient import TestClient
     c = TestClient(app, raise_server_exceptions=False)
     r = c.post("/api/db/song", json={"fields": {"interpret": "X", "titel": "Y"}})
-    assert r.status_code == 500 and r.json()["detail"] == "RuntimeError: kaputt"
+    assert r.status_code == 500 and r.json()["detail"].startswith("Unerwarteter Fehler (RuntimeError: kaputt). Erneut versuchen")
 
 
 def test_exports_go_through_save_download_helper():
@@ -2600,3 +2603,178 @@ def test_start_removes_leftovers_of_an_interrupted_index_download(tmp_path, monk
     monkeypatch.setitem(appmod._INDEX_DL, "state", "idle")
     appmod.configure(db)
     assert not (tmp_path / "track_index.db.part").exists()
+
+
+def test_intake_apply_learns_unknown_tag_label_as_alias(tmp_path, monkeypatch):
+    """C7: Trägt die Datei ein Label, das der Master nicht kennt, und der Mensch bestätigt einen Code, kennt der
+    Index den Namen danach (label_aliases_user.csv im Datenordner, überlebt den Neustart). Ein Name, den der Master
+    selbst kennt, wird nie umgelernt. Testwerte frei erfunden."""
+    from core.labelmatch import match_label
+    _setup(tmp_path)
+    monkeypatch.setattr(appmod.settings, "SETTINGS_PATH", tmp_path / "settings.json")
+    appmod.settings.set_paths({"lc_verified_dir": str(tmp_path / "LC verified")})
+    src = tmp_path / "a.mp3"
+    src.write_bytes(b"")
+    tags.write_tags(src, {"artist": "Zzq", "title": "Nordwand", "label": "Zzq Hausmusik"})
+    assert match_label("Zzq Hausmusik", appmod.INDEX) is None
+    j = client.post("/api/intake/apply", json={"path": str(src), "artist": "Zzq", "title": "Nordwand",
+                                                "labelcode": "00121", "confirm": True}).json()
+    assert j["alias_learned"] is True and match_label("Zzq Hausmusik", appmod.INDEX) == "00121"
+    appmod.configure(tmp_path / "labels.db")                                   # Neustart: aus der CSV
+    assert match_label("Zzq Hausmusik", appmod.INDEX) == "00121"
+    other = tmp_path / "b.mp3"
+    other.write_bytes(b"")
+    tags.write_tags(other, {"artist": "Zzq", "title": "Zweites", "label": "Atlantic"})
+    j = client.post("/api/intake/apply", json={"path": str(other), "artist": "Zzq", "title": "Zweites",
+                                                "labelcode": "10192", "confirm": True}).json()
+    assert j["alias_learned"] is False and match_label("Atlantic", appmod.INDEX) == "00121"
+
+
+def test_db_song_speichern_ergaenzt_den_code_ueber_den_eindeutigen_labelnamen(tmp_path):
+    """Regel 23.10.2026: eindeutiger GVL-Labelname -> Code ohne Extraschritt, schon beim Speichern."""
+    from core import songsdb
+    _setup_split_codes(tmp_path)
+    appmod.SONGS_CON = songsdb.open(tmp_path / "songs.db")
+    r = client.post("/api/db/song", json={"fields": {"interpret": "Erika Testerin", "titel": "Nordwand", "labelname": "Mom & Pop"}})
+    assert r.status_code == 200, r.text
+    assert (r.json()["fields"]["labelcode"], r.json()["fields"]["labelname"]) == ("LC24584", "MOM & POP")
+    sid = client.post("/api/db/song", json={"fields": {"interpret": "Erika Testerin", "titel": "Südhang"}}).json()["id"]
+    up = client.post(f"/api/db/song/{sid}", json={"fields": {"labelname": "Lumas Records"}}).json()
+    assert up["fields"]["labelcode"] == "LC00100"
+
+
+def test_eingebauter_partnerzugang_wird_ohne_eigene_zugangsdaten_gefragt(tmp_path, monkeypatch):
+    """Profil mit `partner`: die Track-API läuft ohne Einträge in den Einstellungen, die Quelle trägt den Namen aus dem
+    Profil; die Einstellungen zeigen ihn ohne Host, Client-ID und Secret. Testwerte erfunden."""
+    import json
+    _setup(tmp_path)
+    prof = dict(json.loads(appmod.trackmeta.os.environ[appmod.trackmeta.PROFILE_ENV]),
+                partner={"name": "Zzq Library", "host": "zzq.example", "client_id": "7", "client_secret": "geheim-zzq"})
+    monkeypatch.setenv(appmod.trackmeta.PROFILE_ENV, json.dumps(prof))
+    monkeypatch.setattr(appmod.settings, "partners", lambda *a, **kw: [])
+    appmod._TRACKMETA_CLIENTS.clear()
+    seen = []
+    monkeypatch.setattr(appmod.trackmeta, "lookup", lambda names, *, client: (seen.append(client.client_id), _lookup_ok([
+        {"fileName": "a.mp3", "query_filename": "a.mp3", "matched": True, "labelcode_raw": "00121", "labelname": "",
+         "titel": "A", "source": "trackmeta"}]))[1])
+    j = client.post("/api/edl/trackmeta-scan", json={"cues": [{"fileName": "a.mp3"}]}).json()
+    assert seen == ["7"] and j["entries"][0]["partner"] == "Zzq Library"
+    view = client.get("/api/settings").json()
+    assert view["partners"] == [{"id": "builtin", "name": "Zzq Library", "host": "", "client_id": "", "secret_set": True,
+                                 "complete": True, "builtin": True}]
+    assert view["configured"]["trackmeta"] is True and "geheim-zzq" not in json.dumps(view)
+
+
+def test_index_laedt_beim_ersten_start_von_selbst_ausser_nach_abbruch(tmp_path, monkeypatch):
+    """Entscheidung 23.10.2026: kein vergessener Download. Ohne Index startet der Download von selbst
+    (auto=True); nach einem Abbruch nicht mehr, bis jemand ihn von Hand startet. Mit Index oder in Tests nie."""
+    _setup(tmp_path)
+    started = []
+    monkeypatch.setattr(appmod, "index_download_start", lambda: started.append(1) or {})
+    monkeypatch.delenv("CUECORE_SKIP_INDEX_AUTOLOAD")
+    monkeypatch.setattr(appmod.settings, "SETTINGS_PATH", tmp_path / "settings.json")
+    assert appmod._autostart_index_download() is True and started == [1] and appmod._INDEX_DL["auto"] is True
+    appmod.settings.set_flag(appmod.INDEX_AUTOLOAD_KEY, "aus")
+    assert appmod._autostart_index_download() is False
+    appmod.settings.set_flag(appmod.INDEX_AUTOLOAD_KEY, "")
+    (tmp_path / "track_index.db").write_bytes(b"")
+    assert appmod._autostart_index_download() is False
+    monkeypatch.setenv("CUECORE_SKIP_INDEX_AUTOLOAD", "1")
+    (tmp_path / "track_index.db").unlink()
+    assert appmod._autostart_index_download() is False and started == [1]
+
+
+def test_index_abbruch_merkt_sich_die_absage_start_von_hand_hebt_sie_auf(tmp_path, monkeypatch):
+    _setup(tmp_path)
+    monkeypatch.setattr(appmod.settings, "SETTINGS_PATH", tmp_path / "settings.json")
+    monkeypatch.setattr(appmod.indexdownload, "install", lambda d, *, cancel, **kw: (_ for _ in ()).throw(appmod.indexdownload.Cancelled()))
+    client.post("/api/index/download")
+    client.post("/api/index/download/cancel")
+    _wait_index_download()
+    assert appmod.settings.get(appmod.INDEX_AUTOLOAD_KEY) == "aus"
+    client.post("/api/index/download")
+    _wait_index_download()
+    assert appmod.settings.get(appmod.INDEX_AUTOLOAD_KEY) == ""
+
+
+def test_zuletzt_bestaetigt_mit_projekt_an_db_cues_und_nie_im_seed(tmp_path):
+    """D15: Übernehmen/Speichern aus dem Cue-Sheet merkt Datum und Projekt; der nächste Import zeigt es am DB-Cue.
+    Die Projektnamen stehen in einer eigenen Tabelle, nicht in songs (refresh_seed kopiert songs-Spalten)."""
+    from core import songsdb
+    _setup(tmp_path)
+    r = client.post("/api/db/verify", json={"interpret": "Erika Testerin", "titel": "Nordwand", "labelcode": "LC00121",
+                                            "project": "Testprojekt Folge 1"})
+    assert r.status_code == 200, r.text
+    edl = "001  AX  AA  C  00:00:00:00 00:00:05:00 00:00:00:00 00:00:05:00\n* FROM CLIP NAME: Erika Testerin - Nordwand.mp3\n"
+    card = client.post("/api/edl/import", json={"content": edl, "online": False}).json()["cards"][0]
+    assert card["status"] == "found_in_db" and card["confirmed_project"] == "Testprojekt Folge 1" and card["confirmed_at"]
+    cols = {r[1] for r in appmod.SONGS_CON.execute("PRAGMA table_info(songs)")}
+    assert not any("project" in c or "confirm" in c for c in cols)
+    # Track-Datenbank-Tab ohne Projekt: keine Bestätigung aufgezeichnet
+    sid = client.post("/api/db/song", json={"fields": {"interpret": "Erika Testerin", "titel": "Südhang"}}).json()["id"]
+    assert songsdb.last_confirmation(appmod.SONGS_CON, sid) is None
+    client.post(f"/api/db/song/{sid}", json={"fields": {"komponist": "Hans Zimm"}, "project": "Testprojekt Folge 2"})
+    assert songsdb.last_confirmation(appmod.SONGS_CON, sid)["project"] == "Testprojekt Folge 2"
+
+
+def test_projekte_api_speichert_im_datenordner(tmp_path):
+    _setup(tmp_path)
+    meta = client.post("/api/projects", json={"name": "Testprojekt", "cards": [{"title": "Nordwand"}],
+                                              "summary": {"cues": 1, "ok": 1}}).json()
+    assert (tmp_path / "projects" / f"{meta['id']}.json").exists()
+    assert client.get("/api/projects").json()["projects"][0]["name"] == "Testprojekt"
+    assert client.get(f"/api/projects/{meta['id']}").json()["cards"] == [{"title": "Nordwand"}]
+    assert client.get("/api/projects/..%2Fsongs").status_code == 404
+    assert client.delete(f"/api/projects/{meta['id']}").json()["deleted"] is True
+    assert client.get(f"/api/projects/{meta['id']}").status_code == 404
+
+
+def test_team_export_und_import_ueber_die_api(tmp_path):
+    import base64
+    from core import songsdb
+    _setup(tmp_path)
+    appmod.SONGS_CON = songsdb.open(tmp_path / "songs.db")
+    client.post("/api/db/song", json={"fields": {"interpret": "Erika Testerin", "titel": "Nordwand", "labelcode": "LC00121"}})
+    r = client.get("/api/db/export", params={"fmt": "team"})
+    assert r.status_code == 200 and "Geprüft am" in r.content.decode("utf-8-sig").splitlines()[0]
+    appmod.SONGS_CON = songsdb.open(tmp_path / "andere.db")
+    body = {"filename": "cuecore_team.csv", "content_b64": base64.b64encode(r.content).decode()}
+    pre = client.post("/api/ingest/upload", json={**body, "commit": False}).json()
+    assert pre["team"] is True and pre["new"] == pre["rows"] >= 1 and pre["committed"] is False
+    assert songsdb.find_row(appmod.SONGS_CON, "Erika Testerin", "Nordwand") is None
+    done = client.post("/api/ingest/upload", json={**body, "commit": True}).json()
+    assert done["committed"] is True and songsdb.find_row(appmod.SONGS_CON, "Erika Testerin", "Nordwand")["labelcode"] == "LC00121"
+
+
+def test_beispielprojekt_einmal_aus_partner_lieferungen(tmp_path, monkeypatch):
+    """D19: beim ersten Start ein Beispielprojekt aus Library-Lieferungen (erfundener Projektname), einmal je
+    Installation; gelöscht bleibt gelöscht; ohne Lieferungen keins."""
+    from core import librarytracks, projects, songsdb
+    _setup_split_codes(tmp_path)
+    monkeypatch.setattr(appmod.settings, "SETTINGS_PATH", tmp_path / "settings.json")
+    appmod.SONGS_CON = songsdb.open(tmp_path / "songs.db")
+    assert appmod._ensure_example_project() is None                       # noch keine Lieferung
+    rows = [{"file": f"ZZQ_APL_{i}.mp3", "library": "apl", "sublibrary": "MOM & POP", "labelcode": "24584",
+             "title": f"Nordwand {i}", "composers": "Erika Testerin"} for i in (1, 2, 3)]
+    songs, _ = librarytracks.to_song_rows(rows, {"24584": "MOM & POP"}.get)
+    songsdb.import_library_tracks(appmod.SONGS_CON, songs, library="apl", date_verified="2026-10-23")
+    meta = appmod._ensure_example_project()
+    assert meta["name"] == "Beispiel: Dokumentation Nordwand" and meta["summary"]["cues"] == 2   # zwei je Library
+    doc = projects.load(tmp_path, meta["id"])
+    assert all(c["status"] == "found_in_db" and c["matched_by"] == "file" and c["labelcode"] for c in doc["cards"])
+    assert meta["summary"]["library_sec"] == meta["summary"]["total_sec"] > 0
+    projects.delete(tmp_path, meta["id"])
+    assert appmod._ensure_example_project() is None                       # gelöscht bleibt gelöscht
+
+
+def test_kuerzel_ohne_festen_code_kommt_als_suchhinweis_an_die_karte(tmp_path, monkeypatch):
+    """Ein Clip, dessen Kürzel nur in der Hinweisliste steht (Listen uneinig), bekommt die Kandidaten als Hinweis,
+    aber keinen Labelcode."""
+    _setup_split_codes(tmp_path)
+    monkeypatch.setattr(appmod, "_PREFIX_HINTS", {"ZQX": [{"labelcode": "24584", "label": "MOM & POP", "sources": "Liste A"},
+                                                         {"labelcode": "00100", "label": "LUMAS RECORDS", "sources": "Liste B"},
+                                                         {"labelcode": "99999", "label": "Fremd", "sources": "Liste C"}]})
+    edl = "001  AX  AA  C  00:00:00:00 00:00:05:00 00:00:00:00 00:00:05:00\n* FROM CLIP NAME: ZQX1234_05.wav\n"
+    card = client.post("/api/edl/import", json={"content": edl, "online": False}).json()["cards"][0]
+    assert not card.get("labelcode")
+    assert card["prefix_hints"]["prefix"] == "ZQX" and [h["labelcode"] for h in card["prefix_hints"]["candidates"]] == ["24584", "00100"]

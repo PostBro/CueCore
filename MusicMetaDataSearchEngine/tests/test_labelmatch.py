@@ -129,3 +129,18 @@ def test_mb_alias_missing_file_is_empty(tmp_path):
     from core.labelmatch import attach_mb_aliases
     idx = build_index([("00121", "Atlantic", "Warner Music")])
     assert attach_mb_aliases(idx, tmp_path / "nope.csv") == 0 and idx.mb_alias == {}
+
+
+# --- C7: gelernte Korrekturen dieser Installation ---
+
+def test_user_alias_learns_only_names_the_master_does_not_know(tmp_path):
+    from core.labelmatch import attach_user_aliases, build_index, learn_user_alias, match_label
+    idx = build_index([("00121", "Atlantic"), ("57251", "Republic Records"), ("07552", "REPUBLIC")])
+    p = tmp_path / "label_aliases_user.csv"
+    assert learn_user_alias(p, idx, "Zzq Hausmusik", "00121", quelle="tagger", datum="2026-10-22")
+    assert match_label("Zzq Hausmusik", idx) == "00121"
+    assert not learn_user_alias(p, idx, "Republic Records", "07552", quelle="tagger", datum="2026-10-22")  # Master
+    assert not learn_user_alias(p, idx, "Zzq Fremd", "99999", quelle="tagger", datum="2026-10-22")         # kein Code
+    assert learn_user_alias(p, idx, "Zzq Hausmusik", "57251", quelle="tagger", datum="2026-10-23")         # neu korrigiert
+    fresh = build_index([("00121", "Atlantic"), ("57251", "Republic Records")])
+    assert attach_user_aliases(fresh, p) == 1 and match_label("zzq hausmusik", fresh) == "57251"           # jüngster gilt

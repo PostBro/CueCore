@@ -95,6 +95,7 @@
   .dot{width:7px;height:7px;border-radius:50%;background:var(--muted-2);display:inline-block;margin-right:6px}
   .dot.ok{background:var(--good);box-shadow:0 0 7px var(--good-soft)}
   .dot.bad{background:var(--accent)}
+  .dot.warn{background:var(--warn)}
 
 
   /* ---------- Main ---------- */
@@ -136,6 +137,13 @@
   .recent button:hover{background:var(--line-strong)}
   .recent button span:last-child{color:var(--muted);font-family:var(--mono);font-size:11.5px;white-space:nowrap}   /* nur die Unterzeile; --muted-2 wirkte deaktiviert */
   .recent .none{font-size:12.5px;color:var(--muted-2)}
+  /* Partnerleiste: weiße Logos auf dunkler Plakette in beiden Themes; quadratische Marken (.sq) etwas höher, damit sie neben den Wortmarken nicht klein wirken */
+  .partners{margin-top:26px}
+  .partners h4{margin:0 0 10px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-2);font-weight:600}
+  .partners ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:10px}
+  .partners li{background:#17171A;border:1px solid var(--line);border-radius:var(--r-sm);height:64px;min-width:132px;padding:0 20px;display:grid;place-items:center}
+  .partners img{display:block;height:24px;width:auto}
+  .partners img.sq{height:40px}
   @media (max-width:1100px){ .tiles{grid-template-columns:1fr} .health{grid-template-columns:1fr} }                                 /* Einzeiler, immer sichtbar (kein Erklärtext-Toggle) */
   /* Tagger: Zielordner-Gate + Drop-Zone (Hinweis auf den Zielordner zuerst) */
   .prereq{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;background:var(--warn-soft);border:1px solid rgba(226,168,60,.35);border-radius:var(--r-md);padding:12px 16px;margin-bottom:14px}
@@ -225,6 +233,18 @@
   .chip.tie{background:var(--warn-soft,rgba(255,170,0,.14));color:var(--warn);border-color:transparent}
   .chip.plm{color:var(--text)}
   .chip.rr{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+  /* Label-Datenbank als Liste: Kürzel-Chips nach Herkunft, eigene Änderungen in Akzentfarbe, Weggenommenes durchgestrichen */
+  .gtable .chip{margin:1px 4px 1px 0;display:inline-block}
+  .chip.kz{text-transform:none;letter-spacing:.02em;font-family:var(--mono);font-weight:500;background:var(--raised)}
+  .chip.kz-gvl{background:none;border-style:dashed}
+  .chip.kz-eigen,.chip.kz-korrektur,.chip.korr{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+  .chip.kz-entfernt,.chip.kz-verschoben{background:none;color:var(--muted-2);text-decoration:line-through;border-style:dashed}
+  .chip.korr{font-family:var(--mono);margin-left:6px}
+  .gtable .lcv.struck{text-decoration:line-through;color:var(--muted-2)}
+  .gtable td.gkz{white-space:normal;max-width:22rem}
+  .gfilt{font-size:12px;font-weight:500;padding:6px 12px;border-radius:99px;border:1px solid var(--line-strong);background:none;color:var(--muted);cursor:pointer;font-family:inherit}
+  .gfilt:hover{color:var(--text)} .gfilt.on{color:var(--text);border-color:var(--accent);background:var(--accent-soft)}
+  .gmsg{min-height:1.2em;margin-top:6px} .gmsg.err{color:var(--warn)}
 
   .conf{display:flex;flex-direction:column;align-items:flex-end;gap:7px;min-width:118px}
   .conf .num{font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums;color:var(--muted)}
@@ -241,6 +261,11 @@
   .warnbox{display:flex;gap:10px;align-items:center;margin:16px 0 4px;padding:11px 14px;border:1px solid var(--warn);
     background:var(--warn-soft);border-radius:var(--r-sm);color:var(--warn);font-size:12.5px;font-weight:500}
   .warnbox b{font-weight:700}
+  .ixbanner{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin:20px 36px 0;padding:12px 16px;border:1px solid var(--line-strong);
+    border-left:3px solid var(--accent);background:var(--raised);border-radius:var(--r-sm);font-size:12.5px}
+  .ixbanner.bad{border-left-color:var(--warn);background:var(--warn-soft)} .ixbanner.ok{border-left-color:var(--good)}
+  .ixbanner .ixt{flex:1 1 320px;min-width:0} .ixbanner .ixt b{display:block;font-weight:700;margin-bottom:2px}
+  .ixbanner progress{flex:0 0 160px;height:6px} .ixbanner .pct{font-variant-numeric:tabular-nums;color:var(--muted);min-width:3.5em;text-align:right}
   .statline{margin-top:18px;font-family:var(--mono);font-size:11px;color:var(--muted-2);font-variant-numeric:tabular-nums}
   .card.big{padding:20px 22px}
   .chip.srclink{background:var(--accent-soft);color:var(--accent);border-color:transparent;text-decoration:none}
@@ -348,6 +373,20 @@
   .abar{grid-column:1/-1;height:6px;border-radius:99px;overflow:hidden;display:flex;background:var(--inset)}
   .abar i{display:block;height:100%} .abar .ok{background:var(--good)} .abar .warn{background:var(--warn)} .abar .bad{background:var(--accent)}
   .asum .act{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+  .eproj{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin:0 0 12px;font-size:12.5px}
+  .eproj label{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted-2)} .eproj .inp{max-width:22rem}
+  .eproj .pstate{color:var(--muted);font-variant-numeric:tabular-nums} .eproj .pstate.bad{color:var(--warn)}
+  .eprojects{margin-top:22px} .eprojects h3{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted-2);margin:0 0 8px;font-weight:700}
+  .ptable{width:100%;border-collapse:collapse;font-size:12.5px} .ptable th{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-2);text-align:left;padding:6px 8px;font-weight:600}
+  .ptable td{border-top:1px solid var(--line);padding:7px 8px;vertical-align:middle} .ptable td.num,.ptable th.num{text-align:right;font-variant-numeric:tabular-nums}
+  .ptable tr.cur td{background:var(--accent-soft)} .ptable .pname{font-weight:600} .ptable .pact{text-align:right;white-space:nowrap}
+  .ptable .libbar{display:inline-block;width:46px;height:5px;border-radius:3px;background:var(--line);vertical-align:middle;margin-right:6px;overflow:hidden}
+  .ptable .libbar i{display:block;height:100%;background:var(--good)}
+  .etpl{display:flex;gap:6px;align-items:center} .etpl select{font:inherit;font-size:12px;padding:5px 8px;border:1px solid var(--line-strong);border-radius:var(--r-sm);background:var(--inset);color:var(--text)}
+  .tpled .tplrow{border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;margin:10px 0;display:grid;gap:10px}
+  .tpled .tplhead{display:flex;gap:8px;align-items:center} .tpled .tplhead .inp{flex:1}
+  .tpled .tplchk{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px} .tpled .tplchk .lbl{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted-2);flex-basis:100%}
+  .tpled .tplchk label{display:inline-flex;gap:6px;align-items:center}
   .asum .hint{font-size:11.5px;color:var(--muted-2);text-align:right;max-width:220px;margin:0}
   .amp{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:7px;vertical-align:0;flex:none}
   .amp.ok{background:var(--good)} .amp.warn{background:var(--warn)} .amp.bad{background:var(--accent)}
@@ -381,7 +420,13 @@
   .etable td.ell{max-width:30rem;white-space:normal}   /* Hybrid-Umbruch ab ~30rem, Wortbruch s. unten */
   .etable td.eact,.etable th:last-child{text-align:right}
   .etable td.num,.etable th.num{font-variant-numeric:tabular-nums;text-align:right}
+  .prow.builtin .pbuiltin{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px} .prow.builtin .pbuiltin .hint{flex-basis:100%}
   .etable tr.edetail>td{padding:0;border-top:0;background:var(--inset);white-space:normal}
+  .etable tr.etrow:focus{outline:none} .etable tr.etrow:focus-visible td{box-shadow:inset 0 1px 0 var(--accent),inset 0 -1px 0 var(--accent)}
+  .etable tr.etrow:focus-visible td:first-child{box-shadow:inset 3px 0 0 var(--accent),inset 0 1px 0 var(--accent),inset 0 -1px 0 var(--accent)}
+  .etable td.cedit{cursor:text} .etable tr.etrow td.cedit:hover{box-shadow:inset 0 0 0 1px var(--line-strong)}
+  .etable td.cediting{padding:3px 6px} .etable .cellinp{width:100%;min-width:9em;font:inherit;padding:5px 7px;border:1px solid var(--accent);border-radius:var(--r-sm);background:var(--inset);color:var(--text)}
+  .ekeys{margin:10px 0 0;font-size:11.5px;color:var(--muted)} .ekeys kbd{font:600 10.5px/1 ui-monospace,monospace;border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:4px;padding:2px 5px;margin:0 2px;background:var(--inset);color:var(--text)}
   .etable tr.edetail .dbedit{border-radius:0}
   .etable .lc{font-family:var(--mono);color:var(--accent);font-weight:600}
   /* Bearbeiten-Editor als Modal (immer voll sichtbar, unabhängig vom Table-Scroll) */
@@ -507,6 +552,15 @@
   .etable td .chip.rr{display:block;width:max-content;margin-top:3px}   /* Rechterückruf unter dem LC, nicht daneben */
   .ibtn{width:30px;height:30px;border-radius:var(--r-sm);border:1px solid transparent;background:transparent;color:var(--muted);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:background .14s,color .14s,border-color .14s}
   .ibtn.accept{color:var(--good);border-color:var(--good)} .ibtn.accept:hover{background:var(--good);color:#fff}
+  .etable .tcell .tnote{color:var(--muted);font-size:11.5px;font-style:italic;margin-top:3px;white-space:normal}
+  .etable .tcell .chip.ask{margin-left:6px;vertical-align:1px}
+  .chip.ask{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+  .dbedit .fsrc{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.35} .dbedit .fsrc.chk{color:var(--warn)}
+  .dbedit .cuehist{grid-column:1/-1;font-size:12px} .dbedit .cuehist summary{cursor:pointer;color:var(--muted)}
+  .dbedit .cuehist ul{list-style:none;margin:8px 0;padding:0;display:grid;gap:4px} .dbedit .cuehist .when{color:var(--muted-2);font-variant-numeric:tabular-nums;margin-right:10px}
+  .dbedit .cuenote{grid-column:1/-1;display:grid;gap:8px;border-top:1px dashed var(--line);padding-top:12px}
+  .dbedit .cuenote textarea{min-height:56px;resize:vertical;font:inherit}
+  .dbedit .cuenote .askrow{display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer}
   .etable .ta.mono{font-family:var(--mono);font-size:10.5px;letter-spacing:0}
   .lcv.tie{background:none;border:0;padding:0;cursor:pointer;font:inherit;color:var(--warn);text-decoration:underline dotted;text-underline-offset:3px}
   .lcv.tie:hover{color:var(--text)}
@@ -520,6 +574,21 @@
   .tiepick-info .lab{font-weight:600;font-size:15px;margin-bottom:6px}
   .tiepick-info .conf{margin-top:8px}
   .tiepick-foot{display:flex;gap:10px;justify-content:flex-end}
+  /* Prüfung vor dem Export: ruhige Checkliste; Warnfarbe nur, wo eine Entscheidung fehlt (Rechterückruf) */
+  .xcheck{max-width:760px;padding:22px 24px}
+  .xcheck-req{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;margin:14px 0 2px;font-size:13px}
+  .xcheck-req .lbl{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted-2);margin-right:4px}
+  .xcheck-req label{display:inline-flex;gap:6px;align-items:center;cursor:pointer}
+  .xcheck-sec{border:1px solid var(--line);border-radius:var(--r-md);background:var(--raised);padding:12px 16px;margin:12px 0}
+  .xcheck-sec.rr{border-color:var(--warn);background:var(--warn-soft)}
+  .xcheck-sec.ok{color:var(--muted)}
+  .xcheck-sec h4{margin:0 0 8px;font-size:13px;font-weight:700}
+  .xcheck-list{list-style:none;margin:0;padding:0;max-height:200px;overflow-y:auto;font-size:13px}
+  .xcheck-list li{display:grid;grid-template-columns:3.2em minmax(0,1fr) auto;gap:12px;align-items:center;padding:5px 0;border-top:1px solid var(--line)}
+  .xcheck-list li:first-child{border-top:0}
+  .xcheck-list .num{color:var(--muted-2);font-variant-numeric:tabular-nums}
+  .xcheck-list .what{color:var(--muted);text-align:right}
+  .xcheck-confirm{display:flex;gap:8px;align-items:flex-start;margin-top:12px;font-weight:600;cursor:pointer}
   .askbox{max-width:540px;padding:22px 24px}
   .askbox h3{font-family:var(--disp);font-weight:700;font-size:20px;letter-spacing:.02em;text-transform:uppercase;margin:0 0 8px}
   .askbox p{margin:0 0 18px;text-wrap:pretty}
@@ -655,6 +724,7 @@
   </aside>
 
   <main class="main">
+    <div id="ixbanner" class="ixbanner" role="status" aria-live="polite" hidden></div>
     <!-- ===== Start ===== -->
     <section id="tool-home">
       <div class="head">
@@ -666,6 +736,17 @@
         <div class="health">
           <div class="hbox"><h4 data-i18n="Datenbestand">Datenbestand</h4><div id="homehealth"></div></div>
           <div class="hbox"><h4 data-i18n="Zuletzt">Zuletzt</h4><div class="recent" id="homerecent"></div></div>
+        </div>
+        <!-- Partnerleiste: Logos sind Marken der jeweiligen Inhaber (LIZENZEN.md) -->
+        <div class="partners" aria-labelledby="partners-h">
+          <h4 id="partners-h" data-i18n="Library-Partner">Library-Partner</h4>
+          <ul>
+            <li><img class="sq" src="/web/partner-apl.png" alt="APL Music"></li>
+            <li><img src="/web/partner-cezame.png" alt="Cezame"></li>
+            <li><img class="sq" src="/web/partner-extrememusic.png" alt="Extreme Music"></li>
+            <li><img src="/web/partner-freshtracks.png" alt="Fresh Tracks"></li>
+            <li><img class="sq" src="/web/partner-ripcue.png" alt="RipCue Music"></li>
+          </ul>
         </div>
       </div>
     </section>
@@ -758,6 +839,7 @@
           <label class="echk"><input type="checkbox" id="estems"> <span data-i18n="Musik-Stems vereinheitlichen">Musik-Stems vereinheitlichen</span> <span class="ehint" data-i18n="(Drums/Bass/Vox → ein Track)">(Drums/Bass/Vox → ein Track)</span></label>
         </div>
         </div>
+        <div id="eprojects" class="eprojects"></div>
       </div>
       <!-- Ergebnis-Tabelle voll breit (außerhalb des 920px-.wrap) -->
       <div id="eresult"></div>
@@ -774,10 +856,18 @@
           <label for="gq" data-i18n="Label, Hersteller oder LC-Nummer">Label, Hersteller oder LC-Nummer</label>
           <input class="inp" id="gq" placeholder="z. B. Domino  ·  Mom & Pop  ·  24584" data-i18n-ph="z. B. Domino  ·  Mom & Pop  ·  24584">
         </div>
-        <div class="hint" data-i18n="Tippe zum Suchen. Zahlen (4–6-stellig) werden als Labelcode gelesen.">Tippe zum Suchen. Zahlen (4–6-stellig) werden als Labelcode gelesen.</div>
+        <div class="hint" data-i18n="Leer zeigt alle Labels. Zahlen (4–6-stellig) werden als Labelcode gelesen, Katalog-Kürzel (z.B. CEZ) findet die Suche auch.">Leer zeigt alle Labels. Zahlen (4–6-stellig) werden als Labelcode gelesen, Katalog-Kürzel (z.B. CEZ) findet die Suche auch.</div>
+        <div class="fbar" id="gfbar"></div>
         <div class="dbtools"><button class="btn sm" id="gadd" data-i18n="+ Label anlegen">+ Label anlegen</button>
-          <span class="hint" data-i18n="Für Labels, die der GVL-Master (noch) nicht kennt, z.B. aus einer Library-Lieferung.">Für Labels, die der GVL-Master (noch) nicht kennt, z.B. aus einer Library-Lieferung.</span></div>
+          <span class="hint" data-i18n="Für Labels, die der GVL-Master (noch) nicht kennt, z.B. aus einer Library-Lieferung.">Für Labels, die der GVL-Master (noch) nicht kennt, z.B. aus einer Library-Lieferung.</span>
+          <button class="btn ghost sm" id="gundo" type="button" disabled data-i18n="Rückgängig">Rückgängig</button></div>
+        <div class="hint gmsg" id="gmsg" role="status"></div>
         <div id="gresult"></div>
+        <div class="dbnav" id="gnav" hidden>
+          <button class="btn ghost sm" id="gprev" data-i18n="Zurück">Zurück</button>
+          <span class="hint" id="gpage"></span>
+          <button class="btn ghost sm" id="gnext" data-i18n="Weiter">Weiter</button>
+        </div>
 
         <div class="gvladmin">
           <div class="gvladmin-head" data-i18n="GVL-Master aktualisieren">GVL-Master aktualisieren</div>
@@ -828,6 +918,7 @@
             <button class="btn ghost sm" data-fmt="xlsx">Excel</button>
             <button class="btn ghost sm" data-fmt="csv">CSV</button>
             <button class="btn ghost sm" data-fmt="pdf">PDF</button>
+            <button class="btn ghost sm" data-fmt="team" data-i18n="Team-Datei" data-i18n-title="Für Kolleg:innen: CSV mit Prüfstatus, Quelle und Prüfdatum. Dort über „Datei importieren“ einlesen; deren eigene Werte bleiben, Abweichungen werden aufgelistet." title="Für Kolleg:innen: CSV mit Prüfstatus, Quelle und Prüfdatum. Dort über „Datei importieren“ einlesen; deren eigene Werte bleiben, Abweichungen werden aufgelistet.">Team-Datei</button>
             <span class="hint" id="dbmsg"></span>
           </span>
         </div>
@@ -890,6 +981,8 @@
         <li data-i18n-html="<b>AudD</b> (optional, kostenpflichtig): Audio-Fingerprinting als Fallback für Dateien ohne Tags."><b>AudD</b> (optional, kostenpflichtig): Audio-Fingerprinting als Fallback für Dateien ohne Tags.</li>
       </ul>
       <p class="hint" style="margin-top:8px" data-i18n="Ohne jeden Schlüssel funktioniert der Kern.">Ohne jeden Schlüssel funktioniert der Kern.</p>
+      <p class="hint" data-i18n="Beim ersten Start lädt CueCore den Track-Index (rund 1,3 GB, einmalig) im Hintergrund. Du kannst sofort loslegen; der Balken oben zeigt den Stand.">Beim ersten Start lädt CueCore den Track-Index (rund 1,3 GB, einmalig) im Hintergrund. Du kannst sofort loslegen; der Balken oben zeigt den Stand.</p>
+      <p class="hint" data-i18n="Zum Ausprobieren liegt unter Cue-Sheet ein Beispielprojekt mit Tracks aus den Library-Lieferungen (Cezame, APL Music, RipCue Music).">Zum Ausprobieren liegt unter Cue-Sheet ein Beispielprojekt mit Tracks aus den Library-Lieferungen (Cezame, APL Music, RipCue Music).</p>
       <div class="ob-keys" data-i18n-html="<b>AcoustID ist eingebaut</b> (nur für nicht-kommerzielle Nutzung). Für weitere Dienste trägst du in den Einstellungen eigene Schlüssel ein, jeder Dienst hat dort einen Link zum Anbieter; für kommerzielle Nutzung auch einen eigenen AcoustID-Schlüssel. Eigene Schlüssel liegen nur lokal auf deinem Rechner (nicht in der App selbst) und gehen bei einem Update nicht verloren."><b>AcoustID ist eingebaut</b> (nur für nicht-kommerzielle Nutzung). Für weitere Dienste trägst du in den Einstellungen eigene Schlüssel ein, jeder Dienst hat dort einen Link zum Anbieter; für kommerzielle Nutzung auch einen eigenen AcoustID-Schlüssel. Eigene Schlüssel liegen nur lokal auf deinem Rechner (nicht in der App selbst) und gehen bei einem Update nicht verloren.</div>
     </div>
     <div class="ob-actions">
@@ -915,13 +1008,16 @@ const esc = s => (s??"").toString().replace(/[&<>"']/g, c=>_ESC[c]);
 const lcNum = c => c ? String(c).replace(/^LC/i,'') : '';   // Anzeige: Labelcode ohne „LC"-Präfix
 // JSON vom Backend holen. Eine HTTP-Fehlerantwort (503 „labels.db nicht geladen“, 500) wirft mit dem Grund des
 // Servers (err.http), ein abgewiesener fetch mit err.net — sonst erschien ein 503 als „kein Treffer“.
+// Fallback-Texte ohne Serverdetail (D18: Alltagssprache mit nächstem Schritt), Übersetzung in I18N_EN
+const NET_DOWN='CueCore-Dienst antwortet nicht. CueCore beenden und neu starten.';
+const SRV_FAIL='Unerwarteter Fehler im CueCore-Dienst. Erneut versuchen; bleibt es, steht der Grund in cuecore.log im Datenordner.';
 async function fetchJson(url, opts){
   let r;
   try{ r=await fetch(url, opts); }
-  catch(e){ if(e && e.name==='AbortError') throw e; const x=new Error('Backend nicht erreichbar'); x.net=true; throw x; }
+  catch(e){ if(e && e.name==='AbortError') throw e; const x=new Error(NET_DOWN); x.net=true; throw x; }
   const j=await r.json().catch(()=>null);
   if(!r.ok){ const d=j && j.detail;
-    const x=new Error(Array.isArray(d) ? d.map(v=>v.msg||String(v)).join('; ') : d ? String(d) : 'HTTP '+r.status); x.http=r.status; throw x; }
+    const x=new Error(Array.isArray(d) ? d.map(v=>v.msg||String(v)).join('; ') : d ? String(d) : SRV_FAIL); x.http=r.status; throw x; }
   return j;
 }
 // Grund zu einem Fehler aus fetchJson als Funktion (für tFn, Sprachwechsel): Servertext übersetzt, „Backend nicht
@@ -929,7 +1025,7 @@ async function fetchJson(url, opts){
 function errWhy(err){
   if(err && (err.http || err.net)) return ()=>t(err.message);
   console.error('CueCore:', err);
-  return ()=>t('Fehler in der Oberfläche: {msg}',{msg:(err && err.message) || String(err)});
+  return ()=>t('Fehler in der Oberfläche: {msg}. CueCore beenden und neu starten; bleibt es, bitte mit diesem Text melden.',{msg:(err && err.message) || String(err)});
 }
 // Netzausfall: stats.failures > 0 ohne Treffer heißt „Netz nicht erreichbar“, nicht „kein Treffer“ —
 // überall derselbe Hinweis wie im Tagger. Maßgeblich ist nur failures > 0, keine Quote zu calls.
@@ -996,6 +1092,7 @@ const I18N_EN = {
   "Ordner":"Folders", "Wohin getaggte und umbenannte Tracks wandern.":"Where tagged and renamed tracks go.",
   "Track-Metadata-API (Library-Partner)":"Track Metadata API (library partner)",
   "Dateiname → Titel, Interpret, Autoren, Label, LC. Mehrere Partner möglich (je Name, Host, Client-ID, Secret aus den Zugangsdaten des Anbieters); „Metadaten vervollständigen“ im Cue-Sheet-Tab fragt sie der Reihe nach.":"File name → title, artist, writers, label, LC. Several partners possible (name, host, client ID, secret from the provider's credentials each); “Complete metadata” in the Cue Sheet tab asks them in order.",
+  "eingebaut":"built in", "Zugang ist in CueCore eingebaut und gilt für alle. Ein eigener Zugang desselben Anbieters ersetzt ihn.":"Access is built into CueCore and works for everyone. Your own access for the same provider replaces it.",
   "+ Partner hinzufügen":"+ Add partner", "Partner entfernen":"Remove partner", "Noch kein Partner eingetragen.":"No partner configured yet.",
   "Name":"Name", "Host":"Host", "Client-ID":"Client ID", "Client-Secret":"Client secret",
   "Anzeigename, z.B. Partner A — steht später als Quelle am Cue.":"Display name, e.g. Partner A — shown as the source on the cue.",
@@ -1035,6 +1132,7 @@ const I18N_EN = {
     "<b>Incomplete.</b>&nbsp;At least one source hit its rate limit — the result may have gaps. Try again shortly (the cache will kick in).",
   "Treffer in MusicBrainz, aber kein eindeutiger GVL-Labelcode zuordenbar.":"Match in MusicBrainz, but no unambiguous GVL label code assignable.",
   "Kein Recording-Match in MusicBrainz.":"No recording match in MusicBrainz.",
+  "Keine Quelle kennt den Track (MusicBrainz, Deezer, Wikidata befragt, alle erreichbar). Schreibweise prüfen, Album-LC suchen oder im Editor eintragen.":"No source knows this track (MusicBrainz, Deezer, Wikidata queried, all reachable). Check the spelling, search the album LC or enter it in the editor.",
   "✓ Dual-Source":"✓ dual-source",
   "⇄ Gleichstand":"⇄ tie",
   "Gleichstand":"Tie",
@@ -1092,6 +1190,18 @@ const I18N_EN = {
   "Gespeichert.":"Saved.", "In Datenbank angelegt.":"Added to database.",
   "Speichern fehlgeschlagen.":"Save failed.",
   "Meintest du diesen Song aus der Datenbank?":"Did you mean this song from the database?",
+  "Meintest du „{q}“?":"Did you mean “{q}”?", "laut MusicBrainz, bitte prüfen":"according to MusicBrainz, please check",
+  "Vor dem Export prüfen":"Check before export", "Cue-Sheet als {fmt} · {n} Cues":"Cue sheet as {fmt} · {n} cues",
+  "Pflichtfelder":"Required fields", "Die Auswahl gilt für jedes Cue-Sheet auf diesem Rechner.":"The selection applies to every cue sheet on this computer.",
+  "Pflichtfelder fehlen bei {n} Cue(s)":"Required fields missing in {n} cue(s)", "Alle Pflichtfelder gefüllt.":"All required fields filled.",
+  "Unbestätigte Vorschläge: {n}":"Unconfirmed suggestions: {n}", "Rechterückrufe bei {n} Cue(s)":"Rights recalls in {n} cue(s)",
+  "Vor der Abgabe auf labelrecherche.gvl.de prüfen, ob die Nutzung erlaubt ist.":"Check on labelrecherche.gvl.de before delivery whether use is permitted.",
+  "Ich habe die Rechterückrufe auf labelrecherche.gvl.de geprüft.":"I have checked the rights recalls on labelrecherche.gvl.de.",
+  "Trotzdem exportieren ({fmt})":"Export anyway ({fmt})", "Exportieren ({fmt})":"Export ({fmt})",
+  "Erst die Rechterückrufe bestätigen":"Confirm the rights recalls first",
+  "Alle sicheren übernehmen ({n})":"Accept all safe ones ({n})", "{n} sichere Vorschläge übernehmen?":"Accept {n} safe suggestions?",
+  "Sicher heißt: Labelcode aus zwei unabhängigen Quellen (Netz) oder aus einer Library-Liste bzw. Lieferung (Katalog-Kürzel), ohne Gleichstand. Track-Index und GVL-Kürzel allein zählen nicht.":"Safe means: label code from two independent sources (network) or from a library list or delivery (catalog prefix), no tie. Track index or GVL short name alone does not count.",
+  "Gilt auch für {n} weitere(n) Cue(s) dieses Titels.":"Also applied to {n} more cue(s) of this title.",
   "+{n} weitere":"+{n} more",
   "Interpret-Suche <b>{artist}</b> · Titel wählen":"Artist search <b>{artist}</b> · pick a title",
   "Suche Titel des Interpreten in Datenbank und Index …":"Looking up the artist's titles in database and index …",
@@ -1212,6 +1322,52 @@ const I18N_EN = {
   "Bearbeiten":"Edit", "Weitere Felder":"More fields", "Bearbeitung aus":"Editing off",
   "Vorschau aktualisieren":"Refresh preview",
   "Taggen & verschieben":"Tag & move", "Verwerfen":"Discard",
+  "Laut Katalog-Listen kann das Kürzel {p} zu diesen Labels gehören. Nicht eindeutig belegt — prüfen, wählen, dann speichern:":"According to catalogue lists, the prefix {p} may belong to these labels. Not clearly confirmed — check, choose, then save:",
+  "Kürzel {p}: {n} mögliche(s) Label(s), im Editor":"Prefix {p}: {n} possible label(s), see editor",
+  "Abgebrochen — bis dahin Gefundenes bleibt.":"Cancelled — what was found so far stays.", "Wird abgebrochen …":"Cancelling …",
+  "Suche nach dem laufenden Stapel beenden — Gefundenes bleibt, fertige Cues sind schon bearbeitbar":"Stop the search after the current batch — results stay, finished cues are already editable",
+  "Team-Datei":"Team file", "Für Kolleg:innen: CSV mit Prüfstatus, Quelle und Prüfdatum. Dort über „Datei importieren“ einlesen; deren eigene Werte bleiben, Abweichungen werden aufgelistet.":"For colleagues: CSV with check status, source and check date. They load it via “Import file”; their own values stay, differences are listed.",
+  "Team-Datei: {new} neue Songs, {filled} ergänzen leere Felder, {same} schon gleich. Deine eigenen Werte bleiben in jedem Fall stehen.":"Team file: {new} new songs, {filled} fill empty fields, {same} already the same. Your own values always stay.",
+  "{n} neue Zeile(n) kommen als „zu prüfen“: Labelcode nicht im GVL-Master oder in der Datei schon als ungeprüft markiert.":"{n} new row(s) come in as “to check”: label code not in the GVL master or already marked unchecked in the file.",
+  "Abweichungen ({n}) — deine Werte bleiben, bitte durchsehen":"Differences ({n}) — your values stay, please review", "deins: {v}":"yours: {v}", "Team: {v}":"team: {v}",
+  "{n} neue übernehmen, {m} ergänzen":"Add {n} new, fill {m}", "Import fehlgeschlagen: {why}":"Import failed: {why}", "{n} neu, {m} ergänzt.":"{n} new, {m} filled.",
+  "Nicht gespeichert: {why}":"Not saved: {why}", "Gespeichert {d}":"Saved {d}", "Wird gespeichert …":"Saving …",
+  "Projekte nicht ladbar: {why}":"Projects could not be loaded: {why}", "Projekte":"Projects",
+  "Noch keine Projekte. Jede eingelesene Schnittliste wird automatisch als Projekt gespeichert und lässt sich hier fortsetzen.":"No projects yet. Every edit list you load is saved as a project automatically and can be continued here.",
+  "Projekt":"Project", "fertig":"done", "Musik gesamt":"Music total", "Löschen fehlgeschlagen: {why}":"Delete failed: {why}", "Rechterückruf":"Rights recall", "Länge Sek.":"Length (s)", "LC":"LC", "Library-Anteil":"Library share",
+  "{a} von {b} Musik aus Library-Lieferungen und Katalogen":"{a} of {b} music from library deliveries and catalogues",
+  "Geöffnet":"Open", "Öffnen":"Open", "Projekt löschen":"Delete project", "Projekt „{n}“ geöffnet":"Project “{n}” opened",
+  "Projekt nicht ladbar: {why}":"Project could not be loaded: {why}", "Projekt löschen?":"Delete project?",
+  "„{n}“ wird aus dem Datenordner gelöscht. Die Song-Datenbank bleibt unberührt.":"“{n}” will be deleted from the data folder. The song database stays untouched.",
+  "Vorlage nicht gespeichert: {why}":"Template not saved: {why}", "Export-Vorlagen":"Export templates",
+  "Eine Vorlage legt fest, welche Felder vor dem Export gefüllt sein müssen und welche Spalten die Datei hat. Die Länge ist immer dabei.":"A template sets which fields must be filled before export and which columns the file has. The duration is always included.",
+  "Name der Vorlage":"Template name", "Vorlage löschen":"Delete template", "+ Vorlage":"+ Template", "Neue Vorlage":"New template",
+  "Jede Vorlage braucht einen Namen.":"Every template needs a name.", "Die Auswahl gilt für die Export-Vorlage „{n}“.":"The choice applies to the export template “{n}”.",
+  "Export-Vorlage":"Export template", "Export-Vorlagen bearbeiten":"Edit export templates", "von Hand":"by hand",
+  "Projekt nicht gefunden. Bitte die Liste neu laden.":"Project not found. Please reload the list.", "Mindestens eine Vorlage muss bleiben.":"At least one template must remain.",
+  "Nichts rückgängig zu machen.":"Nothing to undo.", "Rückgängig: {what}. In der Datenbank Gespeichertes bleibt dort.":"Undone: {what}. Anything already saved in the database stays there.",
+  "Rückgängig: {what} (⌘Z / Strg+Z)":"Undo: {what} (⌘Z / Ctrl+Z)", "Noch nichts geändert":"Nothing changed yet",
+  "Verlauf ({n})":"History ({n})", "Letzte Änderung an diesem Cue rückgängig":"Undo the last change to this cue",
+  "Setzt nur diesen Cue zurück. In der Datenbank Gespeichertes bleibt dort.":"Resets this cue only. Anything already saved in the database stays there.",
+  "Vorschlag übernommen":"Proposal accepted", "Label aus Gleichstand gewählt":"Label chosen from a tie", "Im Editor gespeichert":"Saved in the editor",
+  "Cue gelöscht":"Cue deleted", "Metadaten vervollständigt":"Metadata completed",
+  "zuletzt bestätigt {d} · {p}":"last confirmed {d} · {p}", "zuletzt bestätigt {d}":"last confirmed {d}",
+  "geprüft {d}":"checked {d}", "aufgenommen {d}":"added {d}", "Lieferung {lib}":"{lib} delivery", "von Hand eingetragen":"entered by hand",
+  "Track-Index, als geprüft markiert":"Track index, marked as checked", "Netzsuche, gespeichert":"Web search, saved",
+  "eigene Track-Datenbank":"own track database", "Netzsuche (MusicBrainz, Discogs, Deezer, Wikidata)":"Web search (MusicBrainz, Discogs, Deezer, Wikidata)",
+  "Track-Index (Discogs/MusicBrainz), ungeprüft":"Track index (Discogs/MusicBrainz), unchecked", "aus der Cue-Liste":"from the cue list",
+  "von Hand geändert {d}":"changed by hand {d}", "Vorschlag aus Genius, nicht gespeichert — bitte prüfen":"Suggestion from Genius, not saved — please check",
+  "Vorschlag aus dem Netz, nicht gespeichert — bitte prüfen":"Suggestion from the web, not saved — please check", "aus dem Dateinamen":"from the file name",
+  "von Hand geändert — gilt mit „Speichern“":"changed by hand — applies on “Save”",
+  "Rückfrage":"Query", "Rückfrage offen — erscheint vor dem Export in der Prüfung":"Open query — shown in the check before export",
+  "Notiz zum Cue":"Note on this cue", "z.B. Lizenz beim Kunden nachfragen — bleibt nur in diesem Cue-Sheet":"e.g. ask the client about the licence — stays in this cue sheet only",
+  "Rückfrage offen — vor dem Export erinnern":"Open query — remind me before export", "Offene Rückfragen: {n}":"Open queries: {n}", "ohne Notiz":"no note",
+  "Vorschlag verworfen":"Proposal discarded", "Vorschlag verworfen — Cue ist jetzt offen":"Proposal discarded — the cue is now open",
+  "Vorschlag verwerfen (Esc) — Cue wird offen":"Discard proposal (Esc) — the cue becomes open",
+  "Tastatur: <kbd>↑</kbd><kbd>↓</kbd> Cue wählen · <kbd>Enter</kbd> Vorschlag übernehmen oder bearbeiten · <kbd>Esc</kbd> Vorschlag verwerfen · <kbd>F2</kbd> oder Doppelklick: Zelle bearbeiten · aus Excel einfügen ab der gewählten Zeile · <kbd>⌘Z</kbd> rückgängig":"Keyboard: <kbd>↑</kbd><kbd>↓</kbd> choose cue · <kbd>Enter</kbd> accept or edit proposal · <kbd>Esc</kbd> discard proposal · <kbd>F2</kbd> or double-click: edit cell · paste from Excel from the chosen row · <kbd>⌘Z</kbd> undo",
+  "{f} bearbeiten — Enter übernimmt, Esc bricht ab":"Edit {f} — Enter applies, Esc cancels", "In der Tabelle geändert":"Changed in the table",
+  "LC{lc} steht nicht im GVL-Master — nicht übernommen.":"LC{lc} is not in the GVL master — not applied.", "Aus Excel eingefügt":"Pasted from Excel",
+  "{n} Zelle(n) eingefügt":"{n} cell(s) pasted", "nicht im GVL-Master: {codes}":"not in the GVL master: {codes}", "{n} Zeile(n) passten nicht mehr in die Liste":"{n} row(s) did not fit into the list",
   "Kein Album eingetragen (Feld „Album“).":"No album entered (field “Album”).",
   "LC eingeben und „Vorschau aktualisieren“ — der Labelname kommt aus dem GVL-Master.":"Enter an LC and “Refresh preview” — the label name comes from the GVL master.",
   "Neuer Name":"New name",
@@ -1297,7 +1453,7 @@ const I18N_EN = {
   "z. B. AURORA  ·  Runaway  ·  the box  ·  LC00171":"e.g. AURORA  ·  Runaway  ·  the box  ·  LC00171",
   "Umfang":"Scope", "Mio.":"M", "Lücken":"Gaps", "keine — alles gefüllt":"none — all filled", "Filter aufheben":"Clear filter",
     "Start":"Start", "Was willst du tun? Die Reihenfolge ist die Arbeitsreihenfolge.":"What do you want to do? The order is the working order.",
-  "Datenbestand":"Data status", "Zuletzt":"Recent", "Taste {n}":"Key {n}", "Zielordner fehlt":"Target folder missing",
+  "Datenbestand":"Data status", "Zuletzt":"Recent", "Library-Partner":"Library partners", "Taste {n}":"Key {n}", "Zielordner fehlt":"Target folder missing",
   "Dateien taggen":"Tag files", "Ordner scannen, Labelcode je Datei prüfen, ID3 schreiben und nach Schema umbenennen.":"Scan a folder, check the label code per file, write ID3 and rename by scheme.",
   "zuletzt · {p} · {n} Dateien":"last · {p} · {n} files", "noch kein Ordner gescannt":"no folder scanned yet",
   "Cue-Sheet erstellen":"Create cue sheet", "Schnittliste laden, GEMA-Dauern rechnen, Cues gegen die Datenbank prüfen, als Excel abgeben.":"Load an edit list, compute GEMA durations, check cues against the database, deliver as Excel.",
@@ -1306,7 +1462,7 @@ const I18N_EN = {
   "zuletzt · {a} – {t}{lc}":"last · {a} – {t}{lc}", "noch nichts nachgeschlagen":"nothing looked up yet",
   "{n} Tage alt — PDF laden":"{n} days old — load PDF", "aktuell · {n} Tage":"current · {n} days",
   "Tracks verifiziert":"Tracks verified", "Track-Index (Discogs + MusicBrainz)":"Track index (Discogs + MusicBrainz)", "Stand {d}":"as of {d}", "nicht gebaut":"not built",
-  "fehlt":"missing", "fehlen":"missing", "Backend nicht erreichbar.":"Backend not reachable.", "{c} Cues · {o} offen":"{c} cues · {o} open",
+  "fehlt":"missing", "fehlen":"missing", "{c} Cues · {o} offen":"{c} cues · {o} open",
   "Noch nichts — die letzten Ordner, Schnittlisten und Suchen erscheinen hier.":"Nothing yet — recent folders, edit lists and searches will show up here.",
   "heute":"today", "gestern":"yesterday",
   "Suchtabellen":"Search tables", "Interpreten ✓":"Artists ✓", "Interpreten fehlen (compact)":"Artists missing (compact)",
@@ -1391,7 +1547,6 @@ const I18N_EN = {
     "Upload a new official GVL PDF. CueCore first shows the diff (new · changed · removed) against the current master — nothing is written without your confirmation. The previous state is archived automatically. Parsing the large PDF takes a few seconds.",
   "GVL-PDF hochladen …":"Upload GVL PDF …",
   "Kein Treffer im GVL-Master.":"No match in the GVL master.",
-  "<b>{n}</b> Treffer<span class=\"mode-tag\">{mode}</span>":"<b>{n}</b> matches<span class=\"mode-tag\">{mode}</span>",
   "Volltext":"Full text",
   "Rechterückruf — manuell auf labelrecherche.gvl.de prüfen":"Rights recall — check manually on labelrecherche.gvl.de",
   "Parse {name} und vergleiche mit dem Master … (dauert einige Sekunden)":"Parsing {name} and comparing with the master … (takes a few seconds)",
@@ -1464,6 +1619,15 @@ const I18N_EN = {
 
   /* ---- Onboarding ---- */
   "Willkommen bei CueCore":"Welcome to CueCore",
+  "Zum Ausprobieren liegt unter Cue-Sheet ein Beispielprojekt mit Tracks aus den Library-Lieferungen (Cezame, APL Music, RipCue Music).":"To try it out, the cue sheet tab has an example project with tracks from the library deliveries (Cezame, APL Music, RipCue Music).",
+  "Beim ersten Start lädt CueCore den Track-Index (rund 1,3 GB, einmalig) im Hintergrund. Du kannst sofort loslegen; der Balken oben zeigt den Stand.":"On first start CueCore downloads the track index (about 1.3 GB, once) in the background. You can start right away; the bar at the top shows the progress.",
+  "Track-Index wird entpackt":"Unpacking the track index", "Track-Index wird geladen (einmalig)":"Downloading the track index (once)",
+  "CueCore ist schon nutzbar. Bis der Index fertig ist, findet die Suche nur Treffer aus deiner Datenbank, den Library-Lieferungen und dem Netz.":"CueCore is ready to use. Until the index is done, search only finds hits from your database, the library deliveries and the web.",
+  "Abbrechen — später in den Einstellungen unter „Lokaler Track-Index“ neu starten":"Cancel — restart later in Settings under “Local track index”",
+  "lädt {p} %":"loading {p} %",
+  "Track-Index ist fertig geladen. Die Suche findet jetzt auch Tracks aus Discogs und MusicBrainz.":"The track index is ready. Search now also finds tracks from Discogs and MusicBrainz.",
+  "Track-Index konnte nicht geladen werden: {why}":"The track index could not be downloaded: {why}",
+  "Der Track-Index lädt noch — danach findet die Suche mehr. Stand oben im Balken.":"The track index is still downloading — search will find more afterwards. Progress in the bar at the top.",
   "Dein Werkzeug fürs ID3-Tagging nach Schema und die GVL-Labelcode-Recherche.":"Your tool for schema-based ID3 tagging and GVL label code research.",
   "Was CueCore kann":"What CueCore can do",
   "<b>Musikdatei-Tagger</b> — Ordner scannen (MP3, WAV, AIFF, FLAC, M4A), LC auflösen, Tags schreiben und nach Schema umbenennen.":
@@ -1493,7 +1657,8 @@ const I18N_EN = {
   "Oder die Datei hierher ziehen — sie wird sofort eingelesen.":"Or drop the file here — it is read right away.",
   "Kein Ordnerpfad angekommen — bitte einen Ordner aus dem Finder/Explorer ziehen oder „Ordner wählen …“ nutzen.":"No folder path arrived — drag a folder from Finder/Explorer or use “Choose folder …”.",
   "Einstellungen nicht ladbar — läuft das Backend? (Details: cuecore.log im Datenordner)":"Settings could not be loaded — is the backend running? (details: cuecore.log in the data folder)",
-  "Speichern fehlgeschlagen: {why}":"Saving failed: {why}", "Backend nicht erreichbar":"backend unreachable",
+  "Speichern fehlgeschlagen: {why}":"Saving failed: {why}", "CueCore-Dienst antwortet nicht. CueCore beenden und neu starten.":"The CueCore service is not responding. Quit and restart CueCore.",
+  "Unerwarteter Fehler im CueCore-Dienst. Erneut versuchen; bleibt es, steht der Grund in cuecore.log im Datenordner.":"Unexpected error in the CueCore service. Try again; if it persists, the reason is in cuecore.log in the data folder.",
   "Zielordner konnte nicht gespeichert werden: {why}":"Target folder could not be saved: {why}",
   "Album {album}: Auflösung fehlgeschlagen — {why}":"Album {album}: resolving failed — {why}",
   "Resolve fehlgeschlagen: {why}":"Resolve failed: {why}", "Prüfen fehlgeschlagen: {why}":"Check failed: {why}",
@@ -1501,7 +1666,7 @@ const I18N_EN = {
   "Netz-Suche fehlgeschlagen: {why}":"Online search failed: {why}", "Suche fehlgeschlagen: {why}":"Search failed: {why}",
   "Abgleich fehlgeschlagen: {why}":"Reconcile failed: {why}", "Laden fehlgeschlagen: {why}":"Loading failed: {why}",
   "Wikidata-Suche fehlgeschlagen: {why}":"Wikidata search failed: {why}", "Album-Suche fehlgeschlagen: {why}":"Album search failed: {why}",
-  "Fehler in der Oberfläche: {msg}":"Error in the interface: {msg}",
+  "Fehler in der Oberfläche: {msg}. CueCore beenden und neu starten; bleibt es, bitte mit diesem Text melden.":"Error in the interface: {msg}. Quit and restart CueCore; if it persists, please report it with this text.",
   "Status nicht ladbar: {why}":"Status could not be loaded: {why}", "Listen nicht ladbar: {why}":"Lists could not be loaded: {why}",
   "Einstellungen nicht ladbar — Library-Quellen übersprungen.":"Settings could not be loaded — library sources skipped.",
   "Unerwartete Antwort des Dienstes":"Unexpected response from the service", "Fehler des Dienstes: {code}":"Service error: {code}",
@@ -1530,6 +1695,7 @@ const I18N_EN = {
   "GVL-Code statt des gelieferten: {list} — der gelieferte Code bleibt als Notiz am Track.":"GVL code instead of the delivered one: {list} — the delivered code stays as a note on the track.",
   "geliefert: {v}":"delivered: {v}",
   "LC aus dem GVL-Master über den Labelnamen":"LC from the GVL master via the label name",
+  "LC aus dem GVL-Master über den Verlag (Production Music)":"LC from the GVL master via the publisher (production music)",
   "Ohne Labelcode geliefert, LC über den Labelnamen aus dem GVL-Master: {list} — die Notiz steht am Track.":"Delivered without a label code, LC taken from the GVL master via the label name: {list} — the note stays on the track.",
   "{n} Zeile(n) ohne Labelcode.":"{n} row(s) without a label code.",
   "Abgebrochen.":"Cancelled.", "Gespeichert: {p}":"Saved: {p}",
@@ -1552,18 +1718,19 @@ const I18N_EN = {
   /* ---- Backend-Fehler/Warnungen (HTTPException.detail, res.error, plan.warnings) ----
      Kommen serverseitig deutsch → hier per Key übersetzt. Dynamische f-Strings (mit Pfad/
      Dateiname/Exception) bleiben deutsch, weil der interpolierte Wert ohnehin nicht übersetzbar ist. */
-  "labels.db nicht geladen — zuerst build_label_db.py laufen lassen":"labels.db not loaded — run build_label_db.py first",
-  "labels.db nicht geladen":"labels.db not loaded", "labels.db nicht geladen — Labelcode kann nicht geprüft werden":"labels.db not loaded — label code cannot be checked",
-  "songs.db nicht geladen":"songs.db not loaded",
+  "Die GVL-Labelcode-Liste ist nicht geladen. CueCore beenden und neu starten; bleibt die Meldung, steht der Grund in cuecore.log im Datenordner (Einstellungen > Datenordner > Ordner öffnen).":
+    "The GVL label code list is not loaded. Quit and restart CueCore; if the message persists, the reason is in cuecore.log in the data folder (Settings > Data folder > Open folder).",
+  "Die Track-Datenbank ist nicht geladen. CueCore beenden und neu starten; bleibt die Meldung, steht der Grund in cuecore.log im Datenordner (Einstellungen > Datenordner > Ordner öffnen).":
+    "The track database is not loaded. Quit and restart CueCore; if the message persists, the reason is in cuecore.log in the data folder (Settings > Data folder > Open folder).",
   "Artist und Titel nötig — Datei nicht identifiziert. Für automatische Erkennung einen AcoustID-Key (frei) oder einen AudD-Token (kostenpflichtig) in den Einstellungen hinterlegen.":
     "Artist and title required — file not identified. Add an AcoustID key (free) or an AudD token (paid) in Settings for automatic recognition.",
   "confirm fehlt — kein Schreiben ohne Bestätigung":"confirm missing — no writing without confirmation",
   "Kein bestätigter Labelcode — kein Tagging (Default-Stopp)":"No confirmed label code — no tagging (default stop)",
-  "Kein LC-verified-Ordner in den Settings konfiguriert":"No LC-verified folder configured in Settings",
+  "Noch kein Zielordner für fertige Dateien gewählt. In den Einstellungen unter Ordner den LC-verified-Ordner wählen, dann erneut taggen.":"No target folder for finished files chosen yet. Choose the LC-verified folder in Settings under Folders, then tag again.",
   "Keine CMX3600-Events erkannt — ist das eine gültige EDL?":"No CMX3600 events detected — is this a valid EDL?",
   "fmt muss xlsx, csv oder pdf sein":"fmt must be xlsx, csv or pdf",
   "fmt muss csv, xlsx oder pdf sein":"fmt must be csv, xlsx or pdf",
-  "Datei-Inhalt nicht dekodierbar (Base64 erwartet)":"File content not decodable (Base64 expected)",
+  "Die Datei kam nicht vollständig an. Bitte noch einmal auswählen.":"The file did not arrive completely. Please choose it again.",
   "Bitte ein PDF hochladen (.pdf)":"Please upload a PDF (.pdf)",
   "Kein Albumname übergeben":"No album name provided",
   "Nur http/https-URLs erlaubt":"Only http/https URLs allowed",
@@ -1587,7 +1754,7 @@ const I18N_EN = {
   "Consumer Key/Secret akzeptiert":"Consumer key/secret accepted", "Token erhalten":"Token received",
   "keine Antwort von api.acoustid.org":"no response from api.acoustid.org",
   "Labelcode: 4 bis 6 Ziffern (z.B. 24584 oder LC 100148)":"Label code: 4 to 6 digits (e.g. 24584 or LC 100148)",
-  "Labelname fehlt":"Label name missing", "Leere Datei":"Empty file", "Liste nicht gefunden":"List not found", "Keine Cues.":"No cues.",
+  "Labelname fehlt":"Label name missing", "Die Datei ist leer. Bitte die richtige Datei auswählen.":"The file is empty. Please choose the right file.", "Liste nicht gefunden":"List not found", "Keine Cues.":"No cues.",
   "Kein händisch angelegtes Label mit diesem Code und Namen":"No manually added label with this code and name",
   "Kein editingtools-API-Key hinterlegt — in den Einstellungen eintragen.":"No editingtools API key stored — add it in Settings.",
   "Keine Cue-Dateinamen für den Library-Scan.":"No cue file names for the library scan.",
@@ -1597,7 +1764,31 @@ const I18N_EN = {
   "Keine erkannte Library-Lieferung.":"Not a recognised library delivery.",
   "Pflichtspalten nicht erkannt: Titel, dazu Interpret oder Komponist":"Required columns not recognised: title, plus artist or composer",
   "Das ist eine Track-Lieferung (Titel, Komponisten, Labelcodes), keine Kürzel-Liste. Sie gehört in die Track-Datenbank: dort „Import“ — die Tracks werden als verifiziert übernommen und das Cue-Sheet findet sie über den Dateinamen. Hier wird nur die Zuordnung Katalog-Kürzel → Labelcode gepflegt.":
-    "This is a track delivery (titles, composers, label codes), not a prefix list. It belongs in the track database: use “Import file” there — the tracks are imported as verified and the cue sheet finds them by file name. This is only where catalogue prefix → label code assignments are maintained."
+    "This is a track delivery (titles, composers, label codes), not a prefix list. It belongs in the track database: use “Import file” there — the tracks are imported as verified and the cue sheet finds them by file name. This is only where catalogue prefix → label code assignments are maintained.",
+  // Label-Datenbank als Liste (Kürzel, LC-Korrekturen)
+  "Leer zeigt alle Labels. Zahlen (4–6-stellig) werden als Labelcode gelesen, Katalog-Kürzel (z.B. CEZ) findet die Suche auch.":"Empty shows all labels. Numbers (4–6 digits) are read as a label code; the search also finds catalogue prefixes (e.g. CEZ).",
+  "Herkunft":"Origin", "Manuell angelegt":"Added manually", "Eigene Änderungen":"Your changes", "Korrektur":"Correction", "gefiltert":"filtered",
+  "nur Production Music":"Production music only", "nur mit Kürzel":"With prefix only",
+  "Nur Labels, die die GVL als Production Library Music (PLM) führt":"Only labels the GVL lists as production library music (PLM)",
+  "Nur Labels mit Katalog-Kürzel aus Library-Listen, Lieferungen oder eigenen Einträgen":"Only labels with a catalogue prefix from library lists, deliveries or your own entries",
+  "<b>{n}</b> Labels":"<b>{n}</b> labels", "Keine Labels mit diesem Filter.":"No labels with this filter.", "(Code fehlt im Master)":"(code missing from the master)",
+  "<kbd>↑</kbd><kbd>↓</kbd> Zeile wählen · <kbd>F2</kbd> oder Doppelklick: Kürzel bzw. LC bearbeiten · <kbd>Enter</kbd> übernimmt · <kbd>Esc</kbd> bricht ab · <kbd>⌘Z</kbd> rückgängig":"<kbd>↑</kbd><kbd>↓</kbd> choose row · <kbd>F2</kbd> or double-click: edit prefixes or LC · <kbd>Enter</kbd> applies · <kbd>Esc</kbd> cancels · <kbd>⌘Z</kbd> undo",
+  "mitgelieferte Kürzel-Tabelle":"bundled prefix table", "aus Library-Lieferungen gelernt":"learned from library deliveries", "aus deiner hochgeladenen Liste":"from your uploaded list",
+  "eigene Zuordnung":"your own assignment", "Korrektur: gegen die gelieferte Zuordnung umgehängt":"Correction: moved against the bundled assignment",
+  "GVL-Kurzname (aus dem Master, nicht änderbar)":"GVL short name (from the master, not editable)", "entfernt — gilt nicht mehr":"removed — no longer applies",
+  "umgehängt zu LC{to}":"moved to LC{to}", "Notiz: {n}":"Note: {n}", "Notiz":"Note", "Notiz (Quelle, Grund):":"Note (source, reason):",
+  "Eigene Korrektur: „{name}“ gilt in CueCore als LC{lc} {label}. Notiz: {note}":"Your correction: “{name}” counts as LC{lc} {label} in CueCore. Note: {note}",
+  "Eigene Korrektur — gilt nur in CueCore, der GVL-Master bleibt unverändert und die Korrektur übersteht jedes Update":"Your correction — applies only in CueCore; the GVL master stays unchanged and the correction survives every update",
+  "Kürzel bearbeiten (F2)":"Edit prefixes (F2)", "LC korrigieren — eigene Korrektur mit Notiz":"Correct LC — your own correction with a note", "LC korrigieren":"Correct LC",
+  "Händisch angelegtes Label entfernen":"Remove manually added label",
+  "LC für „{name}“ — Enter übernimmt, Esc bricht ab":"LC for “{name}” — Enter applies, Esc cancels",
+  "Kürzel, durch Komma getrennt — Enter übernimmt, Esc bricht ab":"Prefixes, separated by commas — Enter applies, Esc cancels",
+  "Kürzel {p} umhängen":"Move prefix {p}", "Gespeichert — gilt sofort im Cue-Sheet.":"Saved — applies in the cue sheet right away.",
+  "„{name}“ steht im GVL-Master unter LC{lc}. Die Korrektur auf LC{to} gilt nur in CueCore, der Master bleibt unverändert, und sie übersteht jedes GVL-Update.":"“{name}” is listed in the GVL master under LC{lc}. The correction to LC{to} applies only in CueCore; the master stays unchanged, and it survives every GVL update.",
+  "Korrektur gespeichert — gilt sofort im Cue-Sheet.":"Correction saved — applies in the cue sheet right away.",
+  "Korrektur aufgehoben — es gilt wieder der GVL-Master.":"Correction removed — the GVL master applies again.",
+  "Kürzel bei LC{lc}":"prefixes at LC{lc}", "LC bei „{name}“":"LC of “{name}”", "Rückgängig: {what}":"Undo: {what}", "Zurückgenommen: {what}":"Undone: {what}", "rückgängig":"undone",
+  "Eine LC-Korrektur braucht eine Notiz (Quelle, Grund)":"An LC correction needs a note (source, reason)", "Kürzel fehlt":"Prefix missing"
 };
 // Englische Einzahl, wenn die Anzahl 1 ist („1 titles“, „1 prefixes“). Wert = Text für {n}=1,
 // oder [Variable, Text], wenn die Anzahl anders heißt, oder bei mehreren Zählern in einem Text
@@ -1618,7 +1809,7 @@ const I18N_EN_ONE = {
   "Übernommen: {n} Kürzel aus dieser Liste, {m} aus allen deinen Listen aktiv.":"Taken over: {n} prefix from this list, {m} active from all your lists.",
   "Netz nicht erreichbar ({n} Fehler) — kein Treffer heißt hier nicht „kein Code“. Verbindung prüfen und erneut suchen.":"Network unreachable ({n} error) — no hit does not mean “no code” here. Check the connection and search again.",
   "Komponisten-Vorschläge für {n} Titel (nicht gespeichert)":"composer suggestion for {n} title (not saved)",
-  "<b>{n}</b> Treffer<span class=\"mode-tag\">{mode}</span>":"<b>{n}</b> match<span class=\"mode-tag\">{mode}</span>",
+  "<b>{n}</b> Labels":"<b>{n}</b> label",
   "{n} weitere Kandidaten mit niedrigerer Confidence/Qualität verworfen.":"{n} more candidate with lower confidence/quality discarded.",
   "{n} Dateien":"{n} file", "zuletzt · {p} · {n} Dateien":"last · {p} · {n} file",
   "<b>{n}</b> Dateien · Bearbeitung in 5er-Batches":"<b>{n}</b> file · processed in batches of 5",
@@ -1634,6 +1825,7 @@ const I18N_EN_ONE = {
 // Deutsche Einzahl, wenn die Anzahl 1 ist („1 Dateien“, „1 Tage“, „1 Zeilen“, „1 Tracks“) — Aufbau wie I18N_EN_ONE.
 // Texte mit „(n)“/„(en)“ und solche, deren Zahl nie 1 ist (Zeilen eines GVL-PDFs), stehen nicht hier.
 const I18N_DE_ONE = {
+  "<b>{n}</b> Labels":"<b>{n}</b> Label",
   "{n} Dateien":"{n} Datei", "zuletzt · {p} · {n} Dateien":"zuletzt · {p} · {n} Datei",
   "<b>{n}</b> Dateien · Bearbeitung in 5er-Batches":"<b>{n}</b> Datei · Bearbeitung in 5er-Batches",
   "{n} Tage alt — PDF laden":"{n} Tag alt — PDF laden", "aktuell · {n} Tage":"aktuell · {n} Tag",
@@ -1659,11 +1851,24 @@ const I18N_DE_ONE = {
 // Backend-Meldungen mit eingesetzten Werten (Pfad, Code, Name) lassen sich nicht als exakter Schlüssel nachschlagen:
 // t() fällt in EN auf diese Muster zurück, der eingesetzte Teil bleibt stehen. Spezifischere Muster zuerst.
 const I18N_EN_RX = [
+  [/^Kürzel (\S+) ist keinem Label zugeordnet$/, 'Prefix $1 is not assigned to any label'],
+  [/^LC(\S+) steht weder im GVL-Master noch unter den eigenen Labels — erst als Label anlegen$/, 'LC$1 is neither in the GVL master nor among your own labels — add it as a label first'],
+  [/^(\S+) gehört laut Kürzel-Tabelle zu LC(\S+) (.*)\. Umhängen ist eine Korrektur und braucht eine Notiz\.$/, '$1 belongs to LC$2 $3 according to the prefix table. Moving it is a correction and needs a note.'],
+  [/^(\S+) gehört laut GVL-Master zu LC(\S+) (.*)\. Umhängen ist eine Korrektur und braucht eine Notiz\.$/, '$1 belongs to LC$2 $3 according to the GVL master. Moving it is a correction and needs a note.'],
+  [/^(\S+) gehört laut (\S+) zu LC(\S+) (.*)\. Umhängen ist eine Korrektur und braucht eine Notiz\.$/, '$1 belongs to LC$3 $4 according to $2. Moving it is a correction and needs a note.'],
+  [/^(\S+) ist ein GVL-Kurzname und bleibt — einem anderen Label zuordnen geht als Korrektur mit Notiz$/, '$1 is a GVL short name and stays — assigning it to another label works as a correction with a note'],
   [/^Das PDF \(Stand (.*)\) ist älter als der aktuelle Master \(Stand (.*)\)\. Übernehmen nur nach ausdrücklicher Bestätigung — sonst gehen neuere Codes verloren\.$/, 'The PDF (as of $1) is older than the current master (as of $2). Apply only after explicit confirmation — otherwise newer codes are lost.'],
   [/^LC(\S+) steht nicht im GVL-Master — nicht gespeichert\. Ein eigenes Label zuerst über „\+ Label anlegen“ eintragen\.$/, 'LC$1 is not in the GVL master — not saved. Add your own label first via “+ Add label”.'],
   [/^Labelcode „(.*)“ nicht lesbar — erwartet z\.B\. LC00121$/, 'Label code “$1” not readable — expected e.g. LC00121'],
   [/^Song (\S+) nicht gefunden$/, 'Song $1 not found'],
-  [/^Kein Ordner: (.*)$/, 'Not a folder: $1'],
+  [/^Keine deutsche oder europäische Veröffentlichung gefunden: (.*) stammt aus einer internationalen Veröffentlichung, bitte prüfen$/, 'No German or European release found: $1 comes from an international release, please check'],
+  [/^GEMA-Werknr\. (\S+) laut MusicBrainz \(Werk-Attribut\), bitte prüfen$/, 'GEMA work no. $1 according to MusicBrainz (work attribute), please check'],
+  [/^Werk trägt (\S+) GEMA-Werknummern \((.*)\), bitte die richtige wählen$/, 'Work carries $1 GEMA work numbers ($2), please choose the right one'],
+  [/^Version erkannt: (.*)\. Label und Urheber können von der Originalfassung abweichen, bitte prüfen$/, 'Version detected: $1. Label and authors may differ from the original, please check'],
+  [/^Version erkannt: (.*)$/, 'Version detected: $1'],
+  [/^MusicBrainz fand nur die Originalfassung, nicht die Version „(.*)“\. Das Label kann abweichen, bitte prüfen$/, 'MusicBrainz only found the original, not the version “$1”. The label may differ, please check'],
+  [/^Werk trägt (\S+) ISWCs \((.*)\), bitte die richtige wählen$/, 'Work carries $1 ISWCs ($2), please choose the right one'],
+  [/^Ordner nicht gefunden: (.*)\. Bitte den Ordner erneut wählen oder hineinziehen\.$/, 'Folder not found: $1. Please choose or drop the folder again.'],
   [/^LC(.+) nicht im GVL-Master — kein Tagging möglich\.$/, 'LC$1 is not in the GVL master — tagging not possible.'],
   [/^LC(.+) nicht im GVL-Master — kein Tagging$/, 'LC$1 is not in the GVL master — no tagging'],
   [/^LC(\S+) „(.*)“ gibt es schon \(GVL-Master\)$/, 'LC$1 “$2” already exists (GVL master)'],
@@ -1671,10 +1876,11 @@ const I18N_EN_RX = [
   [/^(Discogs|Index)-LC (.+) nicht im GVL-Master — verworfen$/, '$1 LC $2 is not in the GVL master — discarded'],
   [/^Labelcode (.+) steht nicht im GVL-Master$/, 'Label code $1 is not in the GVL master'],
   [/^Format nicht unterstützt: (.*) \(erlaubt: (.*)\)$/, 'Format not supported: $1 (allowed: $2)'],
-  [/^Datei nicht gefunden: (.*)$/, 'File not found: $1'],
-  [/^Verschieben fehlgeschlagen: (.*) — Tags zurückgesetzt\.$/, 'Moving failed: $1 — tags restored.'],
-  [/^Verschieben fehlgeschlagen: (.*)$/, 'Moving failed: $1'],
-  [/^PDF nicht lesbar: (.*)$/, 'PDF not readable: $1'],
+  [/^Datei nicht gefunden: (.*)\. Wurde sie verschoben oder umbenannt\? Ordner neu scannen\.$/, 'File not found: $1. Was it moved or renamed? Scan the folder again.'],
+  [/^Datei konnte nicht verschoben werden \((.*)\)\. Die Tags sind wieder wie vorher\. Prüfen, ob der Zielordner erreichbar ist und die Datei in keinem anderen Programm offen ist, dann erneut versuchen\.$/, 'The file could not be moved ($1). The tags are back as before. Check that the target folder is reachable and the file is not open in another program, then try again.'],
+  [/^Datei konnte nicht verschoben werden \((.*)\)\. Prüfen, ob der Zielordner erreichbar ist und die Datei in keinem anderen Programm offen ist, dann erneut versuchen\.$/, 'The file could not be moved ($1). Check that the target folder is reachable and the file is not open in another program, then try again.'],
+  [/^PDF nicht lesbar \((.*)\)\. Bitte die Labelcode-Liste als PDF von labelrecherche\.gvl\.de neu laden und erneut wählen\.$/, 'PDF not readable ($1). Please download the label code list as PDF from labelrecherche.gvl.de again and choose it.'],
+  [/^Unerwarteter Fehler \((.*)\)\. Erneut versuchen; bleibt es, steht der Grund in cuecore\.log im Datenordner\.$/, 'Unexpected error ($1). Try again; if it persists, the reason is in cuecore.log in the data folder.'],
   [/^Maximal (.+) Cues je Anfrage\.$/, 'At most $1 cues per request.'],
   [/^Kein Verbindungstest für '(.*)'\.$/, "No connection test for '$1'."],
   [/^Keine Spalte für Interpret, Titel oder Clip\/Dateiname erkannt — gefunden: (.*)$/, 'No column for artist, title or clip/file name recognised — found: $1'],
@@ -1797,7 +2003,8 @@ window.addEventListener('scroll', _tipHide, true);
 function openSource(url){ fetch('/api/open-url',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})}).catch(e=>logErr('Link öffnen', e)); }
 function srcChip(s){
   const a=document.createElement('a'); a.className='chip srclink'; a.href=s.url; a.target='_blank'; a.rel='noopener';
-  a.innerHTML=esc(s.name)+' <span class="ext">↗</span>';
+  // Discogs-API-Bedingungen: Hinweis „Data provided by Discogs“ mit Link an den Daten (Wortlaut bleibt Englisch)
+  a.innerHTML=(s.name==='Discogs' ? 'Data provided by Discogs' : esc(s.name))+' <span class="ext">↗</span>';
   a.addEventListener('click', e=>{ e.preventDefault(); openSource(s.url); });
   return a;
 }
@@ -1820,7 +2027,9 @@ document.querySelectorAll('.nav button').forEach(b=>{
     $('#tool-settings').hidden = tool!=='settings';
     if(tool==='settings') loadSettings();
     if(tool==='db') loadDb(0);
+    if(tool==='gvl' && !gState.rows.length) loadGvl(0);
     if(tool==='home') renderHome();
+    if(tool==='edl') renderProjects();
   });
 });
 // Track-Suche startet nicht mehr sichtbar: Start-Tab ist der Eingang
@@ -1960,7 +2169,19 @@ async function loadSettings(){
       const pf=data.partner_fields||{};
       const list=el('div','plist'); card.appendChild(list);
       const empty=el('div','hint',()=>t('Noch kein Partner eingetragen.')); card.appendChild(empty);
+      const addBuiltin=(p)=>{   // eingebauter Zugang: gilt für alle, nicht bearbeitbar, nur prüfbar
+        const row=el('div','prow builtin');
+        const head=el('div','pbuiltin'); head.append(el('b',null,p.name), el('span','chip lock', ()=>t('eingebaut')));
+        head.appendChild(el('span','hint', ()=>t('Zugang ist in CueCore eingebaut und gilt für alle. Ein eigener Zugang desselben Anbieters ersetzt ihn.')));
+        row.appendChild(head);
+        const act=el('div','sgroup-test');
+        const tb=el('button','btn ghost sm'); tSet(tb,'Verbindung prüfen'); tb.type='button';
+        const msg=el('span','hint'); act.append(tb,msg); row.appendChild(act);
+        tb.addEventListener('click', ()=>runTest(tb,msg,p.id));
+        list.appendChild(row); empty.hidden=true;
+      };
       const addRow=(p)=>{
+        if(p.builtin){ addBuiltin(p); return; }
         const row=el('div','prow'); row.dataset.pid=p.id||'';
         const pg=el('div','sgrid');
         ['name','host','client_id','client_secret'].forEach(k=>{
@@ -2030,9 +2251,9 @@ $('#save-settings').addEventListener('click', async ()=>{
   document.querySelectorAll('#settings-list input:not([data-pfield])').forEach(i=>{ if(i.value!=='' || i.dataset.always) updates[i.dataset.key]=i.value; });
   // Partnerliste komplett (Reihenfolge = Abfrage-Reihenfolge); leeres Secret behält das gespeicherte.
   const partners=[];
-  document.querySelectorAll('#settings-list .prow').forEach(r=>{ const p={id:r.dataset.pid||''}; r.querySelectorAll('input[data-pfield]').forEach(i=>{ p[i.dataset.pfield]=i.value.trim(); }); partners.push(p); });
+  document.querySelectorAll('#settings-list .prow:not(.builtin)').forEach(r=>{ const p={id:r.dataset.pid||''}; r.querySelectorAll('input[data-pfield]').forEach(i=>{ p[i.dataset.pfield]=i.value.trim(); }); partners.push(p); });
   const r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({updates, partners})}).catch(e=>{ logErr('Einstellungen speichern', e); return null; });
-  if(!r || !r.ok){ const d=r ? await r.json().catch(()=>({})) : {}; tFn($('#settings-msg'), ()=>t('Speichern fehlgeschlagen: {why}',{why:d.detail?t(String(d.detail)):t('Backend nicht erreichbar')})); return; }
+  if(!r || !r.ok){ const d=r ? await r.json().catch(()=>({})) : {}; tFn($('#settings-msg'), ()=>t('Speichern fehlgeschlagen: {why}',{why:d.detail?t(String(d.detail)):t(NET_DOWN)})); return; }
   tFn($('#settings-msg'), ()=>t('Gespeichert.')); setTimeout(()=>{$('#settings-msg').textContent='';},2000); loadSettings(); refreshHealth(); refreshTaggerGate();   // Rail: Quellen-Zähler mitziehen
 });
 
@@ -2062,7 +2283,10 @@ function refreshHealth(){
     $('#st-songs').textContent = (h.songs||0).toLocaleString(LOC());
     const ix=h.index||{}; window._ixRows = ix.present ? (ix.rows||0) : null;
     $('#st-index').textContent = ix.present ? (ix.rows||0).toLocaleString(LOC()) : t('keiner');
-    $('#dot').className = 'dot ' + (h.ready?'ok':'bad');
+    // D17: GVL-Master älter als 90 Tage -> gelber Punkt auch in der Seitenleiste (wie die Pille auf der Startseite)
+    const age=h.source_version ? Math.floor((Date.now()-new Date(h.source_version).getTime())/864e5) : null;
+    $('#dot').className = 'dot ' + (!h.ready ? 'bad' : (age!=null && age>90 ? 'warn' : 'ok'));
+    if(age!=null && age>90) tFn($('#st-ver').closest('.row'), ()=>t('{n} Tage alt — PDF laden',{n:age}), 'title');
     // Externe Quellen: 'n/5' + Tooltip mit Namen — ersetzt das veraltete 'API-Key: keiner nötig'.
     const src=h.sources||{}; const names={editingtools:'editingtools',trackmeta:'Track-API',discogs:'Discogs',genius:'Genius',acoustid:'AcoustID',audd:'AudD',acrcloud:'ACRCloud'};
     const on=Object.keys(names).filter(k=>src[k]); const b=$('#st-src');
@@ -2071,6 +2295,42 @@ function refreshHealth(){
   }).catch(e=>{ $('#dot').className='dot bad'; logErr('Status', e); });
 }
 refreshHealth();
+
+// Track-Index lädt beim ersten Start von selbst (Backend, _autostart_index_download). Der Balken oben zeigt das auf
+// jeder Seite, damit niemand „findet nichts“ für leer hält; die Seitenleiste zeigt den Stand, die Suche weist darauf hin.
+let _ixState='idle';
+async function ixWatch(){
+  const box=$('#ixbanner'); let st;
+  try{ st=await fetchJson('/api/index/download'); }catch(e){ setTimeout(ixWatch, 5000); return; }
+  const was=_ixState; _ixState=st.state;
+  const pct=st.total ? Math.floor(100*st.done/st.total) : 0;
+  box.innerHTML=''; box.className='ixbanner';
+  if(st.state==='running'){
+    const tx=el('div','ixt'); tx.append(el('b',null,()=>st.phase==='extract' ? t('Track-Index wird entpackt') : t('Track-Index wird geladen (einmalig)')),
+      el('span',null,()=>t('CueCore ist schon nutzbar. Bis der Index fertig ist, findet die Suche nur Treffer aus deiner Datenbank, den Library-Lieferungen und dem Netz.')));
+    const bar=document.createElement('progress'); bar.max=100; bar.value=pct; tFn(bar, ()=>t('Fortschritt'), 'aria-label');
+    const stop=el('button','btn ghost sm',()=>t('Abbrechen')); stop.type='button';
+    tFn(stop, ()=>t('Abbrechen — später in den Einstellungen unter „Lokaler Track-Index“ neu starten'), 'title');
+    stop.addEventListener('click', ()=>fetchJson('/api/index/download/cancel',{method:'POST'}).catch(e=>logErr('Index abbrechen', e)));
+    box.append(tx, bar, el('span','pct',pct+' %'), stop); box.hidden=false;
+    $('#st-index').textContent=t('lädt {p} %',{p:pct});
+    setTimeout(ixWatch, 1500); return;
+  }
+  if(st.state==='done' && was==='running'){
+    box.classList.add('ok'); box.appendChild(el('div','ixt',()=>t('Track-Index ist fertig geladen. Die Suche findet jetzt auch Tracks aus Discogs und MusicBrainz.')));
+    box.hidden=false; refreshHealth(); setTimeout(()=>{ if(_ixState==='done') box.hidden=true; }, 8000); return;
+  }
+  if(st.state==='error' && st.auto){
+    box.classList.add('bad');
+    box.appendChild(el('div','ixt',()=>t('Track-Index konnte nicht geladen werden: {why}',{why:t(st.error||'')})));
+    const again=el('button','btn sm',()=>t('Erneut versuchen')); again.type='button';
+    again.addEventListener('click', async()=>{ again.disabled=true; try{ await fetchJson('/api/index/download',{method:'POST'}); }
+      catch(e){ logErr('Index erneut', e); } ixWatch(); });
+    box.appendChild(again); box.hidden=false; return;
+  }
+  box.hidden=true;
+}
+ixWatch();
 
 /* ---- Startseite ---- */
 const RECENT_EDL_KEY='cuecore_recent_edls', RECENT_SEARCH_KEY='cuecore_recent_search';
@@ -2149,7 +2409,7 @@ async function renderHome(){
     const on=Object.keys(names).filter(k=>src[k]); const off=Object.keys(names).filter(k=>!src[k]);
     row(on.length?'ok':'', t('Online-Dienste'), on.length+' / '+Object.keys(names).length, off.length?el('span','pill warn', off.map(k=>t(names[k])).join(', ')+' '+t(off.length>1?'fehlen':'fehlt')):null, 'settings');
   }catch(e){ if(stale()) return;     // ein Fehler im Skript ist kein Backend-Ausfall: Grund zeigen, Konsole
-    const why=errWhy(e); hh.appendChild(el('div','none', ()=>e.net ? t('Backend nicht erreichbar.') : why())); }
+    const why=errWhy(e); hh.appendChild(el('div','none', ()=>e.net ? t(NET_DOWN) : why())); }
   // Zuletzt: Schnittlisten, Ordner, Suche — gemischt nach Zeit
   const rc=$('#homerecent'); rc.innerHTML='';
   const items=[...edls.map(e=>({at:e.at, label:e.name, sub:t('{c} Cues · {o} offen',{c:e.cues,o:e.open}), tool:'edl'})),
@@ -2166,6 +2426,11 @@ document.addEventListener('keydown', e=>{
   const map={'1':'tagger','2':'edl','3':'resolve'}; if(map[e.key]) goTool(map[e.key]);
 });
 renderHome();
+document.addEventListener('keydown', e=>{
+  if(!(e.metaKey||e.ctrlKey) || e.shiftKey || e.altKey || (e.key||'').toLowerCase()!=='z') return;
+  if($('#tool-edl').hidden || document.querySelector('.emodal-overlay') || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName||'') || edlState.busy) return;
+  e.preventDefault(); undoEdl();
+});
 
 /* ---- GVL-Master aktualisieren (PDF -> Diff-Vorschau -> Merge) ---- */
 let _gvlToken=null;
@@ -2443,7 +2708,8 @@ function renderResolve(res){
   }
 
   if(!best){
-    if(!netDown) rresult.appendChild(el('div','empty', ()=>res.matched?t('Treffer in MusicBrainz, aber kein eindeutiger GVL-Labelcode zuordenbar.'):t('Kein Recording-Match in MusicBrainz.')));
+    if(!netDown) rresult.appendChild(el('div','empty', ()=>res.matched?t('Treffer in MusicBrainz, aber kein eindeutiger GVL-Labelcode zuordenbar.'):t('Keine Quelle kennt den Track (MusicBrainz, Deezer, Wikidata befragt, alle erreichbar). Schreibweise prüfen, Album-LC suchen oder im Editor eintragen.')));   // D8: Quelle kennt ihn nicht ≠ Quelle nicht erreichbar
+    if(!netDown && _ixState==='running') rresult.appendChild(el('div','hint', ()=>t('Der Track-Index lädt noch — danach findet die Suche mehr. Stand oben im Balken.')));
     appendMergeAffordance(res); appendNotes(res); return;
   }
 
@@ -2476,6 +2742,9 @@ function renderResolve(res){
     ['Komponist', res.composer||'–', false],['Texter', res.lyricist||'–', false],
     ['Verlag', res.publisher||'–', false],
     ['ISRC', (res.isrcs&&res.isrcs[0])||'–', true],
+    ['Version', res.version||'–', false],
+    ['ISWC', (res.iswcs||[]).join(' · ')||'–', true],          // mehrere: alle zeigen, nicht raten
+    ['GEMA-Werknr.', res.gema_werknummer ? res.gema_werknummer+(res.gema_source==='musicbrainz'?' · '+t('laut MusicBrainz, bitte prüfen'):'') : '–', true],
     ['Label', best.label||'–', false],['Labelcode', lcNum(best.labelcode), true],
   ];
   rows.forEach(([k,v,mono])=>{ if(!v||v==='–') return;   // leere Felder nicht als „–“-Zeile zeigen
@@ -2508,7 +2777,8 @@ let _rmerge=null;   // laufender Abgleich (AbortController), s. _rsearch
 function _editorFromResult(res, artist, title){
   const b=res.best||{}, tie=!!res.ambiguous;
   const net={komponist:res.composer||'', texter:res.lyricist||'', verlag:res.publisher||'', album:res.album||'',
-    isrc:(res.isrcs&&res.isrcs[0])||'', labelname:tie?'':(b.label||''), labelcode:tie?'':(b.labelcode||'')};
+    isrc:(res.isrcs&&res.isrcs[0])||'', iswc:(res.iswcs&&res.iswcs.length===1)?res.iswcs[0]:'',
+    gema_werknummer:res.gema_werknummer||'', labelname:tie?'':(b.label||''), labelcode:tie?'':(b.labelcode||'')};
   return {db:null, db_id:null, artist:res.artist||artist, title:res.title||title, net,
     fields:Object.entries(net).filter(([,v])=>v).map(([key,v])=>({key, net:v, status:''}))};
 }
@@ -2782,58 +3052,219 @@ function appendNotes(res){
   }
 }
 
-/* ---- gvl search ---- */
-const gresult=$('#gresult'); let gt=null;
-$('#gq').addEventListener('input', e=>{
-  clearTimeout(gt); const q=e.target.value.trim();
-  if(!q){ gresult.innerHTML=''; return; }
-  gt=setTimeout(()=>runGvl(q), 200);
+/* ---- Label-Datenbank: alle Labels seitenweise (wie die Track-Datenbank), Kürzel und LC direkt in der Tabelle ----
+   Kürzel und LC-Korrekturen landen in einer eigenen Schicht (label_edits.json), der GVL-Master bleibt unverändert und
+   die Schicht überlebt jedes Update. Doppelklick oder F2 bearbeitet, Enter übernimmt, Esc bricht ab, ⌘Z nimmt zurück. */
+const gState={q:'', offset:0, limit:50, plm:false, kuerzel:false, herkunft:'', total:0, rows:[], undo:[], focus:-1};
+const gresult=$('#gresult'); let gt=null, _gSeq=0;
+$('#gq').addEventListener('input', e=>{ clearTimeout(gt); const q=e.target.value.trim(); gt=setTimeout(()=>runGvl(q), 200); });
+$('#gprev').addEventListener('click', ()=>loadGvl(Math.max(0, gState.offset-gState.limit)));
+$('#gnext').addEventListener('click', ()=>loadGvl(gState.offset+gState.limit));
+$('#gundo').addEventListener('click', ()=>gvlUndo());
+document.addEventListener('keydown', e=>{
+  if($('#tool-gvl').hidden || !(e.metaKey||e.ctrlKey) || e.key.toLowerCase()!=='z' || e.shiftKey) return;
+  if(e.target.closest && e.target.closest('input,textarea,.emodal-overlay')) return;
+  if(gState.undo.length){ e.preventDefault(); gvlUndo(); }
 });
-// Die Volltext-Suche kappt der Server (limit). Eine Zeile mehr holen zeigt, ob es weitere gibt — sonst stand dort
-// stumm „30 Treffer“ bei 78. „Weitere laden“ hebt die Grenze, ein neuer Suchbegriff beginnt wieder bei GVL_PAGE.
-const GVL_PAGE=30, GVL_MORE=100; let gLimit=GVL_PAGE, gQuery='';
-async function runGvl(q, limit){
-  if(q!==gQuery){ gQuery=q; gLimit=GVL_PAGE; }
-  if(limit) gLimit=limit;
-  const lim=gLimit;
+function runGvl(q){ gState.q=q||''; return loadGvl(0); }
+function gvlMsg(fn, cls){ const m=$('#gmsg'); m.className='hint gmsg'+(cls?' '+cls:''); if(fn) tFn(m, fn); else m.textContent=''; }
+const _GORIGIN={liste:'mitgelieferte Kürzel-Tabelle', lieferung:'aus Library-Lieferungen gelernt', nutzerliste:'aus deiner hochgeladenen Liste',
+  eigen:'eigene Zuordnung', korrektur:'Korrektur: gegen die gelieferte Zuordnung umgehängt', gvl:'GVL-Kurzname (aus dem Master, nicht änderbar)',
+  entfernt:'entfernt — gilt nicht mehr', verschoben:'umgehängt zu LC{to}'};
+function renderGvlBar(){
+  const bar=$('#gfbar'); bar.innerHTML='';
+  const seg=el('div','seg'); seg.setAttribute('role','group'); tFn(seg, ()=>t('Herkunft'), 'aria-label');
+  [['','Alle'],['manuell','Manuell angelegt'],['eigen','Eigene Änderungen']].forEach(([k,lab])=>{
+    const b=el('button', gState.herkunft===k?'on':'', ()=>t(lab)); b.type='button'; b.setAttribute('aria-pressed', String(gState.herkunft===k));
+    b.addEventListener('click', ()=>{ gState.herkunft=k; loadGvl(0); }); seg.appendChild(b); });
+  bar.appendChild(seg);
+  const tog=(key, lab, tip)=>{ const b=el('button','gfilt'+(gState[key]?' on':''), ()=>t(lab)); b.type='button'; b.dataset.tip='';
+    b.setAttribute('aria-pressed', String(!!gState[key])); tFn(b, ()=>t(tip), 'aria-label');
+    b.addEventListener('click', ()=>{ gState[key]=!gState[key]; loadGvl(0); }); return b; };
+  bar.append(tog('plm','nur Production Music','Nur Labels, die die GVL als Production Library Music (PLM) führt'),
+             tog('kuerzel','nur mit Kürzel','Nur Labels mit Katalog-Kürzel aus Library-Listen, Lieferungen oder eigenen Einträgen'));
+}
+async function loadGvl(offset){
+  gState.offset=offset; const seq=++_gSeq;
+  const p=new URLSearchParams({q:gState.q, offset:offset, limit:gState.limit});
+  if(gState.plm) p.set('plm','true'); if(gState.kuerzel) p.set('kuerzel','true'); if(gState.herkunft) p.set('herkunft', gState.herkunft);
+  renderGvlBar();
   let data;
-  try{ data=await fetchJson('/api/search?q='+encodeURIComponent(q)+'&limit='+(lim+1)); }
-  catch(err){ gresult.innerHTML=''; const why=errWhy(err); gresult.appendChild(el('div','empty',()=>t('Suche fehlgeschlagen: {why}',{why:why()}))); return; }
+  try{ data=await fetchJson('/api/labels/list?'+p); }
+  catch(err){ if(seq!==_gSeq) return; gresult.innerHTML=''; $('#gnav').hidden=true; const why=errWhy(err);
+    gresult.appendChild(el('div','empty',()=>t('Laden fehlgeschlagen: {why}',{why:why()}))); return; }
+  if(seq!==_gSeq) return;
+  gState.total=data.total; gState.rows=data.rows;
   gresult.innerHTML='';
-  if(!data.results.length){ gresult.appendChild(el('div','empty',()=>t('Kein Treffer im GVL-Master.'))); return; }
-  const more=data.mode!=='code' && data.results.length>lim, rows=more ? data.results.slice(0,lim) : data.results;
-  const head=el('div','meta-line'); head.innerHTML=t('<b>{n}</b> Treffer<span class="mode-tag">{mode}</span>',{n:more ? nfmt(lim)+'+' : nfmt(rows.length), mode:data.mode==='code'?t('Labelcode'):t('Volltext')});
+  const head=el('div','meta-line');
+  tFn(head, ()=>t('<b>{n}</b> Labels',{n:nfmt(data.total)})+(gState.q||gState.plm||gState.kuerzel||gState.herkunft ? '<span class="mode-tag">'+esc(t('gefiltert'))+'</span>' : ''), 'html');
   gresult.appendChild(head);
-  const list=el('div','glist');
-  rows.forEach(r=>{
-    const row=el('div','grow');
-    row.appendChild(el('div','glc',lcNum(r.labelcode)));
-    const mid=el('div'); mid.appendChild(el('div','glab', r.label||'—'));
-    if(r.hersteller) mid.appendChild(el('div','gher', r.hersteller));
-    row.appendChild(mid);
-    const tags=el('div','gtags');
-    if(r.plm) tags.appendChild(el('span','chip plm','PLM'));
-    if(r.rechterueckrufe){ const c=el('span','chip rr','RR '+r.rechterueckrufe); tFn(c, ()=>t('Rechterückruf — manuell auf labelrecherche.gvl.de prüfen'), 'title'); tags.appendChild(c); }
-    if(r.source==='manuell'){
-      const c=el('span','chip tie',()=>t('manuell')); tFn(c, ()=>t('Händisch angelegt — nicht aus dem GVL-Master'), 'title'); tags.appendChild(c);
-      const del=el('button','btn xs ghost',()=>t('Entfernen')); del.type='button';
-      del.addEventListener('click', async ()=>{
-        if(!confirm(t('Dieses händisch angelegte Label entfernen?'))) return;
-        await fetch('/api/labels/manual',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({labelcode:r.labelcode,label:r.label})});
-        refreshHealth(); runGvl($('#gq').value.trim());
-      });
-      tags.appendChild(del);
-    }
-    row.appendChild(tags);
-    list.appendChild(row);
-  });
-  gresult.appendChild(list);
-  if(more){
-    gresult.appendChild(el('div','hint', ()=>t('Die ersten {n} Treffer — es gibt weitere. Suchbegriff eingrenzen oder weitere laden.',{n:nfmt(lim)})));
-    const b=el('button','btn ghost sm', ()=>t('{n} weitere laden',{n:GVL_MORE})); b.type='button'; b.style.marginTop='8px';
-    b.addEventListener('click', ()=>{ b.disabled=true; runGvl(q, lim+GVL_MORE); });
-    gresult.appendChild(b);
+  if(!data.rows.length) gresult.appendChild(el('div','empty',()=>gState.q ? t('Kein Treffer im GVL-Master.') : t('Keine Labels mit diesem Filter.')));
+  else {
+    gresult.appendChild(gvlTable(data.rows));
+    const kh=el('p','ekeys'); tFn(kh, ()=>t('<kbd>↑</kbd><kbd>↓</kbd> Zeile wählen · <kbd>F2</kbd> oder Doppelklick: Kürzel bzw. LC bearbeiten · <kbd>Enter</kbd> übernimmt · <kbd>Esc</kbd> bricht ab · <kbd>⌘Z</kbd> rückgängig'), 'html');
+    gresult.appendChild(kh);
   }
+  $('#gnav').hidden=data.total<=gState.limit;
+  tFn($('#gpage'), ()=>t('{from}–{to} von {total}',{from:nfmt(offset+1), to:nfmt(Math.min(offset+gState.limit, data.total)), total:nfmt(data.total)}));
+  $('#gprev').disabled=offset<=0; $('#gnext').disabled=offset+gState.limit>=data.total;
+}
+const _gTok=s=>String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+function gvlChip(k){
+  const c=el('span','chip kz kz-'+k.origin, k.prefix);
+  c.dataset.tip=''; c.tabIndex=-1;
+  tFn(c, ()=>[t(_GORIGIN[k.origin]||k.origin,{to:lcNum(k.to||'')}), k.library && !['eigen','korrektur'].includes(k.origin) ? k.library : '', k.note ? t('Notiz: {n}',{n:k.note}) : '']
+    .filter(Boolean).join(' · '), 'aria-label');
+  return c;
+}
+function gvlTable(rows){
+  const tbl=el('table','etable gtable'); const hr=el('tr');
+  [['LC','glc-h'],['Label','col-title'],['Kürzel','col-w'],['Hersteller','col-w'],['PLM',''],['Rechterückruf',''],['Herkunft',''],['','']]
+    .forEach(([h,cls])=>hr.appendChild(el('th',cls||null, h?()=>t(h):'')));
+  const thead=el('thead'); thead.appendChild(hr); tbl.appendChild(thead);
+  const tb=el('tbody');
+  rows.forEach((r,i)=>{
+    const tr=el('tr','etrow'); tr.tabIndex=(i===Math.max(0,gState.focus)?0:-1);
+    const lc=el('td','cedit glc'); lc.dataset.field='lc';
+    const v=el('span','lcv'+(r.korrektur?' struck':''), lcNum(r.labelcode)); lc.appendChild(v);
+    if(r.korrektur){ const k=el('span','chip korr', '→ '+lcNum(r.korrektur.labelcode)); k.dataset.tip=''; k.tabIndex=-1;
+      tFn(k, ()=>t('Eigene Korrektur: „{name}“ gilt in CueCore als LC{lc} {label}. Notiz: {note}',{name:r.label, lc:lcNum(r.korrektur.labelcode), label:r.korrektur.label||t('(Code fehlt im Master)'), note:r.korrektur.note||'–'}), 'aria-label');
+      lc.appendChild(k); }
+    const nm=el('td','ell col-title', r.label||'—');
+    const kz=el('td','cedit col-w gkz'); kz.dataset.field='kuerzel';
+    (r.kuerzel||[]).forEach(k=>kz.appendChild(gvlChip(k)));
+    if(r.kurzname && !(r.kuerzel||[]).some(k=>_gTok(k.prefix)===_gTok(r.kurzname))) kz.appendChild(gvlChip({prefix:r.kurzname, origin:'gvl'}));
+    if(!kz.childNodes.length) kz.appendChild(el('span','dim','–'));
+    const her=el('td','ell col-w', r.hersteller||''); if(!r.hersteller) her.appendChild(el('span','dim','–'));
+    const plm=el('td'); if(r.plm) plm.appendChild(el('span','chip plm','PLM'));
+    const rr=el('td'); if(r.rechterueckrufe){ const c=el('span','chip rr','RR '+r.rechterueckrufe); c.dataset.tip=''; c.tabIndex=-1;
+      tFn(c, ()=>t('Rechterückruf — manuell auf labelrecherche.gvl.de prüfen'), 'aria-label'); rr.appendChild(c); }
+    const hk=el('td');
+    if(r.herkunft==='manuell'){ const c=el('span','chip tie',()=>t('manuell')); c.dataset.tip=''; c.tabIndex=-1; tFn(c, ()=>t('Händisch angelegt — nicht aus dem GVL-Master'), 'aria-label'); hk.appendChild(c); }
+    else if(r.herkunft==='korrektur'){ const c=el('span','chip korr',()=>t('Korrektur')); c.dataset.tip=''; c.tabIndex=-1; tFn(c, ()=>t('Eigene Korrektur — gilt nur in CueCore, der GVL-Master bleibt unverändert und die Korrektur übersteht jedes Update'), 'aria-label'); hk.appendChild(c); }
+    else hk.appendChild(el('span','dim','GVL'));
+    const act=el('td','eact');
+    const ek=iconBtn('pencil', ()=>t('Kürzel bearbeiten (F2)')); ek.addEventListener('click', e=>{ e.stopPropagation(); startGvlEdit(kz, r); });
+    const el2=iconBtn('hash', ()=>t('LC korrigieren — eigene Korrektur mit Notiz')); el2.addEventListener('click', e=>{ e.stopPropagation(); startGvlEdit(lc, r); });
+    act.append(ek, el2);
+    if(r.source==='manuell'){
+      const del=iconBtn('trash', ()=>t('Händisch angelegtes Label entfernen'));
+      del.addEventListener('click', async e=>{ e.stopPropagation();
+        if(!confirm(t('Dieses händisch angelegte Label entfernen?'))) return;
+        await fetch('/api/labels/manual',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({labelcode:r.labelcode,label:r.label})}).catch(e=>logErr('Label entfernen', e));
+        refreshHealth(); loadGvl(gState.offset); });
+      act.appendChild(del);
+    }
+    tr.append(lc, nm, kz, her, plm, rr, hk, act);
+    tr.addEventListener('focus', ()=>{ gState.focus=i; });
+    tb.appendChild(tr);
+  });
+  tb.addEventListener('dblclick', e=>{ const td=e.target.closest && e.target.closest('td.cedit'); if(!td || e.target.closest('button,input')) return;
+    const tr=td.closest('tr.etrow'); startGvlEdit(td, rows[[...tb.children].indexOf(tr)]); });
+  tb.addEventListener('keydown', e=>{
+    const tr=e.target.closest && e.target.closest('tr.etrow'); if(!tr || e.target!==tr) return;
+    const trs=[...tb.children], i=trs.indexOf(tr);
+    const go=j=>{ const n=trs[Math.max(0, Math.min(trs.length-1, j))]; trs.forEach(x=>x.tabIndex=-1); n.tabIndex=0; n.focus(); };
+    if(e.key==='ArrowDown'){ e.preventDefault(); go(i+1); }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); go(i-1); }
+    else if(e.key==='F2'){ e.preventDefault(); startGvlEdit(tr.querySelector('td[data-field="kuerzel"]'), rows[i]); }
+  });
+  tbl.appendChild(tb); const tw=el('div','etable-wrap'); tw.appendChild(tbl);
+  if(gState.focus>=0) setTimeout(()=>{ const n=tb.children[Math.min(gState.focus, tb.children.length-1)]; n && n.focus(); }, 0);
+  return tw;
+}
+function startGvlEdit(td, r){
+  if(!td || !r || td.querySelector('input')) return;
+  const k=td.dataset.field;
+  const mine=(r.kuerzel||[]).filter(x=>!['entfernt','verschoben'].includes(x.origin)).map(x=>x.prefix);
+  const old=k==='lc' ? lcNum(r.korrektur ? r.korrektur.labelcode : r.labelcode) : mine.join(', ');
+  td.classList.add('cediting'); td.innerHTML='';
+  const inp=document.createElement('input'); inp.className='cellinp'; inp.value=old;
+  tFn(inp, ()=>k==='lc' ? t('LC für „{name}“ — Enter übernimmt, Esc bricht ab',{name:r.label}) : t('Kürzel, durch Komma getrennt — Enter übernimmt, Esc bricht ab'), 'aria-label');
+  td.appendChild(inp); inp.focus(); inp.select && inp.select();
+  let done=false;
+  const finish=async save=>{
+    if(done) return; done=true;
+    const v=inp.value.trim();
+    gState.focus=gState.rows.indexOf(r);
+    if(save && v!==old){ if(k==='lc') await gvlSetLc(r, v); else await gvlSetPrefixes(r, mine, v); }
+    loadGvl(gState.offset);
+  };
+  inp.addEventListener('keydown', e=>{ e.stopPropagation();
+    if(e.key==='Enter'){ e.preventDefault(); finish(true); }
+    else if(e.key==='Escape'){ e.preventDefault(); finish(false); } });
+  inp.addEventListener('blur', ()=>{ if(!document.querySelector('.askbox')) finish(true); });
+}
+async function gvlPost(path, body){
+  const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const j=await r.json().catch(()=>({}));
+  return {status:r.status, ok:r.ok, j};
+}
+async function gvlSetPrefixes(r, mine, v){
+  const now=v.split(/[,;\s]+/).map(x=>x.trim().toUpperCase()).filter(Boolean);
+  const oldT=new Set(mine.map(_gTok)), newT=new Set(now.map(_gTok));
+  const ops=[...mine.filter(x=>!newT.has(_gTok(x))).map(x=>({prefix:x, labelcode:''})),
+             ...now.filter(x=>!oldT.has(_gTok(x))).map(x=>({prefix:x, labelcode:r.labelcode}))];
+  const undo=[], errs=[];
+  for(const op of ops){
+    let res=await gvlPost('/api/labels/edits/prefix', op);
+    if(res.status===409){
+      const note=await askNote(t('Kürzel {p} umhängen',{p:op.prefix}), t(res.j.detail)+' '+t('Notiz (Quelle, Grund):'));
+      if(note==null) continue;
+      res=await gvlPost('/api/labels/edits/prefix', {...op, note});
+    }
+    if(res.ok) undo.push({kind:'prefix', prefix:op.prefix, labelcode:res.j.before||'', note:res.j.before_note||''});
+    else errs.push(res.j.detail ? t(String(res.j.detail)) : t('Fehler.'));
+  }
+  if(undo.length) gvlPushUndo(()=>t('Kürzel bei LC{lc}',{lc:lcNum(r.labelcode)}), undo);
+  gvlMsg(errs.length ? ()=>errs.join(' · ') : undo.length ? ()=>t('Gespeichert — gilt sofort im Cue-Sheet.') : null, errs.length?'err':'');
+}
+async function gvlSetLc(r, v){
+  const digits=v.replace(/^\s*LC[\s-]*/i,'').replace(/\D/g,'');
+  const target=digits && lcNum(digits.padStart(5,'0'))!==lcNum(r.labelcode) ? digits : '';
+  let note='';
+  if(target){
+    note=await askNote(t('LC korrigieren'), t('„{name}“ steht im GVL-Master unter LC{lc}. Die Korrektur auf LC{to} gilt nur in CueCore, der Master bleibt unverändert, und sie übersteht jedes GVL-Update.',{name:r.label, lc:lcNum(r.labelcode), to:digits})+' '+t('Notiz (Quelle, Grund):'));
+    if(note==null) return;
+  } else if(!r.korrektur) return;
+  const res=await gvlPost('/api/labels/edits/name', {name:r.label, from_code:r.labelcode, labelcode:target, note});
+  if(!res.ok){ gvlMsg(()=>t(String(res.j.detail||'Fehler.')), 'err'); return; }
+  const b=res.j.before;
+  gvlPushUndo(()=>t('LC bei „{name}“',{name:r.label}), [{kind:'name', name:r.label, from_code:r.labelcode, labelcode:b?b.labelcode:'', note:b?b.note:''}]);
+  gvlMsg(()=>target ? t('Korrektur gespeichert — gilt sofort im Cue-Sheet.') : t('Korrektur aufgehoben — es gilt wieder der GVL-Master.'));
+}
+function gvlPushUndo(what, items){ gState.undo.push({what, items}); gvlUndoBtn(); }
+function gvlUndoBtn(){ const b=$('#gundo'), last=gState.undo[gState.undo.length-1]; b.disabled=!last;
+  tFn(b, ()=>last ? t('Rückgängig: {what}',{what:last.what()}) : t('Rückgängig')); }
+async function gvlUndo(){
+  const st=gState.undo.pop(); gvlUndoBtn(); if(!st) return;
+  for(const it of st.items.slice().reverse()){
+    const res=it.kind==='prefix' ? await gvlPost('/api/labels/edits/prefix', {prefix:it.prefix, labelcode:it.labelcode, note:it.note||t('rückgängig')})
+                                 : await gvlPost('/api/labels/edits/name', {name:it.name, from_code:it.from_code, labelcode:it.labelcode, note:it.note||t('rückgängig')});
+    if(!res.ok){ gvlMsg(()=>t(String(res.j.detail||'Fehler.')), 'err'); loadGvl(gState.offset); return; }
+  }
+  gvlMsg(()=>t('Zurückgenommen: {what}',{what:st.what()})); loadGvl(gState.offset);
+}
+// Notiz abfragen (eigenes Popup wie askChoice): Text oder null (Abbrechen, Escape). Ohne Text kein Übernehmen.
+function askNote(title, text){
+  return new Promise(res=>{
+    const overlay=el('div','emodal-overlay'); const modal=el('div','emodal askbox'); overlay.appendChild(modal);
+    modal.setAttribute('role','dialog'); modal.setAttribute('aria-modal','true');
+    const done=v=>{ overlay.remove(); document.removeEventListener('keydown', onKey, true); res(v); };
+    function onKey(e){ if(e.key==='Escape'){ e.stopPropagation(); done(null); } }
+    const inp=document.createElement('input'); inp.className='inp'; tFn(inp, ()=>t('Notiz'), 'aria-label');
+    const act=el('div','actions');
+    const ok=el('button','btn sm', ()=>t('Übernehmen')); ok.type='button'; ok.disabled=true;
+    const cancel=el('button','btn ghost sm', ()=>t('Abbrechen')); cancel.type='button';
+    inp.addEventListener('input', ()=>{ ok.disabled=!inp.value.trim(); });
+    inp.addEventListener('keydown', e=>{ if(e.key==='Enter' && inp.value.trim()){ e.preventDefault(); done(inp.value.trim()); } });
+    ok.addEventListener('click', ()=>done(inp.value.trim())); cancel.addEventListener('click', ()=>done(null));
+    act.append(ok, cancel);
+    modal.append(el('h3',null,title), el('p',null,text), inp, act);
+    overlay.addEventListener('mousedown', e=>{ if(e.target===overlay) done(null); });
+    document.addEventListener('keydown', onKey, true);
+    document.body.appendChild(overlay); inp.focus();
+  });
 }
 
 // Label händisch anlegen: LC + Name, optional Hersteller/Verlag + Notiz. Landet in labels.db
@@ -2941,7 +3372,7 @@ async function pickTaggerTarget(){
   const tmp={value:''}; await pickFolderInto(tmp);
   if(!tmp.value) return;
   const r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({updates:{lc_verified_dir:tmp.value}})}).catch(e=>{ logErr('Zielordner speichern', e); return null; });
-  if(!r || !r.ok){ const d=r ? await r.json().catch(()=>({})) : {}; alert(t('Zielordner konnte nicht gespeichert werden: {why}',{why:(d.detail&&t(String(d.detail)))||t('Backend nicht erreichbar')})); return; }
+  if(!r || !r.ok){ const d=r ? await r.json().catch(()=>({})) : {}; alert(t('Zielordner konnte nicht gespeichert werden: {why}',{why:(d.detail&&t(String(d.detail)))||t(NET_DOWN)})); return; }
   applyTaggerGate(tmp.value); loadSettings(); refreshHealth();
 }
 $('#ttargetpick').addEventListener('click', pickTaggerTarget);
@@ -3057,7 +3488,7 @@ $('#tgroupalbum').addEventListener('click', async ()=>{
   for(const key of keys){
     const g=groups[key], gi=++i; tFn(tbatchmsg, ()=>t('Album {i}/{total}: {album} ({n} Track{s}) …',{i:gi, total:keys.length, album:g.album, n:g.cards.length, s:g.cards.length>1?'s':''}));
     let res=null, failed='';
-    try{ const r=await fetch('/api/album/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({album:g.album})}); res=await r.json(); if(!r.ok){ failed=(res.detail&&String(res.detail))||('HTTP '+r.status); res=null; } }catch(err){ logErr('Album-Gruppe', err); failed='Backend nicht erreichbar'; }
+    try{ const r=await fetch('/api/album/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({album:g.album})}); res=await r.json(); if(!r.ok){ failed=(res.detail&&String(res.detail))||t(SRV_FAIL); res=null; } }catch(err){ logErr('Album-Gruppe', err); failed=NET_DOWN; }
     if(failed){ tFn(tbatchmsg, ()=>t('Album {album}: Auflösung fehlgeschlagen — {why}',{album:g.album, why:t(failed)})); btn.disabled=false; return; }
     g.cards.forEach(c=> c.seedAlbumResult(res));
   }
@@ -3109,11 +3540,11 @@ function tagCard(f){
       const isrc=(f.current_tags&&f.current_tags.isrc)||'';   // Stufe 0: exakter MB-Lookup statt Fuzzy-Suche
       const r=await fetch('/api/intake/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:f.path,artist,title,isrc})});
       const c=await r.json();
-      if(!r.ok) throw new Error((c.detail&&String(c.detail))||('HTTP '+r.status));
+      if(!r.ok) throw new Error((c.detail&&String(c.detail))||t(SRV_FAIL));
       c.album = c.album || ialb.value.trim();      // Album aus dem Feld mitnehmen (Netz liefert es oft nicht)
       renderProposal(prop, f, c); ctrl.resolved=true;
       if(!c.best && netFailures(c)>0 && !c.local) prop.prepend(netWarnBox(netFailures(c)));
-    }catch(err){ logErr('Resolve', err); prop.innerHTML=''; prop.appendChild(el('div','empty',()=>t('Resolve fehlgeschlagen: {why}',{why:err.message?t(err.message):t('Backend nicht erreichbar')}))); }
+    }catch(err){ logErr('Resolve', err); prop.innerHTML=''; prop.appendChild(el('div','empty',()=>t('Resolve fehlgeschlagen: {why}',{why:err.message?t(err.message):t(NET_DOWN)}))); }
     finally{ rb.disabled=false; }
   };
   // Album-basierte Auflösung (Soundtrack-Fall): Album einmal -> LC für alle Tracks des Albums.
@@ -3165,7 +3596,8 @@ function renderProposal(prop, f, c){
   const st={
     interpret:c.artist||f.artist||'', titel:c.title||f.title||'',
     komponist:c.composer||'', texter:c.lyricist||'', verlag:c.publisher||c.verlag_hint||'', album:c.album||'',
-    track_number:'', isrc:(c.isrcs&&c.isrcs[0])||'', iswc:'', gema_werknummer:'',
+    track_number:'', isrc:(c.isrcs&&c.isrcs[0])||'',
+    iswc:(c.iswcs&&c.iswcs.length===1)?c.iswcs[0]:'', gema_werknummer:c.gema_werknummer||'',   // mehrere ISWCs: nicht raten (Hinweis steht in den Notizen)
     labelcode: best ? lcNum(best.labelcode) : (f.filename_lc||''),
   };
 
@@ -3317,11 +3749,11 @@ function renderProposal(prop, f, c){
         album:inputs.album.value.trim(), composer:inputs.komponist.value.trim(), lyricist:inputs.texter.value.trim(), publisher:inputs.verlag.value.trim()};
       const r=await fetch('/api/intake/plan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
       const p=await r.json();
-      if(!r.ok) throw new Error((p.detail&&String(p.detail))||('HTTP '+r.status));
+      if(!r.ok) throw new Error((p.detail&&String(p.detail))||t(SRV_FAIL));
       plan={label:p.label, rechterueckrufe:p.rechterueckrufe, proposed_name:p.plan.proposed_name,
             warnings:p.plan.warnings, can_apply:p.plan.can_apply};
       planFor=key; renderPreview(); msg.textContent='';
-    }catch(err){ logErr('Vorschau prüfen', err); tFn(msg, ()=>t('Prüfen fehlgeschlagen: {why}',{why:err.message?t(err.message):t('Backend nicht erreichbar')})); }
+    }catch(err){ logErr('Vorschau prüfen', err); tFn(msg, ()=>t('Prüfen fehlgeschlagen: {why}',{why:err.message?t(err.message):t(NET_DOWN)})); }
     finally{ refreshBtn.disabled=false; }
   }
   refreshBtn.addEventListener('click', refreshPreview);
@@ -3384,6 +3816,7 @@ const _EST={
   library_name:     {t:'Kürzel unbekannt', c:'miss'},
   sibling_hit:      {t:'Wie andere Fassung', c:'warn'},
   confirmed:        {t:'Übernommen',     c:'ok'},
+  rejected:         {t:'Vorschlag verworfen', c:'miss'},
 };
 const _ET_ERR={auth:'API-Key ungültig', quota:'Kontingent erschöpft oder PRO nötig',
   forbidden:'Kein Zugriff (evtl. PRO-Abo nötig)', not_found:'Projekt nicht gefunden',
@@ -3433,7 +3866,7 @@ async function runEdlImport(online){
     const data=await r.json(); box.innerHTML='';
     if(!r.ok){ box.appendChild(el('div','empty', ()=>(data.detail&&t(String(data.detail)))||t('Import fehlgeschlagen.'))); return; }   // Backend-Meldung über t()
     edlState.lastList = isList ? {mapping:data.mapping, rows:data.rows, list_warnings:data.list_warnings} : null;
-    edlState.cards=mergeEdlCards(data.cards, $('#emerge').checked, $('#estems').checked); edlState.filter=''; setEdlProgress('');
+    edlState.cards=mergeEdlCards(data.cards, $('#emerge').checked, $('#estems').checked); edlState.filter=''; setEdlProgress(''); edlState.undo=[]; edlState.projectId=null; edlState.projectSaved=null; edlState.projectErr=null;
     renderEdl(edlDataFromCards());   // renderEdl setzt den Schritt nach der Ampel
   }catch(err){ logErr('Import', err); box.innerHTML=''; box.appendChild(el('div','empty', ()=>(isList ? t('Import fehlgeschlagen. Ist es eine CSV/XLSX-Liste mit Kopfzeile? Backend läuft?') : t('Import fehlgeschlagen. Ist es eine gültige Schnittliste (CMX3600, Assemble List, XML, FCPXML, Pro Tools)? Backend läuft?'))+(err&&err.message?' ('+err.message+')':''))); return; }
   // Ab hier nur noch Buchhaltung — ein Fehler darf die fertige Tabelle nicht mehr leeren (ein ReferenceError hinter
@@ -3534,18 +3967,57 @@ function unmergeEdlCards(cards){
 ['#emerge','#estems'].forEach(id=> $(id).addEventListener('change', ()=>{
   if(!edlState.cards.length) return;
   edlState.cards=mergeEdlCards(unmergeEdlCards(edlState.cards), $('#emerge').checked, $('#estems').checked);
+  edlState.undo=[];   // die Cues sind neu gebaut, alte Schritte zeigen ins Leere
   renderEdl(edlDataFromCards());
 }));
 
 // Editierbare EDL-Zeile: Felder säubern, im Netz recherchieren, direkt in die songs.db
 // aufnehmen — nutzt dieselben Endpoints wie DB-Editor (/api/db/song) und Resolver (/api/resolve).
+// D10: Herkunft und Prüfdatum je Feld eines Cues. Feldgenaue Angaben (von Hand geändert, MusicBrainz-GEMA-ID,
+// Netz-Autoren, Lieferungsnotiz zum LC) gehen vor; sonst gilt die Herkunft der Zeile. '' = nichts bekannt.
+const _LIB_NAMES={apl:'APL Music', cezame:'Cezame', ripcue:'RipCue Music'};
+const _day=d=>d ? dfmt(String(d).slice(0,10)) : '';
+function cueRowSrc(c){
+  const q=String(c.quelle||''), lib=q.startsWith('library:') ? q.slice(8) : (c.matched_by==='file' ? (c.library||'') : '');
+  const when=c.date_verified ? t('geprüft {d}',{d:_day(c.date_verified)}) : (c.date_added ? t('aufgenommen {d}',{d:_day(c.date_added)}) : '');
+  const join=(a)=>[a, when].filter(Boolean).join(' · ');
+  if(lib) return join(t('Lieferung {lib}',{lib:_LIB_NAMES[lib] || c.sublibrary || 'Library'}));
+  if(c.status==='found_in_db' || c.status==='db_review' || c.status==='confirmed' && c.quelle){
+    if(q==='manuell' || q==='tagger:manuell') return join(t('von Hand eingetragen'));
+    if(q.startsWith('tagger')) return join(t('Musikdatei-Tagger'));
+    if(q==='index') return join(t('Track-Index, als geprüft markiert'));
+    if(c.source_type==='edl_import') return join(t('Netzsuche, gespeichert'));
+    return join(t('eigene Track-Datenbank'));
+  }
+  if(c.status==='library_matched') return c.library_source==='trackmeta' ? (c.library_partner||t('Track-API')) : (c.library_source||'Library');
+  if(c.status==='resolved_and_written') return t('Netzsuche (MusicBrainz, Discogs, Deezer, Wikidata)');
+  if(c.status==='index_hit') return t('Track-Index (Discogs/MusicBrainz), ungeprüft');
+  if(c.status==='catalog_hint') return c.catalog_hint ? t(c.catalog_hint) : t('Katalog-Kürzel');
+  if(c.status==='list_lc') return t('aus der Cue-Liste');
+  return '';
+}
+function cueFieldSrc(c, k){
+  const fs=(c.field_src||{})[k];
+  if(fs) return {text:t('von Hand geändert {d}',{d:_day(fs.date)})};
+  if(k==='gema_werknummer' && c.gema_source==='musicbrainz') return {text:t('laut MusicBrainz, bitte prüfen'), check:true};
+  if((k==='komponist'||k==='texter'||k==='verlag') && c.author_new)
+    return {text:c.author_source==='genius' ? t('Vorschlag aus Genius, nicht gespeichert — bitte prüfen') : t('Vorschlag aus dem Netz, nicht gespeichert — bitte prüfen'), check:true};
+  if((k==='labelcode'||k==='labelname') && c.label_geliefert) return {text:[cueRowSrc(c), lcNoteText(c.label_geliefert)].filter(Boolean).join(' · ')};
+  if((k==='interpret'||k==='titel') && !['found_in_db','db_review','confirmed','library_matched'].includes(c.status) && !c.quelle) return {text:t('aus dem Dateinamen')};
+  if((k==='labelcode'||k==='labelname') && c.status==='filename_lc') return {text:t('aus dem Dateinamen'), check:true};
+  const r=cueRowSrc(c); return r ? {text:r, check:c.status==='index_hit'||c.status==='catalog_hint'} : null;
+}
+// D15: zuletzt bestätigt — Datum und Projekt (Cue-Sheet-Name), aus der Tabelle confirmations
+const edlProject=()=>(edlState.name && edlState.name!=='cue_sheet') ? edlState.name : '';   // Vorgabename zählt nicht als Projekt
+const confirmedText=c=>c.confirmed_project ? t('zuletzt bestätigt {d} · {p}',{d:_day(c.confirmed_at), p:c.confirmed_project}) : t('zuletzt bestätigt {d}',{d:_day(c.confirmed_at)});
 const _EDLFIELDS=[['interpret','Interpret'],['titel','Titel'],['komponist','Komponist'],['texter','Texter'],
-  ['verlag','Verlag'],['labelname','Label'],['labelcode','Labelcode'],['album','Album'],['isrc','ISRC']];
-function renderEdlPicker(pick, cands, inp, msg){
+  ['verlag','Verlag'],['labelname','Label'],['labelcode','Labelcode'],['album','Album'],['isrc','ISRC'],
+  ['iswc','ISWC'],['gema_werknummer','GEMA-Werknr.']];
+function renderEdlPicker(pick, cands, inp, msg, head){
   pick.innerHTML='';
-  if(!cands || cands.length<2){ pick.hidden=true; return; }   // nur bei echter Mehrdeutigkeit
+  if(!cands || cands.length<(head ? 1 : 2)){ pick.hidden=true; return; }   // nur bei echter Mehrdeutigkeit (Hinweise: ab einem)
   pick.hidden=false;
-  pick.appendChild(el('div','sug-h', ()=>t('Mehrere Labelcode-Kandidaten — anderen wählen:')));
+  pick.appendChild(el('div','sug-h', head || (()=>t('Mehrere Labelcode-Kandidaten — anderen wählen:'))));
   cands.forEach(c=>{
     const b=el('button','sugbtn'); b.type='button';
     const conf=(c.confidence!=null)?` · ${Math.round(c.confidence*100)}%`:'';
@@ -3560,7 +4032,8 @@ function renderEdlPicker(pick, cands, inp, msg){
 function openEdlEditorModal(card, onSaved){
   const overlay=el('div','emodal-overlay');
   const modal=el('div','emodal'); overlay.appendChild(modal);
-  const close=()=>{ overlay.remove(); document.removeEventListener('keydown', onKey); };
+  const close=()=>{ overlay.remove(); document.removeEventListener('keydown', onKey);
+    if(card._noteTouched){ card._noteTouched=false; renderEdl(edlDataFromCards()); } };   // Notiz/Rückfrage sofort sichtbar
   function onKey(e){ if(e.key==='Escape') close(); }
   modal.appendChild(buildEdlEditor(card, ()=>{ onSaved&&onSaved(); close(); }, close));
   overlay.addEventListener('mousedown', e=>{ if(e.target===overlay) close(); });   // Klick auf Backdrop schließt
@@ -3568,6 +4041,13 @@ function openEdlEditorModal(card, onSaved){
   document.body.appendChild(overlay);
   const f=modal.querySelector('input,select,textarea'); if(f) f.focus();
 }
+// Gleicher Track in einer Liste: Interpret + Titel (ohne Groß/klein), ohne beides derselbe Clip-Name
+function edlSameTrack(a, b){
+  const k=x=>((x.artist||'').trim().toLowerCase()+'|'+(x.title||'').trim().toLowerCase());
+  if(k(a)!=='|' || k(b)!=='|') return k(a)===k(b);
+  return !!a.clip_name && clipBase(a.clip_name)===clipBase(b.clip_name||'');
+}
+const clipBase=n=>String(n).split(/[\\/]/).pop().replace(/\.[A-Za-z0-9]{2,4}$/,'').toLowerCase();
 function buildEdlEditor(card, onSaved, onClose){
   const wrap=el('div','dbedit');
   // Dateiname oben, auswählbar und mit Kopier-Knopf: oft steht alles drin, was dem Eintrag noch fehlt
@@ -3599,7 +4079,8 @@ function buildEdlEditor(card, onSaved, onClose){
   if(!card.artist && isLib && (card.komponist||chint)) vorschlag.interpret=card.komponist ? 'gema' : 'datei';
   const seed={ interpret:card.artist||(vorschlag.interpret ? card.komponist||chint : ''), titel:card.title||(card.artist?'':(card.clip_name||'')),
     komponist:card.komponist||chint, texter:card.texter||'', verlag:card.verlag||'', labelname:card.labelname||'',
-    labelcode:card.labelcode?lcNum(card.labelcode):'', album:card.album||'', isrc:card.isrc||'' };
+    labelcode:card.labelcode?lcNum(card.labelcode):'', album:card.album||'', isrc:card.isrc||'',
+    iswc:card.iswc||'', gema_werknummer:card.gema_werknummer||'' };
   const unSugg=i=>{ i.classList.remove('sugg'); i.removeAttribute('title'); };   // Vorschlag ist jetzt ein echter Wert
   const inp={};
   _EDLFIELDS.forEach(([k,lab])=>{
@@ -3609,7 +4090,11 @@ function buildEdlEditor(card, onSaved, onClose){
       tFn(i, ()=>vorschlag[k]==='gema' ? t('Vorschlag: bei Production Music tritt der Komponist als Interpret ein (GEMA-Meldung) — prüfen und bei Bedarf überschreiben')
                                        : t('Vorschlag aus dem Dateinamen — prüfen und bei Bedarf überschreiben'), 'title');
       i.addEventListener('input', ()=>unSugg(i), {once:true}); }
-    f.appendChild(i); wrap.appendChild(f);
+    f.appendChild(i);
+    const src=seed[k] && !vorschlag[k] ? cueFieldSrc(card, k) : null;
+    if(src){ const sl=el('div','fsrc'+(src.check?' chk':''), ()=>(cueFieldSrc(card, k)||src).text); f.appendChild(sl);   // folgt dem Sprachwechsel
+      i.addEventListener('input', ()=>{ sl.className='fsrc'; tFn(sl, ()=>t('von Hand geändert — gilt mit „Speichern“')); }, {once:true}); }
+    wrap.appendChild(f);
   });
   if(vorschlag.interpret || vorschlag.komponist){
     const n=el('div','hint'); n.style.gridColumn='1/-1';
@@ -3618,6 +4103,26 @@ function buildEdlEditor(card, onSaved, onClose){
       : t('Kursive Felder sind Vorschläge aus dem Dateinamen, noch nichts Geprüftes.'));
     wrap.appendChild(n);
   }
+  if(card.confirmed_at){ const cf=el('div','hint', ()=>confirmedText(card)); cf.style.gridColumn='1/-1'; wrap.appendChild(cf); }
+  if((card._hist||[]).length){   // D11: Verlauf dieses Cues, neueste Änderung oben, die letzte zurücknehmbar
+    const hd=el('details','cuehist'); const sm=el('summary',null, ()=>t('Verlauf ({n})',{n:card._hist.length})); hd.appendChild(sm);
+    const ul=el('ul');
+    card._hist.slice().reverse().forEach(h=>{ const li=el('li'); li.append(el('span','when', new Date(h.at).toLocaleString(LOC(),{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})), el('span',null,()=>t(h.label))); ul.appendChild(li); });
+    const ub=el('button','btn ghost sm', ()=>t('Letzte Änderung an diesem Cue rückgängig')); ub.type='button';
+    tFn(ub, ()=>t('Setzt nur diesen Cue zurück. In der Datenbank Gespeichertes bleibt dort.'), 'title');
+    ub.addEventListener('click', ()=>{ undoCue(card); card._noteTouched=true; onClose(); });
+    hd.append(ul, ub); wrap.appendChild(hd);
+  }
+  // D13: Notiz und Rückfrage gehören zum Cue in diesem Cue-Sheet, nicht in die Datenbank — sie gelten sofort
+  const nb=el('div','cuenote'); const nid='cuenote-'+Math.random().toString(36).slice(2,8);
+  const nl=el('label', null, ()=>t('Notiz zum Cue')); nl.htmlFor=nid;
+  const na=document.createElement('textarea'); na.className='inp'; na.id=nid; na.value=card.note||'';
+  tFn(na, ()=>t('z.B. Lizenz beim Kunden nachfragen — bleibt nur in diesem Cue-Sheet'), 'placeholder');
+  na.addEventListener('input', ()=>{ card.note=na.value; card._noteTouched=true; });
+  const ql=el('label','askrow'); const qb=document.createElement('input'); qb.type='checkbox'; qb.checked=!!card.query;
+  qb.addEventListener('change', ()=>{ card.query=qb.checked; card._noteTouched=true; });
+  ql.append(qb, el('span',null,()=>t('Rückfrage offen — vor dem Export erinnern')));
+  nb.append(nl, na, ql); wrap.appendChild(nb);
   const actions=el('div','actions');
   const research=el('button','btn ghost sm'); research.type='button'; tSet(research,'Im Netz recherchieren');
   // Vorhandene songs.db-Zeile bearbeiten statt neu anlegen (sonst 409 „existiert bereits“): Library-Datei-
@@ -3635,6 +4140,9 @@ function buildEdlEditor(card, onSaved, onClose){
   const msg=el('span','hint'); actions.append(research,save,close,msg); wrap.appendChild(actions);
   const pick=el('div','suggests'); pick.hidden=true; wrap.appendChild(pick);   // LC-Kandidaten-Picker
   if(!seed.labelcode && (card.tied||[]).length>=2) renderEdlPicker(pick, card.tied, inp, msg);   // Gleichstand aus dem Cue-Sheet-Lauf direkt anbieten
+  else if(!seed.labelcode && card.prefix_hints)   // Kürzel ohne festen Code: Kandidaten aus Katalog-Listen, nur Vorschlag
+    renderEdlPicker(pick, card.prefix_hints.candidates.map(h=>({labelcode:h.labelcode, label:h.label, sources:[h.sources]})), inp, msg,
+      ()=>t('Laut Katalog-Listen kann das Kürzel {p} zu diesen Labels gehören. Nicht eindeutig belegt — prüfen, wählen, dann speichern:',{p:card.prefix_hints.prefix}));
 
   research.addEventListener('click', async ()=>{
     // Ein unberührter Vorschlag ist kein Interpret fürs Netz: der Komponisten-Nachname aus dem Dateinamen fand sonst
@@ -3651,7 +4159,8 @@ function buildEdlEditor(card, onSaved, onClose){
         const isrc=(inp.isrc.value||'').trim();   // trägt die Zeile schon einen ISRC: exakte Stufe 0 statt Fuzzy-Suche
         const res=await fetchJson('/api/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({artist,title,isrc})});
         let n=0;
-        [['komponist',res.composer],['texter',res.lyricist],['album',res.album],['isrc',(res.isrcs&&res.isrcs[0])||'']].forEach(([k,v])=>{ if(fill(k,v)) n++; });
+        [['komponist',res.composer],['texter',res.lyricist],['album',res.album],['isrc',(res.isrcs&&res.isrcs[0])||''],
+         ['iswc',(res.iswcs&&res.iswcs.length===1)?res.iswcs[0]:''],['gema_werknummer',res.gema_werknummer||'']].forEach(([k,v])=>{ if(fill(k,v)) n++; });
         const b=res.best;
         if(b && res.ambiguous){   // Margin-Gate: keinen Zufallssieger eintragen — unten wählen
           netMsg=()=>t('Gleichstand: {codes} — unten wählen.',{codes:(res.tied||[]).map(x=>'LC '+lcNum(x&&typeof x==='object'?x.labelcode:x)).join(' / ')}); }
@@ -3685,15 +4194,21 @@ function buildEdlEditor(card, onSaved, onClose){
       const upd=!!dbId;
       // Bearbeiten schickt nur Geändertes: was die Karte nicht trägt, bleibt in der songs.db stehen
       const send=upd ? Object.fromEntries(Object.entries(fields).filter(([k,v])=>v!==(seed[k]||''))) : fields;
-      const r=await fetch(upd ? '/api/db/song/'+dbId : '/api/db/song',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:send})});
+      const r=await fetch(upd ? '/api/db/song/'+dbId : '/api/db/song',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:send, project:edlProject()})});
       const j=await r.json();
       if(!r.ok){ tFn(msg, ()=>t(j.detail)||t('Speichern fehlgeschlagen.')); save.disabled=false; return; }
       const sv=Object.assign({}, fields, j.fields||{});   // gespeicherte Werte: Labelcode als LC+Ziffern, Labelname aus dem GVL-Master
-      if(lcNum(sv.labelcode||'')!==lcNum(card.labelcode||'')) card.rechterueckrufe=await lcRights(sv.labelcode);
-      Object.assign(card, {artist:sv.interpret, title:sv.titel, komponist:sv.komponist,
+      // D3: dieselbe Entscheidung gilt für jedes Vorkommen dieses Titels in der Liste (vor dem Überschreiben bestimmen)
+      const same=edlState.cards.filter(x=>x!==card && edlSameTrack(x, card));
+      const rr=lcNum(sv.labelcode||'')!==lcNum(card.labelcode||'') ? await lcRights(sv.labelcode) : card.rechterueckrufe;
+      const vals={artist:sv.interpret, title:sv.titel, komponist:sv.komponist,
         texter:sv.texter, verlag:sv.verlag, labelname:sv.labelname, labelcode:sv.labelcode, album:sv.album,
-        isrc:sv.isrc, status:'found_in_db', id:dbId||j.id||card.id});   // Karte + Export tragen jetzt die gesäuberten Daten
-      tFn(msg, ()=>upd ? t('Gespeichert.') : t('In Datenbank aufgenommen.'));
+        isrc:sv.isrc, iswc:sv.iswc, gema_werknummer:sv.gema_werknummer, rechterueckrufe:rr||'', status:'found_in_db', id:dbId||j.id||card.id};
+      const today=new Date().toISOString().slice(0,10), changed=Object.keys(fields).filter(k=>fields[k]!==(seed[k]||''));
+      cueChange('Im Editor gespeichert', [card, ...same], ()=>[card, ...same].forEach(x=>{ Object.assign(x, vals); x.tied=[];
+        x.field_src=Object.assign({}, x.field_src, Object.fromEntries(changed.map(k=>[k,{date:today}]))); }));   // Karte + Export tragen jetzt die gesäuberten Daten
+      tFn(msg, ()=>(upd ? t('Gespeichert.') : t('In Datenbank aufgenommen.'))
+        + (same.length ? ' '+t('Gilt auch für {n} weitere(n) Cue(s) dieses Titels.',{n:same.length}) : ''));
       setTimeout(onSaved, 650);
     }catch(e){ logErr('Cue speichern', e); tFn(msg, ()=>t('Speichern fehlgeschlagen.')); save.disabled=false; }
   });
@@ -3722,11 +4237,13 @@ const setEdlProgress=txt=>{ edlState.progress=txt||''; if(edlState.progEl) tFn(e
 // woher ein Wert kommt, ohne eine weitere Spalte.
 function edlSourceLabel(c){
   // Library-Lieferung über den Dateinamen getroffen (verifiziert): Library + Katalognummer sichtbar machen
-  if(c.matched_by==='file') return t('Library-Datei')+' · '+(c.sublibrary||c.library||'')+(c.catno?' '+c.catno:'');
+  if(c.matched_by==='file') return t('Library-Datei')+' · '+(c.sublibrary||_LIB_NAMES[c.library]||c.library||'')+(c.catno?' '+c.catno:'')
+    +(c.file_version?' · '+c.file_version:'');   // Version der Lieferung (Main, Underscore, Stems …)
   if(c.status==='library_matched') return c.library_source==='trackmeta' ? (c.library_partner||t('Track-API')) : (c.library_source||'Library');
   if(c.status==='resolved_and_written') return t('Netz');
   if(c.status==='index_hit') return t('Index');
   if(c.status==='sibling_hit') return c.sibling_of ? t('wie Cue {n}',{n:c.sibling_of}) : t('Basistitel {t}',{t:c.sibling_title||''});
+  if(c.status==='confirmed' && (c.field_src||{}).labelcode) return t('von Hand');
   if(c.status==='confirmed') return (c.chosen_from ? t('gewählt aus {n}',{n:c.chosen_from.length}) : (c.confirmed_from ? t(_EST[c.confirmed_from]?_EST[c.confirmed_from].t:c.confirmed_from) : ''));
   return '';
 }
@@ -3778,13 +4295,13 @@ function lcRights(code){
 async function chooseTie(c, cand){
   const same=edlState.cards.filter(x=>(x.tied||[]).length && (x.artist||'')===(c.artist||'') && (x.title||'')===(c.title||''));
   const rr=cand.rechterueckrufe!=null ? cand.rechterueckrufe : await lcRights(cand.labelcode);
-  same.forEach(x=>{ x.labelcode=cand.labelcode; x.labelname=cand.label||''; x.rechterueckrufe=rr; x.chosen_from=x.tied.map(t2=>t2.labelcode); x.tied=[]; x.confirmed_from='ambiguous'; x.status='confirmed'; });
+  cueChange('Label aus Gleichstand gewählt', same, ()=>same.forEach(x=>{ x.labelcode=cand.labelcode; x.labelname=cand.label||''; x.rechterueckrufe=rr; x.chosen_from=x.tied.map(t2=>t2.labelcode); x.tied=[]; x.confirmed_from='ambiguous'; x.status='confirmed'; }));
   const parts=[()=>t('{n} Cue(s): LC{lc} {label} gewählt',{n:same.length, lc:lcNum(cand.labelcode), label:cand.label||''})];
   if(c.artist && c.title){
     try{
-      const r=await fetch('/api/db/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({interpret:c.artist, titel:c.title, labelcode:cand.labelcode, labelname:cand.label||'', komponist:c.komponist||'', texter:c.texter||'', verlag:c.verlag||'', isrc:c.isrc||'', album:c.album||''})});
+      const r=await fetch('/api/db/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({interpret:c.artist, titel:c.title, labelcode:cand.labelcode, labelname:cand.label||'', komponist:c.komponist||'', texter:c.texter||'', verlag:c.verlag||'', isrc:c.isrc||'', album:c.album||'', project:edlProject()})});
       const d=await r.json().catch(()=>({}));
-      parts.push(()=>r.ok ? t('in der Datenbank verifiziert') : t('Datenbank: {why}',{why:(d.detail&&t(String(d.detail)))||('HTTP '+r.status)}));
+      parts.push(()=>r.ok ? t('in der Datenbank verifiziert') : t('Datenbank: {why}',{why:(d.detail&&t(String(d.detail)))||t(SRV_FAIL)}));
       if(r.ok) refreshHealth();
     }catch(err){ logErr('Datenbank', err); parts.push(()=>t('Datenbank nicht erreichbar')); }
   }
@@ -3796,14 +4313,14 @@ async function chooseTie(c, cand){
 // gleiche Vorschläge (Interpret + Titel + LC) in derselben Liste gleich mit. Mit Interpret + Titel wandert der Track
 // als verifiziert in die Datenbank (/api/db/verify) — beim nächsten Cue-Sheet ist er dann grün ohne Klick.
 async function acceptCue(c){
-  const same=edlState.cards.filter(x=>x!==c && x.status===c.status && x.labelcode===c.labelcode && (x.artist||'')===(c.artist||'') && (x.title||'')===(c.title||''));
-  [c, ...same].forEach(x=>{ x.confirmed_from=x.status; x.status='confirmed'; });
+  const same=edlState.cards.filter(x=>x!==c && edlAmpel(x)==='warn' && x.labelcode===c.labelcode && (x.artist||'')===(c.artist||'') && (x.title||'')===(c.title||''));
+  cueChange('Vorschlag übernommen', [c, ...same], ()=>[c, ...same].forEach(x=>{ x.confirmed_from=x.status; x.status='confirmed'; }));
   const parts=[()=>t('{n} Cue(s) übernommen',{n:1+same.length})];
   if(c.artist && c.title && c.labelcode){
     try{
-      const r=await fetch('/api/db/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({interpret:c.artist, titel:c.title, labelcode:c.labelcode, labelname:c.labelname||'', komponist:c.komponist||'', texter:c.texter||'', verlag:c.verlag||'', isrc:c.isrc||'', album:c.album||''})});
+      const r=await fetch('/api/db/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({interpret:c.artist, titel:c.title, labelcode:c.labelcode, labelname:c.labelname||'', komponist:c.komponist||'', texter:c.texter||'', verlag:c.verlag||'', isrc:c.isrc||'', album:c.album||'', project:edlProject()})});
       const d=await r.json().catch(()=>({}));
-      parts.push(()=>r.ok ? t('in der Datenbank verifiziert') : t('Datenbank: {why}',{why:(d.detail&&t(String(d.detail)))||('HTTP '+r.status)}));
+      parts.push(()=>r.ok ? t('in der Datenbank verifiziert') : t('Datenbank: {why}',{why:(d.detail&&t(String(d.detail)))||t(SRV_FAIL)}));
       if(r.ok) refreshHealth();
     }catch(err){ logErr('Datenbank', err); parts.push(()=>t('Datenbank nicht erreichbar')); }
   }
@@ -3811,9 +4328,290 @@ async function acceptCue(c){
   setEdlProgress(msg); setTimeout(()=>{ if(edlState.progress===msg) setEdlProgress(''); }, 5000);
   renderEdl(edlDataFromCards());
 }
+// D12/D14: Projekte. Jedes eingelesene Cue-Sheet ist ein Projekt im Datenordner (core/projects.py) und wird nach jeder
+// Änderung von selbst gespeichert; die Liste zeigt je Projekt fertig, offen und den Library-Anteil (nach Musikdauer).
+const isLibraryCue=c=>c.matched_by==='file' || c.status==='library_matched' || String(c.quelle||'').startsWith('library:') || !!c.catalog_hint || !!c.library_name;
+function projSummary(cards){
+  const s={cues:cards.length, ok:0, warn:0, bad:0, library_sec:0, total_sec:0};
+  cards.forEach(c=>{ s[edlAmpel(c)]++; const d=c.duration_sec||0; s.total_sec+=d; if(isLibraryCue(c)) s.library_sec+=d; });
+  return s;
+}
+let _projTimer=null;
+function projAutosave(){ if(!edlState.cards.length || edlState._projLoading) return; clearTimeout(_projTimer); _projTimer=setTimeout(projSave, 800); }
+function paintProjState(){
+  const sp=$('#eprojstate'); if(!sp) return; sp.className='pstate'+(edlState.projectErr?' bad':'');
+  tFn(sp, ()=>edlState.projectErr ? t('Nicht gespeichert: {why}',{why:edlState.projectErr()}) : edlState.projectSaved
+    ? t('Gespeichert {d}',{d:new Date(edlState.projectSaved).toLocaleTimeString(LOC(),{hour:'2-digit',minute:'2-digit'})}) : t('Wird gespeichert …'));
+}
+async function projSave(){
+  if(!edlState.cards.length) return;
+  const body={id:edlState.projectId||'', name:edlState.name||'Cue-Sheet', source_file:edlState.filename||'',
+    options:{merge:$('#emerge').checked, stems:$('#estems').checked}, summary:projSummary(edlState.cards), cards:edlState.cards};
+  try{ const m=await fetchJson('/api/projects',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    edlState.projectId=m.id; edlState.projectSaved=m.updated; edlState.projectErr=null; }
+  catch(e){ edlState.projectErr=errWhy(e); }
+  paintProjState(); renderProjects();
+}
+async function renderProjects(){
+  const box=$('#eprojects'); if(!box) return;
+  let list;
+  try{ list=(await fetchJson('/api/projects')).projects||[]; }
+  catch(e){ box.innerHTML=''; box.appendChild(el('p','hint', ()=>t('Projekte nicht ladbar: {why}',{why:errWhy(e)()}))); return; }
+  box.innerHTML=''; box.appendChild(el('h3',null,()=>t('Projekte')));
+  if(!list.length){ box.appendChild(el('p','hint',()=>t('Noch keine Projekte. Jede eingelesene Schnittliste wird automatisch als Projekt gespeichert und lässt sich hier fortsetzen.'))); return; }
+  const tbl=el('table','ptable'); const hr=el('tr');
+  [[()=>t('Projekt'),''],[()=>t('Zuletzt'),''],[()=>t('Cues'),'num'],[()=>t('fertig'),'num'],[()=>t('offen'),'num'],[()=>t('Library-Anteil'),''],[()=>t('Musik gesamt'),'num'],['','']]
+    .forEach(([x,c])=>hr.appendChild(el('th',c||null,x)));
+  const th=el('thead'); th.appendChild(hr); tbl.appendChild(th); const tb=el('tbody');
+  list.forEach(m=>{
+    const s=m.summary||{}, tr=el('tr', m.id===edlState.projectId ? 'cur' : null);
+    tr.appendChild(el('td','pname', m.name||'—'));
+    tr.appendChild(el('td',null, m.error ? ()=>t(m.error) : (m.updated ? new Date(m.updated).toLocaleString(LOC(),{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—')));
+    tr.appendChild(el('td','num', nfmt(s.cues||0))); tr.appendChild(el('td','num', nfmt(s.ok||0))); tr.appendChild(el('td','num', nfmt((s.warn||0)+(s.bad||0))));
+    const pct=s.total_sec ? Math.round(100*(s.library_sec||0)/s.total_sec) : 0;
+    const lt=el('td'); const bar=el('span','libbar'); const i=el('i'); i.style.width=pct+'%'; bar.appendChild(i); lt.append(bar, el('span',null,pct+' %'));
+    tFn(lt, ()=>t('{a} von {b} Musik aus Library-Lieferungen und Katalogen',{a:fmtDur(s.library_sec||0), b:fmtDur(s.total_sec||0)}), 'title'); tr.appendChild(lt);
+    tr.appendChild(el('td','num', fmtDur(s.total_sec||0)));
+    const act=el('td','pact');
+    const op=el('button','btn ghost sm', ()=>m.id===edlState.projectId ? t('Geöffnet') : t('Öffnen')); op.type='button'; op.disabled=m.id===edlState.projectId || !!m.error;
+    op.addEventListener('click', ()=>openProject(m.id));
+    const del=iconBtn('trash', ()=>t('Projekt löschen'), 'danger'); del.addEventListener('click', ()=>deleteProject(m));
+    act.append(op, del); tr.appendChild(act); tb.appendChild(tr);
+  });
+  tbl.appendChild(tb); box.appendChild(tbl);
+}
+async function openProject(id){
+  try{
+    const doc=await fetchJson('/api/projects/'+encodeURIComponent(id));
+    edlState._projLoading=true;
+    edlState.cards=doc.cards||[]; edlState.name=doc.name||'cue_sheet'; edlState.filename=doc.source_file||''; edlState.projectId=doc.id;
+    edlState.projectSaved=doc.updated; edlState.projectErr=null; edlState.undo=[]; edlState.filter=''; edlState.focusCard=null;
+    $('#emerge').checked=!!(doc.options||{}).merge; $('#estems').checked=!!(doc.options||{}).stems;
+    renderEdl(edlDataFromCards()); edlState._projLoading=false; renderProjects();
+    const msg=()=>t('Projekt „{n}“ geöffnet',{n:doc.name||''}); setEdlProgress(msg); setTimeout(()=>{ if(edlState.progress===msg) setEdlProgress(''); }, 5000);
+  }catch(e){ edlState._projLoading=false; const why=errWhy(e); setEdlProgress(()=>t('Projekt nicht ladbar: {why}',{why:why()})); }
+}
+async function deleteProject(m){
+  const ok=await askChoice(()=>t('Projekt löschen?'), ()=>t('„{n}“ wird aus dem Datenordner gelöscht. Die Song-Datenbank bleibt unberührt.',{n:m.name||''}), [{key:'del', label:t('Löschen'), cls:'danger'}]);
+  if(ok!=='del') return;
+  try{ await fetchJson('/api/projects/'+encodeURIComponent(m.id),{method:'DELETE'}); if(m.id===edlState.projectId){ edlState.projectId=null; edlState.projectSaved=null; } }
+  catch(e){ const why=errWhy(e); setEdlProgress(()=>t('Löschen fehlgeschlagen: {why}',{why:why()})); }
+  renderProjects();
+}
+// D2: Export-Vorlagen, frei benennbar, gespeichert in den Settings (/api/export-templates). Eine Vorlage legt die
+// Pflichtfelder der Prüfung vor dem Export und die Spalten der Datei fest; die aktive gilt für jedes Cue-Sheet.
+const tplState={templates:[], active:'', columns:[], always:'', loaded:false};
+async function loadTemplates(){
+  try{ Object.assign(tplState, await fetchJson('/api/export-templates'), {loaded:true}); }
+  catch(e){ logErr('Export-Vorlagen', e); return; }
+  // einmalig: die frühere Pflichtfeld-Wahl aus dem Browser in die Vorgabe übernehmen
+  let old=null; try{ old=JSON.parse(localStorage.getItem('cuecore.exportRequired')||'null'); }catch(e){}
+  if(Array.isArray(old)){
+    const a=activeTpl(); if(a){ a.required=old.filter(k=>_XREQ.some(([f])=>f===k)); await saveTemplates(); }
+    try{ localStorage.removeItem('cuecore.exportRequired'); }catch(e){}
+  }
+}
+const activeTpl=()=>tplState.templates.find(x=>x.id===tplState.active) || tplState.templates[0] || null;
+async function saveTemplates(){
+  try{ Object.assign(tplState, await fetchJson('/api/export-templates',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({templates:tplState.templates, active:tplState.active})})); return true; }
+  catch(e){ const why=errWhy(e); setEdlProgress(()=>t('Vorlage nicht gespeichert: {why}',{why:why()})); return false; }
+}
+function openTemplateEditor(){
+  const draft=JSON.parse(JSON.stringify(tplState.templates)); let active=tplState.active;
+  const overlay=el('div','emodal-overlay'); const modal=el('div','emodal xcheck tpled'); overlay.appendChild(modal);
+  modal.setAttribute('role','dialog'); modal.setAttribute('aria-modal','true');
+  const close=()=>{ overlay.remove(); document.removeEventListener('keydown', onKey); };
+  function onKey(e){ if(e.key==='Escape') close(); }
+  const head=el('div','tiepick-head'); head.appendChild(el('h3',null,()=>t('Export-Vorlagen')));
+  head.appendChild(el('p','hint',()=>t('Eine Vorlage legt fest, welche Felder vor dem Export gefüllt sein müssen und welche Spalten die Datei hat. Die Länge ist immer dabei.')));
+  modal.appendChild(head);
+  const list=el('div'); modal.appendChild(list);
+  const paint=()=>{ list.innerHTML='';
+    draft.forEach((tp,idx)=>{
+      const row=el('div','tplrow'); const hd=el('div','tplhead');
+      const nm=document.createElement('input'); nm.className='inp'; nm.value=tp.name; tFn(nm, ()=>t('Name der Vorlage'), 'aria-label');
+      nm.addEventListener('input', ()=>{ tp.name=nm.value; });
+      const del=iconBtn('trash', ()=>t('Vorlage löschen'), 'danger'); del.disabled=draft.length<2;
+      del.addEventListener('click', ()=>{ draft.splice(idx,1); if(active===tp.id) active=(draft[0]||{}).id||''; paint(); });
+      hd.append(nm, del); row.appendChild(hd);
+      const rq=el('div','tplchk'); rq.appendChild(el('span','lbl',()=>t('Pflichtfelder')));
+      _XREQ.forEach(([k,lab])=>{ const l=el('label'); const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=(tp.required||[]).includes(k);
+        cb.addEventListener('change', ()=>{ tp.required=_XREQ.map(([f])=>f).filter(f=>f===k ? cb.checked : (tp.required||[]).includes(f)); });
+        l.append(cb, el('span',null,()=>t(lab))); rq.appendChild(l); });
+      const co=el('div','tplchk'); co.appendChild(el('span','lbl',()=>t('Spalten')));
+      tplState.columns.forEach(c=>{ const l=el('label'); const cb=document.createElement('input'); cb.type='checkbox';
+        cb.checked=c===tplState.always || (tp.columns||[]).includes(c); cb.disabled=c===tplState.always;
+        cb.addEventListener('change', ()=>{ tp.columns=tplState.columns.filter(x=>x===c ? cb.checked : (tp.columns||[]).includes(x)); });
+        l.append(cb, el('span',null,()=>t(c))); co.appendChild(l); });
+      row.append(rq, co); list.appendChild(row);
+    }); };
+  paint();
+  const foot=el('div','tiepick-foot');
+  const add=el('button','btn ghost sm',()=>t('+ Vorlage')); add.type='button';
+  add.addEventListener('click', ()=>{ draft.push({id:'', name:t('Neue Vorlage'), required:['labelcode'], columns:tplState.columns.slice()}); paint(); });
+  const cancel=el('button','btn ghost sm',()=>t('Abbrechen')); cancel.type='button'; cancel.addEventListener('click', close);
+  const save=el('button','btn sm',()=>t('Speichern')); save.type='button';
+  save.addEventListener('click', async ()=>{ if(draft.some(x=>!x.name.trim())){ setEdlProgress(()=>t('Jede Vorlage braucht einen Namen.')); return; }
+    tplState.templates=draft; tplState.active=active; if(await saveTemplates()){ close(); renderEdl(edlDataFromCards()); } });
+  foot.append(add, cancel, save); modal.appendChild(foot);
+  overlay.addEventListener('mousedown', e=>{ if(e.target===overlay) close(); });
+  document.addEventListener('keydown', onKey); document.body.appendChild(overlay);
+}
+loadTemplates();
+// D11: Rückgängig und Verlauf je Cue. Jede Änderung an Cues ist ein Schritt {label, at, items:[{c, before, index}]}
+// im Stapel edlState.undo; jeder betroffene Cue trägt den Eintrag zusätzlich in c._hist (Verlauf im Editor). Felder mit
+// „_“ (Gruppen-Teile, Verlauf) gehören nicht zum Stand. Rückgängig betrifft das Cue-Sheet, nicht die Datenbank.
+const _cueSnap=c=>{ const o={}; Object.keys(c).forEach(k=>{ if(k[0]!=='_') o[k]=c[k]==null ? c[k] : JSON.parse(JSON.stringify(c[k])); }); return o; };
+const _cueRestore=(c, before)=>{ Object.keys(c).forEach(k=>{ if(k[0]!=='_') delete c[k]; }); Object.assign(c, before); };
+function cueBegin(cards){ return cards.map(c=>({c, before:_cueSnap(c), index:edlState.cards.indexOf(c)})); }
+function cueCommit(label, items){
+  const at=new Date().toISOString();
+  if(label==='Metadaten vervollständigt' && edlState.runStart) items=items.filter(it=>!((it.c._userAt||0)>=edlState.runStart));
+  const changed=items.filter(it=>!edlState.cards.includes(it.c) || JSON.stringify(_cueSnap(it.c))!==JSON.stringify(it.before));
+  if(!changed.length) return;
+  changed.forEach(it=>{ (it.c._hist=it.c._hist||[]).push({at, label, before:it.before}); });
+  // D7: was der Mensch während eines Laufs ändert, überschreibt der Lauf nicht mehr und nimmt sein Rückgängig nicht mit
+  if(edlState.busy && label!=='Metadaten vervollständigt') changed.forEach(it=>{ it.c._userAt=Date.now(); });
+  (edlState.undo=edlState.undo||[]).push({label, at, items:changed});
+  if(edlState.undo.length>200) edlState.undo.shift();
+}
+function cueChange(label, cards, fn){ const items=cueBegin(cards); const r=fn(); cueCommit(label, items); return r; }
+function undoEdl(){
+  const step=(edlState.undo||[]).pop();
+  if(!step){ setEdlProgress(()=>t('Nichts rückgängig zu machen.')); return false; }
+  step.items.slice().sort((a,b)=>a.index-b.index).forEach(it=>{
+    if(!edlState.cards.includes(it.c)) edlState.cards.splice(Math.max(0, Math.min(it.index, edlState.cards.length)), 0, it.c);
+    _cueRestore(it.c, it.before); (it.c._hist||[]).pop();
+  });
+  edlState.focusCard=step.items[0].c; edlState.refocus=true;
+  const msg=()=>t('Rückgängig: {what}. In der Datenbank Gespeichertes bleibt dort.',{what:t(step.label)});
+  setEdlProgress(msg); setTimeout(()=>{ if(edlState.progress===msg) setEdlProgress(''); }, 6000);
+  renderEdl(edlDataFromCards()); return true;
+}
+// Letzte Änderung genau dieses Cues zurücknehmen (aus dem Editor); der Schritt im Stapel verliert dann diesen Cue.
+function undoCue(c){
+  const h=(c._hist||[]).pop(); if(!h) return false;
+  _cueRestore(c, h.before);
+  (edlState.undo||[]).forEach(st=>{ st.items=st.items.filter(it=>!(it.c===c && it.before===h.before)); });
+  edlState.undo=(edlState.undo||[]).filter(st=>st.items.length);
+  return true;
+}
+// D6: Zellen direkt in der Tabelle bearbeiten (Doppelklick oder F2; Enter übernimmt, Escape bricht ab, Tab springt
+// weiter) und mehrere Zellen aus Excel einfügen (Tabulator/Zeilenumbruch, ab der gewählten Zeile und Spalte). Ein
+// Labelcode zählt nur, wenn der GVL-Master ihn kennt; Label und Rechterückruf kommen dann aus dem Master.
+const _CEDIT=['komponist','texter','verlag','labelname','labelcode'];
+const _CEDIT_LAB={komponist:'Komponist', texter:'Texter', verlag:'Verlag', labelname:'Label', labelcode:'Labelcode'};
+const _lcMasterCache=new Map();
+function lcMaster(code){
+  const d=String(code||'').replace(/^\s*LC[\s-]*/i,'').replace(/[\s-]/g,''); if(!/^\d{4,6}$/.test(d)) return Promise.resolve(null);
+  if(!_lcMasterCache.has(d)) _lcMasterCache.set(d, fetch('/api/search?q='+encodeURIComponent(d)).then(r=>r.json())
+    .then(g=>{ const x=g && g.mode==='code' && (g.results||[]).find(r=>lcNum(r.labelcode)===d.padStart(5,'0') || lcNum(r.labelcode)===d);
+      return x ? {labelcode:'LC'+lcNum(x.labelcode), label:x.label||'', rr:x.rechterueckrufe||''} : null; })
+    .catch(e=>{ logErr('Labelcode prüfen', e); _lcMasterCache.delete(d); return null; }));
+  return _lcMasterCache.get(d);
+}
+// Wert in einen Cue schreiben (ohne Schritt; der Aufrufer bündelt). Rückgabe false = LC nicht im Master.
+async function cueSetField(c, k, v){
+  const today=new Date().toISOString().slice(0,10);
+  if(k==='labelcode'){
+    if(!v){ if(!c.labelcode) return true; c.labelcode=''; c.labelname=''; c.rechterueckrufe=''; c.status='rejected'; }
+    else { const m=await lcMaster(v); if(!m) return false;
+      if(lcNum(m.labelcode)===lcNum(c.labelcode||'')) return true;
+      Object.assign(c, {labelcode:m.labelcode, labelname:m.label, rechterueckrufe:m.rr, tied:[], confirmed_from:c.status, status:'confirmed'}); }
+    c.field_src=Object.assign({}, c.field_src, {labelcode:{date:today}, labelname:{date:today}}); return true;
+  }
+  if((c[k]||'')===v) return true;
+  c[k]=v; if(k==='komponist'||k==='texter'||k==='verlag') c.author_new=false;
+  c.field_src=Object.assign({}, c.field_src, {[k]:{date:today}}); return true;
+}
+function startCellEdit(td, c, rows){
+  if(!td || !c || td.querySelector('input')) return;
+  const k=td.dataset.field; const old=k==='labelcode' ? lcNum(c.labelcode||'') : (c[k]||'');
+  td.classList.add('cediting'); td.innerHTML='';
+  const inp=document.createElement('input'); inp.className='cellinp'; inp.value=old; inp.dataset.field=k;
+  tFn(inp, ()=>t('{f} bearbeiten — Enter übernimmt, Esc bricht ab',{f:t(_CEDIT_LAB[k])}), 'aria-label');
+  td.appendChild(inp); inp.focus(); inp.select && inp.select();
+  let done=false;
+  const finish=async(save, move)=>{
+    if(done) return; done=true;
+    const v=inp.value.trim(); const tr=td.closest('tr.etrow');
+    const idx=tr ? [...tr.parentNode.querySelectorAll('tr.etrow')].indexOf(tr) : -1;
+    if(save && v!==old){
+      const items=cueBegin([c]); const ok=await cueSetField(c, k, v); cueCommit('In der Tabelle geändert', items);
+      if(!ok){ const msg=()=>t('LC{lc} steht nicht im GVL-Master — nicht übernommen.',{lc:v.replace(/^LC/i,'')});
+        setEdlProgress(msg); setTimeout(()=>{ if(edlState.progress===msg) setEdlProgress(''); }, 6000); }
+    }
+    edlState.focusCard=c; edlState.refocus=!move;
+    renderEdl(edlDataFromCards());
+    if(move){   // Tab: nächste/vorige Zelle, am Zeilenende in die nächste Zeile
+      const trs=[...document.querySelectorAll('#eresult tr.etrow')]; let r=idx, col=_CEDIT.indexOf(k)+move;
+      if(col>=_CEDIT.length){ col=0; r++; } if(col<0){ col=_CEDIT.length-1; r--; }
+      const ntr=trs[r]; if(ntr) startCellEdit(ntr.querySelector('td.cedit[data-field="'+_CEDIT[col]+'"]'), rows[r], rows);
+    }
+  };
+  inp.addEventListener('keydown', e=>{ e.stopPropagation();
+    if(e.key==='Enter'){ e.preventDefault(); finish(true, 0); }
+    else if(e.key==='Escape'){ e.preventDefault(); finish(false, 0); }
+    else if(e.key==='Tab'){ e.preventDefault(); finish(true, e.shiftKey ? -1 : 1); } });
+  inp.addEventListener('blur', ()=>finish(true, 0));
+}
+async function pasteCells(e, rows, tb){
+  const raw=(e.clipboardData && e.clipboardData.getData('text/plain')) || '';
+  if(!/[\t\n]/.test(raw.replace(/\r?\n$/,''))) return;      // eine einzelne Zelle: normales Einfügen
+  e.preventDefault();
+  const grid=raw.replace(/\r?\n$/,'').split(/\r?\n/).map(l=>l.split('\t'));
+  const inp=e.target.closest && e.target.closest('input.cellinp');
+  const tr=e.target.closest && e.target.closest('tr.etrow'); if(!tr) return;
+  const r0=[...tb.querySelectorAll('tr.etrow')].indexOf(tr), c0=inp ? _CEDIT.indexOf(inp.dataset.field) : 0;
+  const targets=grid.map((cells,i)=>rows[r0+i]).filter(Boolean);
+  const items=cueBegin(targets); let n=0, bad=[];
+  for(let i=0;i<targets.length;i++){
+    for(let j=0;j<grid[i].length;j++){ const k=_CEDIT[c0+j]; if(!k) continue;
+      const v=grid[i][j].trim(); if(await cueSetField(targets[i], k, v)) n++; else bad.push(v); }
+  }
+  cueCommit('Aus Excel eingefügt', items);
+  const left=grid.length-targets.length;
+  const msg=()=>[t('{n} Zelle(n) eingefügt',{n}), bad.length ? t('nicht im GVL-Master: {codes}',{codes:bad.join(', ')}) : '',
+    left>0 ? t('{n} Zeile(n) passten nicht mehr in die Liste',{n:left}) : ''].filter(Boolean).join(' · ');
+  setEdlProgress(msg); setTimeout(()=>{ if(edlState.progress===msg) setEdlProgress(''); }, 8000);
+  edlState.focusCard=rows[r0]; edlState.refocus=true; renderEdl(edlDataFromCards());
+}
+// D5: Vorschlag verwerfen (Escape in der Tabelle oder ✕): Labelcode und Label raus, Cue wird „offen“;
+// der verworfene Vorschlag bleibt am Cue (c.rejected), damit er nicht still verloren geht.
+function discardCue(c){
+  if(!c.labelcode && !(c.tied||[]).length) return false;
+  cueChange('Vorschlag verworfen', [c], ()=>{
+    c.rejected={labelcode:c.labelcode||'', labelname:c.labelname||'', status:c.status, tied:c.tied||[]};
+    c.labelcode=''; c.labelname=''; c.tied=[]; c.status='rejected'; });
+  const msg=()=>t('Vorschlag verworfen — Cue ist jetzt offen');
+  setEdlProgress(msg); setTimeout(()=>{ if(edlState.progress===msg) setEdlProgress(''); }, 5000);
+  renderEdl(edlDataFromCards()); return true;
+}
+// D5: Tastatur im Cue-Sheet. Eine Zeile ist fokussierbar (roving tabindex), ↑/↓/Pos1/Ende wandern,
+// Enter übernimmt einen Vorschlag (bei Gleichstand: Auswahl, sonst Editor), Escape verwirft ihn.
+// Nach Übernehmen/Verwerfen steht der Fokus auf dem nächsten Cue.
+function edlRowKeys(e, rows){
+  const tr=e.target.closest && e.target.closest('tr.etrow'); if(!tr || e.target!==tr || e.metaKey || e.ctrlKey || e.altKey) return;
+  const trs=[...tr.parentNode.querySelectorAll('tr.etrow')]; const i=trs.indexOf(tr); const c=rows[i]; if(!c) return;
+  const go=j=>{ const n=trs[Math.max(0, Math.min(trs.length-1, j))]; if(!n) return; trs.forEach(x=>x.tabIndex=-1); n.tabIndex=0; n.focus(); edlState.focusCard=rows[trs.indexOf(n)]; };
+  const nextCard=()=>rows[i+1]||rows[i-1]||null;
+  if(e.key==='ArrowDown'){ e.preventDefault(); go(i+1); }
+  else if(e.key==='ArrowUp'){ e.preventDefault(); go(i-1); }
+  else if(e.key==='Home'){ e.preventDefault(); go(0); }
+  else if(e.key==='End'){ e.preventDefault(); go(trs.length-1); }
+  else if(e.key==='F2'){ e.preventDefault(); startCellEdit(tr.querySelector('td.cedit'), c, rows); }
+  else if(e.key==='Enter'){ e.preventDefault();
+    if(edlAmpel(c)==='warn' && c.labelcode){ edlState.focusCard=nextCard(); edlState.refocus=true; acceptCue(c); }
+    else if(!c.labelcode && (c.tied||[]).length) openTiePicker(c);
+    else { const eb=tr.querySelector('.eact .ibtn.edit'); eb && eb.click(); } }
+  else if(e.key==='Escape'){ if(edlAmpel(c)!=='warn') return; e.preventDefault(); e.stopPropagation(); edlState.focusCard=nextCard(); edlState.refocus=true; discardCue(c); }
+}
 const _ICO={
   check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>',
   pencil:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  hash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/></svg>',
   trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>',
 };
 function iconBtn(kind, title, extra){   // Hinweis über data-tip (eigener Tooltip, Text = aria-label), nicht title; title auch als Funktion (tFn)
@@ -3838,7 +4636,7 @@ async function libraryScan(src, missing){
   if(r.status===400) return {matched:0, n:missing.length, error:()=>t(src.noKey)};
   const data=await r.json().catch(()=>null);
   // andere HTTP-Fehler (503 „labels.db nicht geladen“) mit dem Grund des Servers statt „unbekannt“
-  if(!r.ok){ const why=(data && data.detail && String(data.detail)) || 'HTTP '+r.status; return {matched:0, n:missing.length, error:()=>t(src.err,{e:t(why)})}; }
+  if(!r.ok){ const why=(data && data.detail && String(data.detail)) || SRV_FAIL; return {matched:0, n:missing.length, error:()=>t(src.err,{e:t(why)})}; }
   if(!data.ok) return {matched:0, n:missing.length, error:()=>t(src.err,{e:etErr(data.error)})};
   // Merge über den ORIGINAL-Dateinamen (query_filename) — editingtools gibt fileName bereinigt zurück. Beide Seiten
   // ohne Ordner: das Backend fragt nur den Dateinamen (edl_import.clip_basename), SOURCE FILE trägt bei
@@ -3877,7 +4675,9 @@ async function completeMetadata(){
     setEdlProgress(()=>noName ? t('Nichts zu suchen: {n} Cue(s) ohne Interpret/Titel — Vorschläge per Haken übernehmen oder im Editor eintragen.',{n:noName}) : t('Alle Cues haben schon einen Labelcode — Vorschläge per Haken übernehmen.'));
     setTimeout(()=>setEdlProgress(''),6000); return;
   }
-  edlState.busy=true; renderEdl(edlDataFromCards());
+  edlState.busy=true; edlState.cancelRun=false; edlState.runStart=Date.now(); renderEdl(edlDataFromCards());
+  const undoItems=cueBegin(edlState.cards);   // ein Schritt für den ganzen Lauf
+  const mine=c=>(c._userAt||0)>=edlState.runStart;   // D7: inzwischen vom Menschen geändert -> Lauf lässt ihn in Ruhe
   const before=missing.length, report=[], errors=[];
   setEdlProgress(()=>netAll.length ? t('Suche {n} Cue(s) mit Interpret + Titel im Netz …',{n:netAll.length}) : t('Suche Komponisten für {n} Cue(s) …',{n:needAuthors}));
   try{
@@ -3887,24 +4687,26 @@ async function completeMetadata(){
     for(const key of ['editingtools','trackmeta']){
       missing=edlMissing(); if(!conf[key]||!missing.length) continue;
       const nm=missing.length; setEdlProgress(()=>t('{src}: {n} Cue(s) …',{src:t(_LIBSRC[key].label), n:nm}));
-      const r=await libraryScan(_LIBSRC[key], missing);
+      if(edlState.cancelRun) break;
+      const r=await libraryScan(_LIBSRC[key], missing.filter(c=>!mine(c)));
       if(r.error) errors.push(r.error); else report.push(r.report || (()=>t(_LIBSRC[key].label)+' '+r.matched));
-      renderEdl(edlDataFromCards());
+      edlRefresh();
     }
     // Je Interpret+Titel EINE Netzanfrage (derselbe Titel liegt mehrfach in der Liste): Ergebnis auf alle Cues.
     const netAllCards=edlNetCandidates(); const netSeen=new Set();
     const net=netAllCards.filter(c=>{ const k=c.artist+'\u0000'+c.title; if(netSeen.has(k)) return false; netSeen.add(k); return true; });
     let done=0, hits=0, authors=0, netFail=0; const authorTitles=[];
     for(let i=0;i<net.length;i+=5){
+      if(edlState.cancelRun) break;
       const batch=net.slice(i,i+5);
       const dn=done; setEdlProgress(()=>t('Netz: {d} von {n} …',{d:dn, n:net.length}));
       const body={cues:batch.map(c=>({clip_name:c.clip_name||'', artist:c.artist, title:c.title, isrc:c.isrc||'', duration_sec:c.duration_sec||0}))};
       const r=await fetch('/api/edl/resolve-cues',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-      if(!r.ok){ const d=await r.json().catch(()=>({})); errors.push(()=>t('Netz-Suche fehlgeschlagen: {why}',{why:(d.detail&&t(String(d.detail)))||('HTTP '+r.status)})); break; }
+      if(!r.ok){ const d=await r.json().catch(()=>({})); errors.push(()=>t('Netz-Suche fehlgeschlagen: {why}',{why:(d.detail&&t(String(d.detail)))||t(SRV_FAIL)})); break; }
       const data=await r.json(); netFail+=netFailures(data);
       (data.entries||[]).forEach((e,j)=>{
         const rep=batch[j]; if(!rep) return;
-        netAllCards.filter(x=>x.artist===rep.artist&&x.title===rep.title).forEach(c=>{
+        netAllCards.filter(x=>x.artist===rep.artist&&x.title===rep.title&&!mine(x)).forEach(c=>{
         if(e.author_source_url){ c.author_source_url=e.author_source_url; c.author_source='genius'; }
         if(e.resolved){ hits++; ['komponist','texter','verlag','isrc'].forEach(k=>{ if(e[k] && !c[k]){ c[k]=e[k]; if(k!=='isrc') c.author_new=true; } });
           if(e.labelcode && c.labelcode && e.labelcode!==c.labelcode) c.note=(c.note?c.note+' · ':'')+t('Dateiname nennt LC{lc}',{lc:lcNum(c.labelcode)});
@@ -3915,21 +4717,22 @@ async function completeMetadata(){
         else if(c.status==='missing_no_resolver' && !netFailures(e)) c.status='unresolved';   // ohne Netz nicht „Nicht gefunden“
         });
       });
-      done+=batch.length; renderEdl(edlDataFromCards());
+      done+=batch.length; edlRefresh();
     }
     // Zweite Runde: Cues mit Labelcode, aber ohne Komponist/Texter — Autoren aus dem Netz nachfüllen
     // (Datenbank-Treffer ohne Autoren, Dateinamen-LC, Index ohne Credits). Dubletten nur einmal fragen.
     const needA=edlState.cards.filter(c=>c.artist&&c.title&&c.labelcode&&!c.komponist&&!c.texter);
     const keys=[...new Set(needA.map(c=>c.artist+'\u0000'+c.title))];
     for(let i=0;i<keys.length;i+=5){
+      if(edlState.cancelRun) break;
       const batch=keys.slice(i,i+5).map(k=>{ const [artist,title]=k.split('\u0000'); return {artist,title}; });
       setEdlProgress(()=>t('Komponisten: {d} von {n} Titel …',{d:i, n:keys.length}));
       const r=await fetch('/api/edl/fill-authors',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cues:batch})});
-      if(!r.ok){ const d=await r.json().catch(()=>({})); errors.push(()=>t('Komponisten-Suche fehlgeschlagen: {why}',{why:(d.detail&&t(String(d.detail)))||('HTTP '+r.status)})); break; }
+      if(!r.ok){ const d=await r.json().catch(()=>({})); errors.push(()=>t('Komponisten-Suche fehlgeschlagen: {why}',{why:(d.detail&&t(String(d.detail)))||t(SRV_FAIL)})); break; }
       const data=await r.json(); netFail+=netFailures(data);
       (data.entries||[]).forEach(e=>{ if(!e.found) return; authors++; authorTitles.push(e.artist+' – '+e.title+(e.source==='genius'?' (Genius)':''));
-        edlState.cards.filter(c=>c.artist===e.artist&&c.title===e.title).forEach(c=>{ ['komponist','texter','verlag'].forEach(k=>{ if(e[k]&&!c[k]){ c[k]=e[k]; c.author_new=true; } }); if(e.source_url) c.author_source_url=e.source_url; if(e.source) c.author_source=e.source; }); });
-      renderEdl(edlDataFromCards());
+        edlState.cards.filter(c=>c.artist===e.artist&&c.title===e.title&&!mine(c)).forEach(c=>{ ['komponist','texter','verlag'].forEach(k=>{ if(e[k]&&!c[k]){ c[k]=e[k]; c.author_new=true; } }); if(e.source_url) c.author_source_url=e.source_url; if(e.source) c.author_source=e.source; }); });
+      edlRefresh();
     }
     const after=edlMissing().length;
     const left=edlState.cards.filter(c=>edlAmpel(c)!=='ok' && !(c.artist&&c.title)).length;
@@ -3940,23 +4743,165 @@ async function completeMetadata(){
     if(authors) parts.push(()=>t('Komponisten-Vorschläge für {n} Titel (nicht gespeichert)',{n:authors})+': '+authorTitles.join(', '));
     parts.push(...report, ...errors);
     if(left) parts.push(()=>t('{n} ohne Interpret/Titel bleiben (Haken oder Editor)',{n:left}));
+    if(edlState.cancelRun) parts.unshift(()=>t('Abgebrochen — bis dahin Gefundenes bleibt.'));
     setEdlProgress(()=>parts.map(f=>typeof f==='function'?f():f).join(' · ') || t('Nichts Neues gefunden.'));
     setEdlStep(after?2:3);
   }catch(err){ logErr('Vervollständigen', err); setEdlProgress(()=>t('Vervollständigen fehlgeschlagen. Backend/Netz?')); }
-  finally{ edlState.busy=false; renderEdl(edlDataFromCards()); }
+  finally{ edlState.busy=false; cueCommit('Metadaten vervollständigt', undoItems); edlState.runStart=0; edlState.cancelRun=false; edlRefresh(true); }
+}
+// Während des Laufs nach jedem Stapel neu zeichnen, aber nie unter einer offenen Zelle weg (D6): dann nachholen,
+// sobald die Zelle zu ist (startCellEdit zeichnet beim Schließen ohnehin neu).
+function edlRefresh(force){
+  const a=document.activeElement;
+  if(!force && a && a.classList && a.classList.contains('cellinp')){ edlState._renderPending=true; return; }
+  edlState._renderPending=false; renderEdl(edlDataFromCards());
+}
+
+// --- D1/D9: Prüfung vor dem Export ---------------------------------------------------------------------------
+// Pflichtfelder: was vor der Abgabe gefüllt sein muss. Die Wahl gilt je Rechner (Export-Vorlagen kommen mit D2).
+const _XREQ=[['labelcode','Labelcode'],['komponist','Komponist'],['gema_werknummer','GEMA-Werknr.'],['texter','Texter'],
+  ['verlag','Verlag'],['isrc','ISRC'],['iswc','ISWC']];
+const _XREQ_DEFAULT=['labelcode','komponist','gema_werknummer'];
+function xreqGet(){ const a=activeTpl(); return a ? (a.required||[]).filter(k=>_XREQ.some(([f])=>f===k)) : _XREQ_DEFAULT.slice(); }
+function xreqSet(v){ const a=activeTpl(); if(!a) return; a.required=v; saveTemplates(); }   // gilt für die aktive Vorlage (D2)
+function exportIssues(cards, req){
+  return {missing: cards.map(c=>({c, fields:req.filter(k=>!String(c[k]||'').trim())})).filter(x=>x.fields.length),
+          open: cards.filter(c=>edlAmpel(c)==='warn'),
+          rr: cards.filter(c=>c.rechterueckrufe),
+          ask: cards.filter(c=>c.query)};
+}
+const _rrKey=cards=>cards.map(c=>(c.event_num||'')+':'+lcNum(c.labelcode||'')+':'+c.rechterueckrufe).join('|');
+function openExportCheck(fmt, btn){
+  const cards=edlState.cards;
+  if(!cards.length){ exportEdl(fmt, btn); return; }
+  let req=xreqGet();
+  // Rechterückrufe dieser Liste schon bestätigt (und seitdem kein LC geändert) zählt wie keine
+  const rrDone=()=>!!edlState.rrChecked && edlState.rrChecked===_rrKey(exportIssues(cards, req).rr);
+  const iss0=exportIssues(cards, req);
+  if(!iss0.missing.length && !iss0.open.length && !iss0.ask.length && (!iss0.rr.length || rrDone())){ exportEdl(fmt, btn); return; }
+  const overlay=el('div','emodal-overlay'); const modal=el('div','emodal xcheck'); overlay.appendChild(modal);
+  modal.setAttribute('role','dialog'); modal.setAttribute('aria-modal','true');
+  const close=()=>{ overlay.remove(); document.removeEventListener('keydown', onKey); };
+  function onKey(e){ if(e.key==='Escape') close(); }
+  const head=el('div','tiepick-head');
+  head.appendChild(el('h3',null, ()=>t('Vor dem Export prüfen')));
+  head.appendChild(el('p','hint', ()=>t('Cue-Sheet als {fmt} · {n} Cues',{fmt:fmt.toUpperCase(), n:cards.length})));
+  modal.appendChild(head);
+  const reqRow=el('div','xcheck-req'); reqRow.appendChild(el('span','lbl', ()=>t('Pflichtfelder')));
+  tFn(reqRow, ()=>t('Die Auswahl gilt für die Export-Vorlage „{n}“.',{n:(activeTpl()||{}).name||''}), 'title');
+  _XREQ.forEach(([k,lab])=>{
+    const l=el('label'); const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=req.includes(k);
+    cb.addEventListener('change', ()=>{ req=_XREQ.map(([f])=>f).filter(f=>f===k ? cb.checked : req.includes(f)); xreqSet(req); paint(); });
+    l.append(cb, el('span',null, ()=>t(lab))); reqRow.appendChild(l);
+  });
+  modal.appendChild(reqRow);
+  const body=el('div'); modal.appendChild(body);
+  const foot=el('div','tiepick-foot');
+  const back=el('button','btn ghost sm'); tFn(back, ()=>t('Zurück')); back.addEventListener('click', close);
+  const go=el('button','btn sm'); foot.append(back, go); modal.appendChild(foot);
+  let rrOk=rrDone();
+  const cueLine=(c, what)=>{
+    const li=el('li'); li.appendChild(el('span','num', c.event_num||'—'));
+    li.appendChild(el('span','ell', [c.title||c.clip_name||'—', c.artist].filter(Boolean).join(' · ')));
+    const w=el('span','what'); if(typeof what==='function') tFn(w, what); else if(what) w.appendChild(what);
+    li.appendChild(w); return li;
+  };
+  function paint(){
+    const iss=exportIssues(cards, req); body.innerHTML='';
+    const labs=Object.fromEntries(_XREQ);
+    if(iss.missing.length){
+      const sec=el('div','xcheck-sec'); sec.appendChild(el('h4',null, ()=>t('Pflichtfelder fehlen bei {n} Cue(s)',{n:iss.missing.length})));
+      const ul=el('ul','xcheck-list'); iss.missing.forEach(({c,fields})=>ul.appendChild(cueLine(c, ()=>fields.map(f=>t(labs[f])).join(', '))));
+      sec.appendChild(ul); body.appendChild(sec);
+    } else if(req.length) body.appendChild(el('div','xcheck-sec ok', ()=>t('Alle Pflichtfelder gefüllt.')));
+    if(iss.open.length){
+      const sec=el('div','xcheck-sec'); sec.appendChild(el('h4',null, ()=>t('Unbestätigte Vorschläge: {n}',{n:iss.open.length})));
+      const ul=el('ul','xcheck-list'); iss.open.forEach(c=>ul.appendChild(cueLine(c, ()=>c.labelcode ? 'LC'+lcNum(c.labelcode) : '—')));
+      sec.appendChild(ul); body.appendChild(sec);
+    }
+    if(iss.ask.length){   // D13: was jemand am Cue als Rückfrage markiert hat, steht vor der Abgabe noch einmal da
+      const sec=el('div','xcheck-sec'); sec.appendChild(el('h4',null, ()=>t('Offene Rückfragen: {n}',{n:iss.ask.length})));
+      const ul=el('ul','xcheck-list'); iss.ask.forEach(c=>ul.appendChild(cueLine(c, ()=>(c.note||'').trim() || t('ohne Notiz'))));
+      sec.appendChild(ul); body.appendChild(sec);
+    }
+    if(iss.rr.length){
+      const sec=el('div','xcheck-sec rr'); sec.appendChild(el('h4',null, ()=>t('Rechterückrufe bei {n} Cue(s)',{n:iss.rr.length})));
+      sec.appendChild(el('p','hint', ()=>t('Vor der Abgabe auf labelrecherche.gvl.de prüfen, ob die Nutzung erlaubt ist.')));
+      const ul=el('ul','xcheck-list'); iss.rr.forEach(c=>ul.appendChild(cueLine(c, el('span','chip rr','LC'+lcNum(c.labelcode||'')+' · RR '+c.rechterueckrufe))));
+      sec.appendChild(ul);
+      const l=el('label','xcheck-confirm'); const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=rrOk;
+      cb.addEventListener('change', ()=>{ rrOk=cb.checked; paintGo(iss); });
+      l.append(cb, el('span',null, ()=>t('Ich habe die Rechterückrufe auf labelrecherche.gvl.de geprüft.'))); sec.appendChild(l);
+      body.appendChild(sec);
+    }
+    paintGo(iss);
+  }
+  function paintGo(iss){
+    const blocked=iss.rr.length && !rrOk;
+    go.disabled=!!blocked;
+    tFn(go, ()=>(iss.missing.length||iss.open.length||iss.ask.length) ? t('Trotzdem exportieren ({fmt})',{fmt:fmt.toUpperCase()}) : t('Exportieren ({fmt})',{fmt:fmt.toUpperCase()}));
+    if(blocked) tFn(go, ()=>t('Erst die Rechterückrufe bestätigen'), 'title'); else go.removeAttribute('title');
+  }
+  go.addEventListener('click', ()=>{
+    const iss=exportIssues(cards, req); if(iss.rr.length && !rrOk) return;
+    if(iss.rr.length) edlState.rrChecked=_rrKey(iss.rr);    // gilt für diese Liste, bis sich ein LC ändert
+    close(); exportEdl(fmt, btn);
+  });
+  paint();
+  overlay.addEventListener('mousedown', e=>{ if(e.target===overlay) close(); });
+  document.addEventListener('keydown', onKey); document.body.appendChild(overlay);
+  (go.disabled ? back : go).focus();
+}
+
+// --- D4: alle sicheren Vorschläge übernehmen ------------------------------------------------------------------
+// Sicher: Vorschlag mit Labelcode, ohne Gleichstand und ohne Versions-Zweifel, den zwei unabhängige Signale tragen:
+// ein Netztreffer aus mindestens zwei Quellen (Confidence ab 0.5) oder ein Katalog-Kürzel aus einer gepflegten
+// Library-Liste bzw. Lieferung. Track-Index (Dump-Daten) und GVL-Kurzname allein zählen nicht.
+const _SAFE_TIP='Sicher heißt: Labelcode aus zwei unabhängigen Quellen (Netz) oder aus einer Library-Liste bzw. Lieferung (Katalog-Kürzel), ohne Gleichstand. Track-Index und GVL-Kürzel allein zählen nicht.';
+function edlSafe(c){
+  if(edlAmpel(c)!=='warn' || !c.labelcode || (c.tied||[]).length || c.version_mismatch) return false;
+  if(c.status==='resolved_and_written') return c.dual_source===true && (c.confidence||0)>=0.5;
+  if(c.status==='catalog_hint') return /^Library-Kürzel /.test(c.catalog_hint||'');
+  return false;
+}
+function openAcceptSafe(safe){
+  const overlay=el('div','emodal-overlay'); const modal=el('div','emodal xcheck'); overlay.appendChild(modal);
+  modal.setAttribute('role','dialog'); modal.setAttribute('aria-modal','true');
+  const close=()=>{ overlay.remove(); document.removeEventListener('keydown', onKey); };
+  function onKey(e){ if(e.key==='Escape') close(); }
+  const head=el('div','tiepick-head');
+  head.appendChild(el('h3',null, ()=>t('{n} sichere Vorschläge übernehmen?',{n:safe.length})));
+  head.appendChild(el('p','hint', ()=>t(_SAFE_TIP)));
+  modal.appendChild(head);
+  const sec=el('div','xcheck-sec'); const ul=el('ul','xcheck-list');
+  safe.forEach(c=>{ const li=el('li'); li.append(el('span','num', c.event_num||'—'),
+    el('span','ell', [c.title||c.clip_name||'—', c.artist].filter(Boolean).join(' · ')),
+    el('span','what', 'LC'+lcNum(c.labelcode)+' '+(c.labelname||''))); ul.appendChild(li); });
+  sec.appendChild(ul); modal.appendChild(sec);
+  const foot=el('div','tiepick-foot');
+  const back=el('button','btn ghost sm'); tFn(back, ()=>t('Abbrechen')); back.addEventListener('click', close);
+  const go=el('button','btn sm'); tFn(go, ()=>t('Übernehmen'));
+  go.addEventListener('click', async ()=>{
+    close();
+    for(const c of safe){ if(edlSafe(c)) await acceptCue(c); }   // acceptCue nimmt gleiche Cues mit, die fallen hier raus
+  });
+  foot.append(back, go); modal.appendChild(foot);
+  overlay.addEventListener('mousedown', e=>{ if(e.target===overlay) close(); });
+  document.addEventListener('keydown', onKey); document.body.appendChild(overlay);
+  go.focus();
 }
 
 async function exportEdl(fmt, btn){
   btn.disabled=true; setEdlProgress(()=>t('Erzeuge {fmt} …',{fmt:fmt.toUpperCase()}));
   try{
-    const r=await fetch('/api/edl/export',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cards:edlState.cards.map(({_parts,_snap,...c})=>c), filename:edlState.name, fmt})});
-    if(!r.ok){ const d=await r.json().catch(()=>({})); throw new Error((d.detail&&String(d.detail))||('HTTP '+r.status)); }
+    const r=await fetch('/api/edl/export',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cards:edlState.cards.map(({_parts,_snap,_hist,...c})=>c), filename:edlState.name, fmt, columns:(activeTpl()||{}).columns||null})});
+    if(!r.ok){ const d=await r.json().catch(()=>({})); throw new Error((d.detail&&String(d.detail))||t(SRV_FAIL)); }
     const blob=await r.blob();
     const res=await saveDownload(blob, edlState.name+'.'+fmt);
     if(res.error) throw new Error(res.error);
     if(res.cancelled){ setEdlProgress(()=>t('Abgebrochen.')); return; }
     setEdlProgress(()=>res.path ? t('Gespeichert: {p}',{p:res.path}) : t('Heruntergeladen.')); setEdlStep(3);
-  }catch(err){ logErr('Export', err); setEdlProgress(()=>t('Export fehlgeschlagen: {why}',{why:err.message?t(err.message):t('Backend nicht erreichbar')})); }
+  }catch(err){ logErr('Export', err); setEdlProgress(()=>t('Export fehlgeschlagen: {why}',{why:err.message?t(err.message):t(NET_DOWN)})); }
   finally{ btn.disabled=false; setTimeout(()=>setEdlProgress(''),6000); }
 }
 
@@ -3975,6 +4920,12 @@ const _AMPEL={ok:'Verifiziert', warn:'Vorschlag', bad:'Offen'};
 function renderEdl(data){
   edlState.lastData=data;
   const box=$('#eresult'); box.innerHTML='';
+  if(data.cards.length){   // D12: Projektname und Speicherstand
+    const pb=el('div','eproj'); const pl=el('label',null,()=>t('Projekt')); pl.htmlFor='eprojname';
+    const pn=document.createElement('input'); pn.className='inp'; pn.id='eprojname'; pn.value=edlState.name||'';
+    pn.addEventListener('change', ()=>{ edlState.name=pn.value.trim() || 'cue_sheet'; projSave(); });
+    const ps=el('span','pstate'); ps.id='eprojstate'; pb.append(pl, pn, ps); box.appendChild(pb);
+  }
   // Ampel-Kopf: die Zahlen, die vor der Abgabe zählen; die drei Zähler sind zugleich Filter.
   const cnt={ok:0,warn:0,bad:0}; data.cards.forEach(c=>{ cnt[edlAmpel(c)]++; });
   const total=data.cards.length||1;
@@ -3994,11 +4945,31 @@ function renderEdl(data){
   tFn(cbtn, ()=>t('Reihenfolge: Song-Datenbank → konfigurierte Library-Quellen (Dateiname) → Netz (Interpret + Titel). Nichts wird automatisch getaggt.'), 'title');
   cbtn.disabled=!!edlState.busy || !data.cards.length;
   cbtn.addEventListener('click', ()=>completeMetadata());
+  const xb=el('button','btn ghost sm', ()=>edlState.cancelRun ? t('Wird abgebrochen …') : t('Abbrechen')); xb.type='button'; xb.hidden=!edlState.busy; xb.disabled=!!edlState.cancelRun;
+  tFn(xb, ()=>t('Suche nach dem laufenden Stapel beenden — Gefundenes bleibt, fertige Cues sind schon bearbeitbar'), 'title');
+  xb.addEventListener('click', ()=>{ edlState.cancelRun=true; xb.disabled=true; tFn(xb, ()=>t('Wird abgebrochen …')); });
   const prog=el('span','eprog', _edlProgText); edlState.progEl=prog;
+  const last=(edlState.undo||[]).slice(-1)[0];
+  const ub=el('button','btn ghost sm', ()=>t('Rückgängig')); ub.type='button'; ub.disabled=!last || !!edlState.busy;
+  tFn(ub, ()=>last ? t('Rückgängig: {what} (⌘Z / Strg+Z)',{what:t(last.label)}) : t('Noch nichts geändert'), 'title');
+  ub.addEventListener('click', ()=>undoEdl());
   const hint=el('p','hint', ()=>cnt.bad ? t('{n} offen — Export geht, aber die Zeilen bleiben ohne Labelcode',{n:cnt.bad}) : (cnt.warn ? t('{n} Vorschläge — vor dem Export bestätigen',{n:cnt.warn}) : t('Alles verifiziert — bereit für die Abgabe')));
   const exp=el('div','egroup export');
-  [['xlsx','Excel'],['csv','CSV'],['pdf','PDF']].forEach(([fmt,lab],i)=>{ const b=el('button', (i===0 && !cnt.bad && !cnt.warn) ? 'btn' : 'btn ghost sm'); tFn(b, ()=>(i===0?t('Export')+' ':'')+lab); b.addEventListener('click',()=>exportEdl(fmt,b)); exp.appendChild(b); });
-  act.append(cbtn, prog, hint, exp); sum.appendChild(act);
+  [['xlsx','Excel'],['csv','CSV'],['pdf','PDF']].forEach(([fmt,lab],i)=>{ const b=el('button', (i===0 && !cnt.bad && !cnt.warn) ? 'btn' : 'btn ghost sm'); tFn(b, ()=>(i===0?t('Export')+' ':'')+lab); b.addEventListener('click',()=>openExportCheck(fmt,b)); exp.appendChild(b); });
+  if(tplState.templates.length){
+    const tw=el('div','etpl'); const sel=document.createElement('select'); tFn(sel, ()=>t('Export-Vorlage'), 'aria-label');
+    tplState.templates.forEach(tp=>{ const o=document.createElement('option'); o.value=tp.id; o.textContent=tp.name; o.selected=tp.id===(activeTpl()||{}).id; sel.appendChild(o); });
+    sel.addEventListener('change', async ()=>{ tplState.active=sel.value; await saveTemplates(); });
+    const ed=iconBtn('pencil', ()=>t('Export-Vorlagen bearbeiten')); ed.addEventListener('click', openTemplateEditor);
+    tw.append(sel, ed); exp.appendChild(tw);
+  }
+  const safe=data.cards.filter(edlSafe);
+  if(safe.length){   // D4: sichere Vorschläge in einem Zug übernehmen (nach Rückfrage mit Liste)
+    const sb=el('button','btn ghost sm'); tFn(sb, ()=>t('Alle sicheren übernehmen ({n})',{n:safe.length}));
+    tFn(sb, ()=>t(_SAFE_TIP), 'title'); sb.disabled=!!edlState.busy;
+    sb.addEventListener('click', ()=>openAcceptSafe(safe)); act.append(cbtn, xb, sb, ub, prog, hint, exp);
+  } else act.append(cbtn, xb, ub, prog, hint, exp);
+  sum.appendChild(act);
   const bar=el('div','abar'); [['ok',cnt.ok],['warn',cnt.warn],['bad',cnt.bad]].forEach(([k,n])=>{ const i=el('i',k); i.style.width=(100*n/total)+'%'; bar.appendChild(i); }); sum.appendChild(bar);
   box.appendChild(sum);
   setEdlStep(cnt.bad||cnt.warn ? 2 : 3);
@@ -4012,8 +4983,14 @@ function renderEdl(data){
   thead.appendChild(hr); tbl.appendChild(thead);
   const tb=el('tbody');
   if(!rows.length){ const tr=el('tr'); const td=el('td','empty-row', ()=>t('Keine Cues mit diesem Status.')); td.colSpan=10; tr.appendChild(td); tb.appendChild(tr); }
+  if(!rows.includes(edlState.focusCard)) edlState.focusCard=rows[0]||null;
+  tb.addEventListener('keydown', e=>edlRowKeys(e, rows));
+  tb.addEventListener('dblclick', e=>{ const td=e.target.closest && e.target.closest('td.cedit'); if(!td || e.target.closest('button,a,input')) return;
+    const tr=td.closest('tr.etrow'); startCellEdit(td, rows[[...tb.querySelectorAll('tr.etrow')].indexOf(tr)], rows); });
+  tb.addEventListener('paste', e=>pasteCells(e, rows, tb));
   rows.forEach(c=>{
-    const tr=el('tr','etrow'); tb.appendChild(tr);
+    const tr=el('tr','etrow'); tb.appendChild(tr); tr.tabIndex=(c===edlState.focusCard ? 0 : -1);
+    tr.addEventListener('focus', ()=>{ if(edlState.focusCard!==c){ tb.querySelectorAll('tr.etrow').forEach(x=>x.tabIndex=-1); tr.tabIndex=0; edlState.focusCard=c; } });
     const paintRow=()=>{
       tr.innerHTML='';
       const m=_EST[c.status]||{t:c.status,c:'miss'};
@@ -4021,21 +4998,25 @@ function renderEdl(data){
       const stC=el('td','stt'); stC.appendChild(el('span','amp '+a)); stC.appendChild(el('span',null,()=>t(_AMPEL[a])));
       const detail=()=>[t(m.t), edlSourceLabel(c)].filter(Boolean).join(' · ');
       if(detail() && detail()!==t(_AMPEL[a])) stC.appendChild(el('span','src', detail));
+      if(c.confirmed_at) stC.appendChild(el('span','src', ()=>confirmedText(c)));
+      if(!c.labelcode && c.prefix_hints) stC.appendChild(el('span','src', ()=>t('Kürzel {p}: {n} mögliche(s) Label(s), im Editor',{p:c.prefix_hints.prefix, n:c.prefix_hints.candidates.length})));
       tr.appendChild(stC);
       tr.appendChild(el('td','num', c.event_num||''));
       const tc=el('td','ell tcell col-title');
       const tt=el('div','tt', c.title || (c.artist ? '' : (c.clip_name||'—')));
       if(c.merged_count>1) tt.appendChild(el('span','mergedn',' ×'+c.merged_count));
+      if(c.query){ const q=el('span','chip ask', ()=>t('Rückfrage')); tFn(q, ()=>t('Rückfrage offen — erscheint vor dem Export in der Prüfung'), 'title'); tt.appendChild(q); }
       const ta=el('div','ta', c.artist||''); if(!c.title && c.artist) ta.textContent=c.artist+(c.clip_name?' · '+c.clip_name:'');
       if(c.library_name && !c.artist){ ta.textContent=c.library_name; ta.classList.add('mono'); }   // Titel aus dem Library-Dateinamen, Katalogname darunter
-      tc.append(tt,ta); tc.title=[c.artist,c.title,c.clip_name].filter(Boolean).join(' · '); tr.appendChild(tc);
+      tc.append(tt,ta); if((c.note||'').trim()) tc.appendChild(el('div','tnote', c.note.trim()));
+      tc.title=[c.artist,c.title,c.clip_name].filter(Boolean).join(' · '); tr.appendChild(tc);
       [c.komponist,c.texter,c.verlag].forEach((v,i)=>{ const d=el('td','ell col-w', v||''); d.title=v||'';
         if(i===0 && !v && c.composer_hint){ d.textContent=c.composer_hint; d.classList.add('hintv'); tFn(d, ()=>t('Aus dem Dateinamen — unverifiziert, im Editor prüfen'), 'title'); }
         if(v && c.author_new && i<3){ d.classList.add('hintv'); tFn(d, ()=>(c.author_source==='genius' ? t('Vorschlag aus Genius (Songwriter, community-gepflegt) — nicht gespeichert, im Editor prüfen und speichern') : t('Vorschlag aus dem Netz — nicht gespeichert, im Editor prüfen und speichern'))+(c.author_source_url?' · '+c.author_source_url:''), 'title'); }
         if(i===0 && v && c.author_source_url){ const a=document.createElement('a'); a.className='srcdot'; a.href=c.author_source_url; a.target='_blank'; a.rel='noopener'; a.title='Genius ↗'; a.textContent='↗'; d.appendChild(a); }
-        tr.appendChild(d); });
-      const lC=el('td','ell col-l', c.labelname||''); lC.title=c.labelname||''; tr.appendChild(lC);
-      const lcC=el('td'); if(c.labelcode){ lcC.appendChild(el('span','lcv', lcNum(c.labelcode)));
+        d.classList.add('cedit'); d.dataset.field=['komponist','texter','verlag'][i]; tr.appendChild(d); });
+      const lC=el('td','ell col-l cedit', c.labelname||''); lC.title=c.labelname||''; lC.dataset.field='labelname'; tr.appendChild(lC);
+      const lcC=el('td','cedit'); lcC.dataset.field='labelcode'; if(c.labelcode){ lcC.appendChild(el('span','lcv', lcNum(c.labelcode)));
         // Rechterückruf wie in der Label-Datenbank sichtbar (Domain-Regel), Lieferungsnotiz bleibt darunter
         if(c.rechterueckrufe){ const rr=el('span','chip rr','RR '+c.rechterueckrufe); tFn(rr, ()=>t('Rechterückruf — manuell auf labelrecherche.gvl.de prüfen'), 'title'); lcC.appendChild(rr); }
         if(c.label_geliefert) lcC.appendChild(el('span','lcnote', ()=>lcNoteText(c.label_geliefert))); }
@@ -4050,11 +5031,13 @@ function renderEdl(data){
         const pick=iconBtn('check', ()=>t('Aus den Kandidaten wählen'), 'accept choose');
         pick.addEventListener('click', ()=>openTiePicker(c)); aC.appendChild(pick);
       }
-      const eb=iconBtn('pencil', ()=>t('Bearbeiten')); const xb=iconBtn('trash', ()=>t('Löschen'), 'danger');   // Nicht-Musik-Cues (Atmos/O-Töne) raus
+      if(a==='warn'){ const no=iconBtn('x', ()=>t('Vorschlag verwerfen (Esc) — Cue wird offen'), 'discard');
+        no.addEventListener('click', ()=>discardCue(c)); aC.appendChild(no); }
+      const eb=iconBtn('pencil', ()=>t('Bearbeiten'), 'edit'); const xb=iconBtn('trash', ()=>t('Löschen'), 'danger');   // Nicht-Musik-Cues (Atmos/O-Töne) raus
       aC.append(eb,xb); tr.appendChild(aC);
       eb.addEventListener('click', ()=> openEdlEditorModal(c, paintRow));
       xb.addEventListener('click', ()=>{
-        const idx=edlState.cards.indexOf(c); if(idx>=0) edlState.cards.splice(idx,1);
+        cueChange('Cue gelöscht', [c], ()=>{ const idx=edlState.cards.indexOf(c); if(idx>=0) edlState.cards.splice(idx,1); });
         renderEdl(edlDataFromCards());   // Zähler/Chips/Export aktualisieren
       });
     };
@@ -4065,7 +5048,10 @@ function renderEdl(data){
   const scrollTop=el('div','etable-scrolltop'); const spacer=el('div'); scrollTop.appendChild(spacer);
   box.appendChild(scrollTop);
   box.appendChild(tw);
+  if(rows.length){ const kh=el('p','ekeys'); tFn(kh, ()=>t('Tastatur: <kbd>↑</kbd><kbd>↓</kbd> Cue wählen · <kbd>Enter</kbd> Vorschlag übernehmen oder bearbeiten · <kbd>Esc</kbd> Vorschlag verwerfen · <kbd>F2</kbd> oder Doppelklick: Zelle bearbeiten · aus Excel einfügen ab der gewählten Zeile · <kbd>⌘Z</kbd> rückgängig'), 'html'); box.appendChild(kh); }
+  if(edlState.refocus){ edlState.refocus=false; const ft=[...tb.querySelectorAll('tr.etrow')][rows.indexOf(edlState.focusCard)]; ft && ft.focus(); }
   syncEdlScrollbars(scrollTop, spacer, tw);
+  paintProjState(); projAutosave();
 }
 
 function syncEdlScrollbars(top, spacer, wrap){
@@ -4198,8 +5184,8 @@ document.querySelectorAll('.dbexport button[data-fmt]').forEach(b=>{
     b.disabled=true; const msg=$('#dbmsg');
     try{
       const r=await fetch(url);
-      if(!r.ok){ const d=await r.json().catch(()=>({})); throw new Error((d.detail&&String(d.detail))||('HTTP '+r.status)); }
-      const res=await saveDownload(await r.blob(), 'cuecore_songs.'+fmt);
+      if(!r.ok){ const d=await r.json().catch(()=>({})); throw new Error((d.detail&&String(d.detail))||t(SRV_FAIL)); }
+      const res=await saveDownload(await r.blob(), fmt==='team' ? 'cuecore_team_'+new Date().toISOString().slice(0,10)+'.csv' : 'cuecore_songs.'+fmt);
       if(res.error) throw new Error(res.error);
       if(msg) tFn(msg, ()=>res.cancelled ? t('Abgebrochen.') : (res.path ? t('Gespeichert: {p}',{p:res.path}) : t('Heruntergeladen.')));
     }catch(err){ logErr('Export', err); if(msg) tFn(msg, ()=>t('Export fehlgeschlagen: {why}',{why:t(err.message)})); else alert(t('Export fehlgeschlagen: {why}',{why:t(err.message)})); }
@@ -4241,6 +5227,7 @@ function renderImportPreview(name, j){
   const p=el('div','ibox');
   p.appendChild(el('div','ititle', ()=>t('{name} — {rows} Zeilen',{name, rows:nfmt(j.rows)})));
   if(j.delivery){ renderDeliveryPreview(p, box, name, j); return; }
+  if(j.team){ renderTeamPreview(p, box, j); return; }
   // Erkannte Zuordnung — jede Zeile korrigierbar, denn automatisch erkannt heißt nicht immer richtig.
   const fieldLabels={interpret:'Interpret',titel:'Titel',komponist:'Komponist',texter:'Texter',verlag:'Verlag',
     labelname:'Label',labelcode:'Labelcode',album:'Album',track_number:'Track-Nr.',isrc:'ISRC',iswc:'ISWC',gema_werknummer:'GEMA-Werknr.'};
@@ -4295,8 +5282,9 @@ function renderImportPreview(name, j){
 }
 
 // Notiz am LC einer Lieferungszeile (label_geliefert): der gelieferte Code, den der GVL-Code ersetzt hat, oder
-// der feste Hinweis, dass der Code über den Labelnamen aus dem Master kam (labelcheck.LC_BY_NAME_NOTE).
-function lcNoteText(v){ return v==='LC aus dem GVL-Master über den Labelnamen' ? t(v) : t('geliefert: {v}',{v}); }
+// der feste Hinweis, dass der Code über Labelnamen oder Verlag aus dem Master kam (labelcheck.LC_BY_*_NOTE).
+const _LC_NOTES=['LC aus dem GVL-Master über den Labelnamen','LC aus dem GVL-Master über den Verlag (Production Music)'];
+function lcNoteText(v){ return _LC_NOTES.includes(v) ? t(v) : t('geliefert: {v}',{v}); }
 
 // Label-Chips einer Lieferung, für Upload- und Ordner-Vorschau gleich: „Name · LC · n Tracks“. Zeilen ohne Code
 // (Schlüssel „—“) zeigen je gelieferten Labelnamen „Name · kein Labelcode“ statt „— · LC—“.
@@ -4328,6 +5316,35 @@ function deliveryCodeNotes(j){
 
 // Track-Lieferung einer Library (Metadaten-Export): kein Spalten-Mapping, sondern Labels + Beispiele, und der
 // Import schreibt sie als VERIFIZIERT in die Datenbank — samt Dateinamen und Edit-ID für die Cue-Zuordnung.
+// D16: Team-Datei einer Kollegin/eines Kollegen. Eigene Werte gewinnen, leere Felder werden gefüllt; Abweichungen
+// stehen zum Durchsehen da, verifiziert bleibt verifiziert, wenn der Labelcode im GVL-Master steht.
+function renderTeamPreview(p, box, j){
+  p.appendChild(el('div','hint', ()=>t('Team-Datei: {new} neue Songs, {filled} ergänzen leere Felder, {same} schon gleich. Deine eigenen Werte bleiben in jedem Fall stehen.',{new:nfmt(j.new), filled:nfmt(j.filled), same:nfmt(j.same)})));
+  if(j.review) p.appendChild(el('div','ierr', ()=>t('{n} neue Zeile(n) kommen als „zu prüfen“: Labelcode nicht im GVL-Master oder in der Datei schon als ungeprüft markiert.',{n:nfmt(j.review)})));
+  const labs={komponist:'Komponist',texter:'Texter',verlag:'Verlag',album:'Album',track_number:'Track-Nr.',labelname:'Label',labelcode:'Labelcode',isrc:'ISRC',iswc:'ISWC',gema_werknummer:'GEMA-Werknr.'};
+  if(j.conflicts_total){
+    p.appendChild(el('div','ititle', ()=>t('Abweichungen ({n}) — deine Werte bleiben, bitte durchsehen',{n:nfmt(j.conflicts_total)})));
+    const tbl=el('table','dbtable'); const tb=document.createElement('tbody');
+    (j.conflicts||[]).forEach(c=>c.diffs.forEach(d=>{ const tr=document.createElement('tr');
+      tr.append(el('td','ell', c.interpret+' – '+c.titel), el('td',null,()=>t(labs[d.field]||d.field)),
+        el('td','ell', ()=>t('deins: {v}',{v:d.own||'—'})), el('td','ell', ()=>t('Team: {v}',{v:d.team||'—'}))); tb.appendChild(tr); }));
+    tbl.appendChild(tb); p.appendChild(tbl);
+  }
+  const act=el('div','actions');
+  const go=el('button','btn sm'); tFn(go, ()=>t('{n} neue übernehmen, {m} ergänzen',{n:nfmt(j.new), m:nfmt(j.filled)})); go.disabled=!(j.new||j.filled);
+  const cancel=el('button','btn ghost sm'); tFn(cancel, ()=>t('Abbrechen'));
+  const msg=el('span','hint'); act.append(go,cancel,msg); p.appendChild(act); box.appendChild(p);
+  cancel.addEventListener('click', ()=>{ box.hidden=true; box.innerHTML=''; _importPayload=null; });
+  go.addEventListener('click', async ()=>{
+    go.disabled=true; tFn(msg, ()=>t('Übernehme …'));
+    try{
+      const jj=await fetchJson('/api/ingest/upload',{method:'POST',headers:{'Content-Type':'application/json'}, body:JSON.stringify({..._importPayload, commit:true})});
+      tFn(msg, ()=>t('{n} neu, {m} ergänzt.',{n:nfmt(jj.new), m:nfmt(jj.filled)}));
+      _importPayload=null; refreshHealth();
+      setTimeout(()=>{ box.hidden=true; box.innerHTML=''; dbState.q=''; $('#dbq').value=''; loadDb(0); }, 2200);
+    }catch(err){ const why=errWhy(err); tFn(msg, ()=>t('Import fehlgeschlagen: {why}',{why:why()})); go.disabled=false; }
+  });
+}
 function renderDeliveryPreview(p, box, name, j){
   p.appendChild(el('div','hint', ()=>t('Track-Lieferung der Library „{lib}“ — wird als verifiziert übernommen (Metadaten der Library gelten als geprüft). Das Cue-Sheet findet die Tracks danach über den Dateinamen oder die Track-Nummer am Dateiende.',{lib:j.library.toUpperCase()})));
   p.appendChild(deliveryLabelChips(j));
@@ -4428,7 +5445,7 @@ async function loadDb(offset){
   try{
     const p=new URLSearchParams({q:dbState.q, limit:dbState.limit, offset:offset, missing:dbState.missing||'', scope:dbState.scope||'all'});
     const r=await fetch('/api/db/songs?'+p); const data=await r.json();
-    if(!r.ok) throw new Error((data.detail&&String(data.detail))||('HTTP '+r.status));
+    if(!r.ok) throw new Error((data.detail&&String(data.detail))||t(SRV_FAIL));
     dbState.total=data.total;
     box.innerHTML='';
     // Filterleiste: links Umfang als Segmentschalter (Alle / Verifiziert / Index; eine Datenbank), rechts die Lücken als beschriftete Gruppe — nur Felder mit Lücken, Zahl je Suche.
@@ -4468,7 +5485,13 @@ async function loadDb(offset){
     }
     const ixRows=(data.index_rows||[]);
     if(dbState.scope!=='index'){
-      if(!data.rows.length && !ixRows.length){ box.appendChild(el('div','empty', ()=>(dbState.q||dbState.missing)?t('Kein Treffer.'):t('Datenbank leer.'))); }
+      if(!data.rows.length && !ixRows.length){ box.appendChild(el('div','empty', ()=>(dbState.q||dbState.missing)?t('Kein Treffer.'):t('Datenbank leer.')));
+        if(data.suggestion){   // Tippfehler: ein Klick sucht mit der korrigierten Schreibweise
+          const sug=el('button','btn ghost sm'); sug.type='button';
+          tFn(sug, ()=>t('Meintest du „{q}“?',{q:data.suggestion}));
+          sug.addEventListener('click', ()=>{ $('#dbq').value=data.suggestion; dbState.q=data.suggestion; loadDb(0); });
+          box.appendChild(sug);
+        } }
       else if(data.rows.length) box.appendChild(dbTable(data.rows));
     }
     // Index-Zeilen (unverifiziert) unter den verifizierten
@@ -4731,7 +5754,7 @@ function _rerenderForLang(){
   try{ loadLibraryLists(); }catch(e){ logErr('Sprachwechsel', e); }      // „{s} Kürzel mitgeliefert …" in der Label-Datenbank
   // Einstellungen, Track-Suche, Tagger-Karten, Cue-Sheet, Formulare, Import-Panels und Modals nicht neu bauen:
   // ihre Texte hängen an tFn/tSet und wechseln in applyI18n an Ort und Stelle — Eingaben bleiben.
-  try{ const q=$('#gq').value.trim(); if(q) runGvl(q); }catch(e){ logErr('Sprachwechsel', e); }
+  try{ if(!$('#tool-gvl').hidden) loadGvl(gState.offset); }catch(e){ logErr('Sprachwechsel', e); }
   try{ if(!$('#tool-db').hidden) loadDb(dbState.offset); }catch(e){ logErr('Sprachwechsel', e); }
 }
 

@@ -10,7 +10,7 @@ import csv
 import html
 from pathlib import Path
 
-from .normalize import export_lc
+from .normalize import export_lc, isrc_display, isrc_plain
 
 # (songs.db-Feld, Spaltenüberschrift) — gilt für alle Formate.
 EXPORT_COLUMNS = [
@@ -21,12 +21,14 @@ EXPORT_COLUMNS = [
 ]
 
 
-def _val(row: dict, field: str) -> str:
+def _val(row: dict, field: str, *, pdf: bool = False) -> str:
     v = row.get(field)
     if v is None:
         return ""
     if field == "labelcode":
         return export_lc(str(v))                 # einheitlich 'LC' + Ziffern, ohne Leerzeichen
+    if field == "isrc":                          # Datenform 12-stellig, im PDF mit Bindestrichen
+        return isrc_display(str(v)) if pdf else isrc_plain(str(v))
     return str(v)
 
 
@@ -82,7 +84,7 @@ def _pdf_parts(rows: list[dict], inner: list[float]) -> tuple[str, list[str]]:
     for i in range(0, len(rows), _PDF_CHUNK):
         trs = []
         for j, r in enumerate(rows[i:i + _PDF_CHUNK]):
-            vals = [html.escape(_fit_break(_val(r, f), w, _PDF_FONT)) for (f, _), w in zip(EXPORT_COLUMNS, inner)]
+            vals = [html.escape(_fit_break(_val(r, f, pdf=True), w, _PDF_FONT)) for (f, _), w in zip(EXPORT_COLUMNS, inner)]
             trs.append(f"<tr class='first'>{cells(vals, 'td', True)}</tr>" if j == 0 else f"<tr>{cells(vals, 'td', False)}</tr>")
         parts.append(f"{style}<table>{''.join(trs)}</table>")
     return style + head, parts

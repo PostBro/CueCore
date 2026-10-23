@@ -87,3 +87,33 @@ def test_zuletzt_eintraege_lesbar_haupttext_in_textfarbe():
     light = dict(re.findall(r"--(muted|raised):(#[0-9A-Fa-f]{6})", css.split("html[data-theme=\"light\"]{")[1].split("}")[0]))
     for theme in (dark, light):
         assert _contrast(theme["muted"], theme["raised"]) >= 4.5, theme
+
+
+PARTNER = ["APL Music", "Cezame", "Extreme Music", "Fresh Tracks", "RipCue Music"]
+
+
+@needs_node
+def test_partnerleiste_nennt_alle_fuenf_library_partner():
+    out = run_page("return {kopf: txt('.partners h4'), namen: qa('.partners li img').map(i => i.getAttribute('alt'))};")
+    assert out["errors"] == []
+    assert out["result"]["kopf"] == "Library-Partner"
+    assert out["result"]["namen"] == PARTNER
+
+
+def test_partnerlogos_tragen_alt_text_und_liegen_auf_dunkler_plakette():
+    """Weiße Logos auf dunkler Plakette (hell und dunkel lesbar); jedes Bild nennt den Partner im Alt-Text,
+    die Datei liegt flach in web/ (die Route liefert nur Dateinamen ohne Pfad) und trägt keine Metadaten."""
+    src = INDEX.read_text(encoding="utf-8")
+    bar = src[src.index('<div class="partners"'):]
+    bar = bar[:bar.index("</ul>")]
+    imgs = re.findall(r"<img[^>]*>", bar)
+    assert len(imgs) == len(PARTNER)
+    for img in imgs:
+        alt = re.search(r'alt="([^"]+)"', img)
+        assert alt and alt.group(1) in PARTNER, img
+        name = re.search(r'src="/web/([^"/]+\.png)"', img).group(1)
+        data = (INDEX.parent / name).read_bytes()
+        assert data[:8] == b"\x89PNG\r\n\x1a\n" and data[25] == 6, name   # RGBA
+        assert not any(c in data for c in (b"tEXt", b"iTXt", b"zTXt", b"eXIf", b"iCCP")), name
+    css = re.sub(r"\s+", "", _css())
+    assert "background:#17171A" in css.split(".partnersli{")[1].split("}")[0]

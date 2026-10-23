@@ -96,11 +96,13 @@ def resolve_card(path: str | Path, artist: str, title: str, *, resolve_fn, label
     """
     fingerprinted = False
     fingerprint_source = ""          # 'acoustid' | 'audd' — die Karte nennt, wer erkannt hat
+    fp_isrc = ""
     possible_cover = False
     if not (artist and title) and recognize is not None:
         info = recognize(str(path), artist, title)
         if info and info.get("artist") and info.get("title"):
             artist, title = info["artist"], info["title"]
+            fp_isrc = info.get("isrc", "") or ""       # AcoustID kennt den ISRC der Aufnahme: exakte Stufe 0
             fingerprinted = True
             fingerprint_source = info.get("fingerprint_source") or ""
             possible_cover = bool(info.get("possible_cover"))
@@ -110,13 +112,14 @@ def resolve_card(path: str | Path, artist: str, title: str, *, resolve_fn, label
             "path": str(path), "artist": artist, "title": title,
             "matched": False, "band": "no_match", "incomplete": False,
             "album": "", "date": "", "composer": "", "lyricist": "", "publisher": "", "via_isrc": False,
-            "isrcs": [], "notes": ["nicht identifizierbar (keine Tags/Name, Fingerprint erfolglos)"],
+            "isrcs": [], "iswcs": [], "gema_werknummer": "", "notes": ["nicht identifizierbar (keine Tags/Name, Fingerprint erfolglos)"],
             "fingerprinted": fingerprinted, "fingerprint_source": fingerprint_source, "possible_cover": possible_cover,
             "best": None, "plan": None,
         }
 
     file_tags = tags.read_tags(path) or {}
-    res = resolve_fn(artist, title, isrc or file_tags.get("isrc", ""))
+    # ISRC der Datei vor dem aus dem Fingerabdruck: der Tag ist die Angabe der Datei selbst
+    res = resolve_fn(artist, title, isrc or file_tags.get("isrc", "") or fp_isrc)
     catalog_hint = ""
     if not res.best and catalog_fn is not None:
         # Dateiname zuerst (CEZ4030_1), dann Album-Tag (CEZ4030 - Little French Fancies)
@@ -148,6 +151,8 @@ def resolve_card(path: str | Path, artist: str, title: str, *, resolve_fn, label
         "composer": composer, "lyricist": lyricist, "publisher": res.publisher,
         "verlag_hint": verlag_hint, "catalog_hint": catalog_hint,
         "isrcs": list(res.isrcs), "notes": list(res.notes),
+        "iswcs": list(res.iswcs), "gema_werknummer": res.gema_werknummer, "gema_source": res.gema_source,
+        "version": res.version, "version_mismatch": res.version_mismatch,
         "fingerprinted": fingerprinted, "fingerprint_source": fingerprint_source, "possible_cover": possible_cover,
         "best": None, "plan": None,
     }
